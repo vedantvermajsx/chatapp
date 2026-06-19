@@ -1,9 +1,11 @@
+import { Router } from 'express';
 import { getProfile } from '../controllers/user/getProfile.controller.js';
 import { updateProfile } from '../controllers/user/updateProfile.controller.js';
 import { deleteUser } from '../controllers/user/deleteUser.controller.js';
-import { getActivityStatus } from '../controllers/user/getActivitystatus.js';
-import { Router } from 'express';
+import { getActivityStatus } from '../controllers/user/getActivitystatus.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
+
+import { Router } from 'express';
 
 
 
