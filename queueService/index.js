@@ -7,6 +7,7 @@ import { connectToBroker, subscribe, on } from './broker.js';
 import { connectDB } from './database/db.js';
 import Message from './models/message.model.js';
 import { invalidateMessageCache } from './cacheClient.js';
+import { createAdminServer } from './adminServer.js';
 
 dotenv.config();
 
@@ -35,6 +36,11 @@ async function start() {
     } finally {
       await invalidateMessageCache({ roomId });
     }
+  });
+
+  createAdminServer({
+    port: process.env.PORT || 6000,
+    getStats: () => messageQueue.getStats()
   });
 
   console.log('[QueueService] ready — subscribed to: message.created, room.deleted');
