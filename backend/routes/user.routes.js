@@ -5,8 +5,6 @@ import { deleteUser } from '../controllers/user/deleteUser.controller.js';
 import { getActivityStatus } from '../controllers/user/getActivitystatus.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 
-import { Router } from 'express';
-
 
 
 const router = Router();
