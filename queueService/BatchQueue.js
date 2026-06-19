@@ -22,6 +22,17 @@ class BatchQueue {
     }
   }
 
+  getStats() {
+    return {
+      queueLength: this.queue.length,
+      isProcessing: this.isProcessing,
+      consecutiveFailures: this.consecutiveFailures,
+      batchSize: this.batchSize,
+      flushInterval: this.flushInterval,
+      maxBackoffMs: this.maxBackoffMs
+    };
+  }
+
   async processQueue() {
     if (this.isProcessing || this.queue.length === 0) {
       return;
