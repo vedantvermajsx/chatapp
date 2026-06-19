@@ -2,7 +2,7 @@ import User from '../../models/user.model.js';
 import Guest from '../../models/guest.model.js';
 import userCache from "../../database/userCache.js";
 
-export const getActivityStatus = async (req, res) => {
+async function getActivityStatus(req, res){
 
     try {
 
@@ -37,3 +37,5 @@ export const getActivityStatus = async (req, res) => {
     }
 
 }
+
+export default getActivityStatus;
