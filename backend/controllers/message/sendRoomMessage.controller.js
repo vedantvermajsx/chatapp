@@ -1,4 +1,4 @@
-import Room from '../../models/room.model.js';
+import roomCacheClient from '../../database/roomCacheClient.js';
 import xss from 'xss';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
@@ -12,7 +12,7 @@ export async function sendRoomMessage(req, res) {
       return res.status(400).json({ message: 'roomId required' });
     }
 
-    const room = await Room.findById(roomId);
+    const room = await roomCacheClient.getRoomById(roomId);
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }

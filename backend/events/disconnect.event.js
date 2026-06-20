@@ -1,5 +1,5 @@
 import { onlineUsers, userRooms } from '../socket.js';
-import userCache from '../database/userCache.js';
+import userCacheClient  from '../database/userCacheClient.js';
 import { publish } from '../utils/messageBroker.js';
 
 export default function handleDisconnect(socket, io) {
@@ -15,7 +15,7 @@ export default function handleDisconnect(socket, io) {
     }
 
     if (disconnectedUserId) {
-      await userCache.updateUserById(disconnectedUserId, {
+      await userCacheClient.updateUserById(disconnectedUserId, {
         isOnline: false,
         lastSeen: new Date()
       });

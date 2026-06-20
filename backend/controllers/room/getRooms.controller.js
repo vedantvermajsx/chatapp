@@ -1,12 +1,9 @@
-import Room from '../../models/room.model.js';
+import roomCacheClient from '../../database/roomCacheClient.js';
 
 export async function getRooms(req, res) {
   try {
     const { search = '' } = req.query;
-    const query = search
-      ? { groupName: { $regex: search, $options: 'i' } }
-      : {};
-    const rooms = await Room.find(query).sort({ createdAt: -1 });
+    const rooms = await roomCacheClient.getAllRooms(search);
     res.json(rooms);
   } catch (err) {
     res.status(500).json({ message: err.message });

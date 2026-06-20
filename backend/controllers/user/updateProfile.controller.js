@@ -1,13 +1,12 @@
-import User from '../../models/user.model.js';
-
-
-import userCache from '../../database/userCache.js';
+import userCacheClient from '../../database/userCacheClient.js';
 import transformCloudinaryUrl from '../../utils/transformCloudinaryUrl.js';
 
 export async function updateProfile(req, res) {
   try {
     const { username, bio, avatar } = req.body;
-    const user = await User.findById(req.user.id);
+    const userId = req.user._id;
+    const user = await userCacheClient.getUserById(userId);
+    
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     if (username && username !== user.username) {
@@ -29,7 +28,7 @@ export async function updateProfile(req, res) {
       avatar: user.avatar,
       role: 'user'
     };
-    userCache.addUserToCache(userData.id, Promise.resolve(userData));
+    userCacheClient.addUserToCache(userData.id, Promise.resolve(userData));
 
     res.json({ 
       message: 'Profile updated', 

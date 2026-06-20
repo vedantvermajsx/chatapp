@@ -1,4 +1,4 @@
-import userCache from '../../database/userCache.js';
+import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 
 export const getRoomMessages = async (req, res) => {
@@ -12,7 +12,7 @@ export const getRoomMessages = async (req, res) => {
     });
 
     const senderIds = [...new Set(messages.map((m) => m.senderId))];
-    const userDetailsMap = await userCache.getUsersByIds(senderIds);
+    const userDetailsMap = await userCacheClient.getUsersByIds(senderIds);
 
     const formattedMessages = messages.map((msg) => {
       const senderDetails = userDetailsMap.get(msg.senderId) || {

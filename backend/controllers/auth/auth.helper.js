@@ -1,5 +1,5 @@
 import { signToken } from '../../utils/tokenGenerator.js';
-import userCache from '../../database/userCache.js';
+import userCacheClient from '../../database/userCacheClient.js';
 import transformCloudinaryUrl from '../../utils/transformCloudinaryUrl.js';
 import {bloomFilter} from '../../utils/bloomFilterService.js';
 
@@ -26,7 +26,7 @@ export async function handleAuthSuccess(res, userDocument, role) {
     role: role
   };
 
-  await userCache.addUserToCache(userData.id, Promise.resolve(userData));
+  await userCacheClient.addUserToCache(userData.id, Promise.resolve(userData));
   
   await bloomFilter.add(userData.username);
   console.log("bloomed");

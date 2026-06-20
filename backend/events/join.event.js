@@ -1,6 +1,6 @@
 import { onlineUsers } from '../socket.js';
-import userCache from '../database/userCache.js';
-import roomCache from '../database/roomCache.js';
+import userCacheClient from '../database/userCacheClient.js';
+import roomCacheClient from '../database/roomCacheClient.js';
 import { publish } from '../utils/messageBroker.js';
 
 export default function handleJoin(socket, io) {
@@ -12,7 +12,7 @@ export default function handleJoin(socket, io) {
     socket.join(userId);
     
     try {
-      const memberRooms = await roomCache.getRoomsByUserId(userId);
+      const memberRooms = await roomCacheClient.getRoomsByUserId(userId);
       for (const room of memberRooms) {
         socket.join(String(room._id));
       }
@@ -31,7 +31,7 @@ export default function handleJoin(socket, io) {
       gender
     });
 
-    await userCache.updateUserById(userId, {
+    await userCacheClient.updateUserById(userId, {
       isOnline: true,
       lastSeen: new Date()
     });

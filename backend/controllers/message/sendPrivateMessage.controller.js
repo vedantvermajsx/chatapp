@@ -1,5 +1,5 @@
 import xss from 'xss';
-import userCache from '../../database/userCache.js';
+import userCacheClient from '../../database/userCacheClient.js';
 import emitNewPrivateMessage from '../../emitters/newPrivateMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,7 +11,7 @@ export async function sendPrivateMessage(req, res) {
       return res.status(400).json({ message: 'receiverId required' });
     }
 
-    const receiver = await userCache.getUserById(receiverId);
+    const receiver = await userCacheClient.getUserById(receiverId);
     if (!receiver) {
       return res.status(404).json({ message: 'Receiver not found' });
     }

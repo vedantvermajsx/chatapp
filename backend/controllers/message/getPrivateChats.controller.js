@@ -1,4 +1,4 @@
-import userCache from '../../database/userCache.js';
+import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 
 export const getPrivateChats = async (req, res) => {
@@ -10,7 +10,7 @@ export const getPrivateChats = async (req, res) => {
 
     const otherUserIds = chats.filter((chat) => chat._id).map((chat) => chat._id);
 
-    const userDetailsMap = await userCache.getUsersByIds(otherUserIds);
+    const userDetailsMap = await userCacheClient.getUsersByIds(otherUserIds);
 
     const chatsWithUserInfo = chats
       .filter((chat) => chat._id)

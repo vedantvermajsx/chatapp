@@ -1,4 +1,4 @@
-import roomCache from '../../database/roomCache.js';
+import roomCacheClient from '../../database/roomCacheClient.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
@@ -12,7 +12,7 @@ export async function getRoomMembers(req, res) {
       Math.max(1, parseInt(req.query.limit, 10) || DEFAULT_PAGE_SIZE)
     );
 
-    const page = await roomCache.getRoomMembers(roomId, { skip, limit });
+    const page = await roomCacheClient.getRoomMembers(roomId, { skip, limit });
 
     if (page === null) {
       return res.status(404).json({ message: 'Room not found' });

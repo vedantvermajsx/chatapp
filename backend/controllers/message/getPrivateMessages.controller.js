@@ -1,4 +1,4 @@
-import userCache from '../../database/userCache.js';
+import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 
 export const getPrivateMessages = async (req, res) => {
@@ -17,7 +17,7 @@ export const getPrivateMessages = async (req, res) => {
     const userIds = [
       ...new Set(messages.flatMap((m) => [m.senderId, m.receiverId]))
     ];
-    const userDetailsMap = await userCache.getUsersByIds(userIds);
+    const userDetailsMap = await userCacheClient.getUsersByIds(userIds);
 
     const formattedMessages = messages.map((msg) => {
       const senderDetails = userDetailsMap.get(msg.senderId) || {

@@ -1,13 +1,13 @@
 import Room from '../../models/room.model.js';
 import emitRoomUpdated from '../../emitters/roomUpdated.emitter.js';
-import roomCache from '../../database/roomCache.js';
+import roomCacheClient from '../../database/roomCacheClient.js';
 
 export async function updateRoom(req, res) {
   try {
     const { roomId } = req.params;
     const { groupName, groupDescription, groupPic } = req.body;
     
-    const room = await roomCache.getRoomById(roomId);
+    const room = await roomCacheClient.getRoomById(roomId);
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
@@ -19,7 +19,7 @@ export async function updateRoom(req, res) {
     const updates = {};
     
     if (groupName && groupName !== room.groupName) {
-      const exists = await Room.findOne({ groupName });
+      const exists = await roomCacheClient.getRoomByName(groupName);
       if (exists) {
         return res.status(409).json({ message: 'Room name already taken' });
       }
@@ -29,10 +29,11 @@ export async function updateRoom(req, res) {
     if (groupDescription !== undefined) updates.groupDescription = groupDescription;
     if (groupPic !== undefined) updates.groupPic = groupPic;
     
-    const updatedRoom = await roomCache.updateRoomById(roomId, updates);
+    const updatedRoom = await Room.findByIdAndUpdate(roomId, updates, { new: true });
     if (!updatedRoom) {
       return res.status(404).json({ message: 'Room not found' });
     }
+    await roomCacheClient.addRoomToCache(roomId, updatedRoom);
     
     emitRoomUpdated(updatedRoom);
     

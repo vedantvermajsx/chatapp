@@ -1,4 +1,5 @@
-import User from '../../models/user.model.js';
+import userModel from '../../models/user.model.js';
+import userCacheClient from '../../database/userCacheClient.js';
 
 export async function deleteUser(req, res) {
   try {
@@ -6,9 +7,14 @@ export async function deleteUser(req, res) {
     if (req.user.id !== userId && req.user.role !== 'admin')
       return res.status(403).json({ message: 'Forbidden' });
 
-    // Messages from this user are intentionally kept - they display
-    // with a "Deleted User" fallback when the sender is not found.
-    await User.findByIdAndDelete(userId);
+    const user = await userCacheClient.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await userModel.findByIdAndDelete(userId);
+
+    await userCacheClient.deleteUser(userId);
     res.clearCookie('token');
     res.json({ message: 'User deleted' });
   } catch (err) {

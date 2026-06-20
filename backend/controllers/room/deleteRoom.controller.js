@@ -1,11 +1,12 @@
 import Room from '../../models/room.model.js';
+import Message from '../../models/message.model.js';
 import emitRoomDeleted from '../../emitters/roomDeleted.emitter.js';
-import roomCache from '../../database/roomCache.js';
+import roomCacheClient from '../../database/roomCacheClient.js';
 import { publish } from '../../utils/messageBroker.js';
 
 export async function deleteRoom(req, res) {
   try {
-    const room = await roomCache.getRoomById(req.params.roomId);
+    const room = await roomCacheClient.getRoomById(req.params.roomId);
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
@@ -14,7 +15,8 @@ export async function deleteRoom(req, res) {
     }
 
     await Room.findByIdAndDelete(req.params.roomId);
-    await roomCache.deleteRoomById(req.params.roomId);
+    await Message.deleteMany({ roomId: req.params.roomId });
+    await roomCacheClient.deleteRoomById(req.params.roomId);
 
     publish('room.deleted', { roomId: req.params.roomId });
 

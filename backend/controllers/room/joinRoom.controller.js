@@ -1,6 +1,7 @@
-import userCache from '../../database/userCache.js';
+import Room from '../../models/room.model.js';
 import emitUserJoinedRoom from '../../emitters/userJoinedRoom.emitter.js';
-import roomCache from '../../database/roomCache.js';
+import roomCacheClient from '../../database/roomCacheClient.js';
+import userCacheClient from '../../database/userCacheClient.js';
 
 export async function joinRoom(req, res) {
   try {
@@ -8,20 +9,21 @@ export async function joinRoom(req, res) {
     const userId = req.user.id;
     const username = req.user.username;
 
-    const room = await roomCache.getRoomById(roomId);
-    const user = await userCache.getUserById(userId);
+    const room = await roomCacheClient.getRoomById(roomId);
+    const user = await userCacheClient.getUserById(userId);
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
 
     if (!room.groupMembers.map(String).includes(userId)) {
-      const updatedRoom = await roomCache.updateRoomById(roomId, {
+      const updatedRoom = await Room.findByIdAndUpdate(roomId, {
         groupMembers: [...room.groupMembers.map(String), userId]
-      });
+      }, { new: true });
       if (!updatedRoom) {
         return res.status(404).json({ message: 'Room not found' });
       }
-      await roomCache.invalidateRoomMembers(roomId);
+      await roomCacheClient.addRoomToCache(roomId, updatedRoom);
+      await roomCacheClient.invalidateRoomMembers(roomId);
     }
 
     console.log('user joined');
