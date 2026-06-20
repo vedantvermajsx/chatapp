@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Upload, Loader2, Camera } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, Loader2, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import userService from '../../../services/user.service';
 import api from '../../../services/api';
@@ -86,26 +86,26 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative rounded-3xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]" style={{ 
+      <div className="relative rounded-3xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]" style={{
         backgroundColor: theme.background,
-        boxShadow: isLight 
-          ? '1px 1px 2px rgba(0,0,0,0.1), -1px -1px 2px rgba(255,255,255,0.8)' 
+        boxShadow: isLight
+          ? '1px 1px 2px rgba(0,0,0,0.1), -1px -1px 2px rgba(255,255,255,0.8)'
           : '1px 1px 2px rgba(0,0,0,0.4), -1px -1px 2px rgba(255,255,255,0.05)'
       }}>
         <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: isLight ? '#cbd5e0' : '#4a5568' }}>
           <h2 className="text-xl font-bold" style={{ color: theme.otherMessageText }}>Profile Settings</h2>
-          <button onClick={onClose} className="p-2 rounded-full transition-all" style={{ 
+          <button onClick={onClose} className="p-2 rounded-full transition-all" style={{
             backgroundColor: theme.background,
-            boxShadow: isLight 
-              ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)' 
+            boxShadow: isLight
+              ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
               : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
           }} onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = isLight 
-              ? 'inset 3px 3px 6px rgba(0,0,0,0.1), inset -3px -3px 6px rgba(255,255,255,0.8)' 
-              : 'inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(255,255,255,0.05)';
+            e.currentTarget.style.boxShadow = isLight
+              ? 'inset 1px 1px 3px rgba(0,0,0,0.1), inset -1px -1px 3px rgba(255,255,255,0.8)'
+              : 'inset 1px 1px 3px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.05)';
           }} onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = isLight 
-              ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)' 
+            e.currentTarget.style.boxShadow = isLight
+              ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
               : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)';
           }}>
             <X className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
@@ -116,20 +116,20 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
           <form id="profile-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
-                <Avatar url={avatarUrl} name={username} gender={user.gender} size={24} className="w-24 h-24 text-3xl" style={{ 
-                  boxShadow: isLight 
-                    ? 'inset 3px 3px 6px rgba(0,0,0,0.1), inset -3px -3px 6px rgba(255,255,255,0.8)' 
-                    : 'inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(255,255,255,0.05)'
+                <Avatar url={avatarUrl} name={username} gender={user.gender} size={24} className="w-24 h-24 text-3xl" style={{
+                  boxShadow: isLight
+                    ? 'inset 1px 1px 3px rgba(0,0,0,0.1), inset -1px -1px 3px rgba(255,255,255,0.8)'
+                    : 'inset 1px 1px 3px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.05)'
                 }} />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                   className="absolute bottom-0 right-0 p-2 rounded-full transition-all border"
-                  style={{ 
+                  style={{
                     backgroundColor: theme.background,
-                    boxShadow: isLight 
-                      ? '2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.8)' 
+                    boxShadow: isLight
+                      ? '2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.8)'
                       : '2px 2px 4px rgba(0,0,0,0.4), -2px -2px 4px rgba(255,255,255,0.05)',
                     borderColor: isLight ? '#e2e8f0' : '#4a5568'
                   }}
@@ -148,11 +148,11 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 border-none rounded-xl focus:outline-none transition-all"
-                style={{ 
-                  backgroundColor: theme.background, 
+                style={{
+                  backgroundColor: theme.background,
                   color: theme.otherMessageText,
-                  boxShadow: isLight 
-                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)' 
+                  boxShadow: isLight
+                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)'
                     : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)'
                 }}
                 required
@@ -170,11 +170,11 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
                 className="w-full px-4 py-3 border-none rounded-xl focus:outline-none transition-all resize-none"
-                style={{ 
-                  backgroundColor: theme.background, 
+                style={{
+                  backgroundColor: theme.background,
                   color: theme.otherMessageText,
-                  boxShadow: isLight 
-                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)' 
+                  boxShadow: isLight
+                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)'
                     : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)'
                 }}
                 placeholder="Tell us about yourself..."
@@ -188,11 +188,11 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 value={avatarUrl}
                 onChange={(e) => setAvatarUrl(e.target.value)}
                 className="w-full px-4 py-3 border-none rounded-xl focus:outline-none transition-all text-sm"
-                style={{ 
-                  backgroundColor: theme.background, 
+                style={{
+                  backgroundColor: theme.background,
                   color: theme.otherMessageText,
-                  boxShadow: isLight 
-                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)' 
+                  boxShadow: isLight
+                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)'
                     : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)'
                 }}
                 placeholder="https://..."
@@ -208,11 +208,11 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
             form="profile-form"
             disabled={isSaving || isUploading}
             className="w-full py-4 font-bold rounded-2xl transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ 
+            style={{
               backgroundColor: theme.background,
               color: theme.myMessageBubble,
-              boxShadow: isLight 
-                ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)' 
+              boxShadow: isLight
+                ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)'
                 : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)'
             }}
             onMouseEnter={(e) => {

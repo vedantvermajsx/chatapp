@@ -6,9 +6,10 @@ import { isUsernameTaken } from './usernameTaken.js';
 export async function createGuest(req, res) {
   try {
     const { username, gender, age } = req.body;
-
+    
     const refactoredUsername=username.trim().toLowerCase()
     
+
     if (!refactoredUsername) {
       return res.status(400).json({ message: 'Username is required' });
     }
@@ -20,10 +21,12 @@ export async function createGuest(req, res) {
       return res.status(400).json({ message: 'Username must be 2–30 characters' });
     }
 
+
     const taken = await isUsernameTaken(refactoredUsername);
     if(taken){
       return res.status(400).json({ message: 'Username already taken' });
     }
+
 
     const defaultAvatar = getDefaultAvatar(gender);
 
@@ -35,6 +38,7 @@ export async function createGuest(req, res) {
       password: hashed,
       avatar: defaultAvatar
     });
+
 
     await handleAuthSuccess(res, guest, 'guest');
   } catch (err) {

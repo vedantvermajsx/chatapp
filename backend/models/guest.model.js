@@ -4,10 +4,7 @@ import Room from "./room.model.js";
 import userCacheClient from "../database/userCacheClient.js";
 
 const guestScheme = new mongoose.Schema({
-    _id: {
-        type: String,
-        default: generateGuestId
-    },
+    _id: { type: String, default: generateGuestId },
     username: { type: String, required: true, unique: true },
     gender:   { type: Number, required: true },
     age:      { type: Number, required: true },
@@ -18,6 +15,8 @@ const guestScheme = new mongoose.Schema({
 }, { timestamps: true });
 
 guestScheme.index({ createdAt: 1 }, { expireAfterSeconds: 24 * 60 * 60 });
+
+const Guest = mongoose.models.Guest || mongoose.model("Guest", guestScheme);
 
 async function cleanupGuestData(guestDoc) {
     try {
@@ -31,15 +30,6 @@ async function cleanupGuestData(guestDoc) {
         console.error('Error cleaning up guest data:', error);
     }
 }
-
-guestScheme.post('remove', async function(doc) {
-    await cleanupGuestData(doc);
-});
-
-guestScheme.post('deleteOne', async function(doc) {
-    if (doc) await cleanupGuestData(doc);
-});
-
 
 let changeStream;
 export function setupGuestChangeStream() {
@@ -59,8 +49,5 @@ export function setupGuestChangeStream() {
         console.error('Guest change stream error:', error);
     });
 }
-
-
-const Guest = mongoose.models.Guest || mongoose.model("Guest", guestScheme);
 
 export default Guest;

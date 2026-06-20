@@ -1,7 +1,6 @@
 import Room from '../../models/room.model.js';
 import emitUserJoinedRoom from '../../emitters/userJoinedRoom.emitter.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
-import userCacheClient from '../../database/userCacheClient.js';
 
 export async function joinRoom(req, res) {
   try {
@@ -10,7 +9,6 @@ export async function joinRoom(req, res) {
     const username = req.user.username;
 
     const room = await roomCacheClient.getRoomById(roomId);
-    const user = await userCacheClient.getUserById(userId);
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
