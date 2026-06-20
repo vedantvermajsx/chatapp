@@ -31,7 +31,6 @@ function mapPrivateMessage(msg) {
   };
 }
 
-// GET /messages/room/:roomId?limit=20&before=<ISO timestamp>
 router.get('/room/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -51,7 +50,6 @@ router.get('/room/:roomId', async (req, res) => {
   }
 });
 
-// GET /messages/private/:userId/:otherUserId?limit=20&before=<ISO timestamp>
 router.get('/private/:userId/:otherUserId', async (req, res) => {
   try {
     const { userId, otherUserId } = req.params;
@@ -72,7 +70,6 @@ router.get('/private/:userId/:otherUserId', async (req, res) => {
   }
 });
 
-// GET /messages/private-chats/:userId
 router.get('/private-chats/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -84,7 +81,6 @@ router.get('/private-chats/:userId', async (req, res) => {
   }
 });
 
-// POST /messages/invalidate { roomId } OR { senderId, receiverId }
 router.post('/invalidate', (req, res) => {
   const { roomId, senderId, receiverId } = req.body;
 

@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import bloomRoutes from './routes/bloom.routes.js';
 import cacheRoutes from './routes/cache.routes.js';
 import messageRoutes from './routes/message.routes.js';
+import roomRoutes from './routes/room.routes.js';
+import userRoutes from './routes/user.routes.js';
 import cache from './services/CacheService.js';
 import { connectDB } from './database/db.js';
 
@@ -38,6 +40,9 @@ app.use(express.json());
 app.use('/cache', cacheRoutes);
 app.use('/bloom', bloomRoutes);
 app.use('/messages', messageRoutes);
+app.use('/rooms', roomRoutes);
+app.use('/users', userRoutes);
+
 
 app.get('/stats', (req, res) => {
   res.json(cache.getStats());
