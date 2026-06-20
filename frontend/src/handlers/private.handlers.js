@@ -38,7 +38,6 @@ export const startPrivateChatHandler = async (
   setCurrentPrivateChat(otherUser);
   setCurrentRoom(null);
   setShowMembersModal(false);
-  setMessages([]);
 
   const cacheKey = `private_${otherUser.id}`;
   const cachedData = messageCache.current[cacheKey];
@@ -50,34 +49,9 @@ export const startPrivateChatHandler = async (
     return;
   }
 
-  const idbData = await dbService.getMessages(cacheKey);
-  if (idbData.messages.length > 0) {
-    setMessages(idbData.messages);
-    setHasMoreMessages(idbData.hasMore);
-    messageCache.current[cacheKey] = {
-      messages: idbData.messages,
-      hasMore: idbData.hasMore,
-      timestamp: Date.now()
-    };
-    setLoadingMessages(false);
-   
-    try {
-      const res = await messageService.getPrivateMessages(otherUser.id, 20);
-      messageCache.current[cacheKey] = {
-        messages: res.messages,
-        hasMore: res.hasMore,
-        timestamp: Date.now()
-      };
-      setMessages(res.messages);
-      setHasMoreMessages(res.hasMore);
-      await dbService.saveMessages(cacheKey, res.messages, res.hasMore);
-    } catch (error) {
-      console.error('Failed to refresh private messages:', error);
-    }
-    return;
-  }
-
+  setMessages([]);
   setLoadingMessages(true);
+
   try {
     const res = await messageService.getPrivateMessages(otherUser.id, 20);
 
@@ -91,6 +65,11 @@ export const startPrivateChatHandler = async (
     setHasMoreMessages(res.hasMore);
     await dbService.saveMessages(cacheKey, res.messages, res.hasMore);
   } catch (error) {
+    const idbData = await dbService.getMessages(cacheKey);
+    if (idbData.messages.length > 0) {
+      setMessages(idbData.messages);
+      setHasMoreMessages(idbData.hasMore);
+    }
     console.error('Failed to load private messages:', error);
   } finally {
     setLoadingMessages(false);

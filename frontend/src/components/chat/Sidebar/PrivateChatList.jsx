@@ -1,10 +1,10 @@
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, X } from 'lucide-react';
 import Spinner from '../../common/Spinner';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { formatLastSeenShort } from '../../../utils/dateUtils';
 
-const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats }) => {
+const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat }) => {
   const { theme } = useTheme();
   const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
   return (
@@ -70,6 +70,13 @@ const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateC
                     {chat.lastMessage?.content || 'Start a conversation'}
                   </p>
                 </div>
+                <button
+                  onClick={(e) => handleDeletePrivateChat(chat.otherUser.id, e)}
+                  className="p-1 rounded-full opacity-50 hover:opacity-100 transition-opacity"
+                  title="Delete Chat"
+                >
+                  <X className="w-4 h-4 text-red-500" />
+                </button>
               </div>
             </div>
           ))

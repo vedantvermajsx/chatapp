@@ -15,7 +15,8 @@ const messageSchema = new mongoose.Schema({
     type: String,
     enum: ['sent', 'delivered', 'read'],
     default: 'sent'
-  }
+  },
+  deletedFor: [{ type: String }]
 });
 
 messageSchema.index({ roomId: 1, timestamp: -1 });

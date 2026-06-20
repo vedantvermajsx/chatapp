@@ -26,6 +26,36 @@ class RoomCacheService {
     return room;
   }
 
+  async isValidRoomId(id){
+    const room = await this.getRoomById(id);
+    if (room) {
+        return { isValid: true, id };
+    }
+    return { isValid: false,id:null};
+  }
+
+  async hasMember(roomId, userId) {
+    const room = await this.getRoomById(roomId);
+    if (!room || !room.groupMembers) return false;
+    return room.groupMembers.includes(userId);
+  }
+
+  async getRoomAdmin(roomId) {
+    const room = await this.getRoomById(roomId);
+    return room ? room.groupAdmin : null;
+  }
+
+  async refreshRoom(roomId) {
+    const room = await Room.findById(roomId);
+    if (room) {
+      await this.addRoomToCache(roomId, room);
+    } else {
+      roomCache.delete(`room:${roomId}`);
+    }
+    await this.invalidateRoomMembers(roomId);
+    return room;
+  }
+
   async getRoomByName(groupName) {
     return Room.findOne({ groupName });
   }
@@ -42,7 +72,7 @@ class RoomCacheService {
     const room = await this.getRoomById(roomId);
     if (!room) return null;
 
-    const memberIds = room.groupMembers.map(String);
+    const memberIds = room.groupMembers || [];
     if (memberIds.length === 0) {
       const empty = { members: [], total: 0, hasMore: false };
       roomCache.set(cacheKey, empty, MEMBERS_PAGE_TTL_SECONDS);
@@ -107,21 +137,35 @@ class RoomCacheService {
   }
 
   async getAllRooms({ search = '' } = {}) {
-    const query = search
+    const matchStage = search
       ? { groupName: { $regex: search, $options: 'i' } }
       : {};
-    const rooms = await Room.find(query).sort({ createdAt: -1 });
+
+    const rooms = await Room.aggregate([
+      { $match: matchStage },
+      { $sort: { createdAt: -1 } },
+      {
+        $project: {
+          _id: 1,
+          groupName: 1,
+          groupDescription: 1,
+          groupAdmin: 1,
+          groupPic: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
+        }
+      }
+    ]);
+
     return rooms;
   }
 
   async deleteRoomCache(id) {
-    // 1. Delete room cache
     roomCache.delete(`room:${id}`);
     
-    // 2. Invalidate room members cache
     await this.invalidateRoomMembers(id);
 
-    // 3. Invalidate room messages cache
     invalidateRoomMessages(id);
   }
 }

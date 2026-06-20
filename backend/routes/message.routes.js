@@ -6,6 +6,7 @@ import { sendPrivateMessage } from '../controllers/message/sendPrivateMessage.co
 import { getRoomMessages } from '../controllers/message/getRoomMessages.controller.js';
 import { getPrivateMessages } from '../controllers/message/getPrivateMessages.controller.js';
 import { getPrivateChats } from '../controllers/message/getPrivateChats.controller.js';
+import { deletePrivateChat } from '../controllers/message/deletePrivateChat.controller.js';
 import { uploadMedia } from '../controllers/message/upload.controller.js';
 
 const SUPPORTED_FORMATS = {
@@ -40,5 +41,6 @@ router.post('/upload', authenticate, upload.single('file'), uploadMedia);
 router.get('/room/:roomId', authenticate, getRoomMessages);
 router.get('/private/:otherUserId', authenticate, getPrivateMessages);
 router.get('/private', authenticate, getPrivateChats);
+router.delete('/private/:otherUserId', authenticate, deletePrivateChat);
 
 export default router;

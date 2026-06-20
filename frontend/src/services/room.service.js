@@ -22,6 +22,11 @@ class RoomService {
     return response.data;
   }
 
+  async leaveRoom(roomId) {
+    const response = await api.post(`${this.basePath}/leave`, { roomId });
+    return response.data;
+  }
+
   async getRoomMembers(roomId) {
     const response = await api.get(`${this.basePath}/${roomId}/members`);
     return response.data;

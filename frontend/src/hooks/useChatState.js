@@ -92,7 +92,8 @@ export const useChatState = (user) => {
       setLoadingJoinRoom,
       setLoadingMessages,
       messageCache,
-      CACHE_TTL
+      CACHE_TTL,
+      currentRoom  // <-- guard: skip if already in this room
     );
     setRoomMembers([]);
     
@@ -114,7 +115,7 @@ export const useChatState = (user) => {
       CACHE_TTL
     );
     setShowSidebar(false);
-  }, [rooms, user, CACHE_TTL, setRoomMembers]);
+  }, [rooms, user, CACHE_TTL, setRoomMembers, currentRoom]);
 
   const startPrivateChat = useCallback(async (otherUser) => {
     await startPrivateChatHandler(

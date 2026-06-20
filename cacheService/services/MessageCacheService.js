@@ -57,7 +57,8 @@ export async function getPrivateMessages({ userId, otherUserId, limit, before, m
       $or: [
         { senderId: userId, receiverId: otherUserId },
         { senderId: otherUserId, receiverId: userId }
-      ]
+      ],
+      deletedFor: { $ne: userId }
     },
     limit: numericLimit,
     before,
@@ -102,7 +103,8 @@ export async function getPrivateChats(userId) {
     {
       $match: {
         $or: [{ senderId: userId }, { receiverId: userId }],
-        roomId: null
+        roomId: null,
+        deletedFor: { $ne: userId }
       }
     },
     {

@@ -40,6 +40,17 @@ class MessageCacheClient {
     const response = await this.client.get(`/messages/private-chats/${userId}`);
     return response.data.chats;
   }
+
+  async invalidatePrivateMessages(userId, otherUserId) {
+    try {
+      await this.client.post('/messages/invalidate', {
+        senderId: userId,
+        receiverId: otherUserId
+      });
+    } catch (err) {
+      console.error('[MessageCacheClient] Error invalidating private messages:', err.message);
+    }
+  }
 }
 
 export const messageCacheClient = new MessageCacheClient();

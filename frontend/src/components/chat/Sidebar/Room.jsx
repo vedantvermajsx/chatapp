@@ -40,7 +40,7 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom }) {
                             {room.groupName}
                         </h3>
                         <span className="text-[10px] md:text-xs font-semibold ml-2 flex-shrink-0" style={{ color: theme.otherUsernameColor }}>
-                            {room.groupMembers.length}
+                            {room.memberCount ?? 0}
                         </span>
                     </div>
                     <p className="text-xs md:text-sm truncate mt-1 md:mt-2" style={{ color: theme.otherMessageText, opacity: 0.8 }}>

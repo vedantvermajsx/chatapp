@@ -107,13 +107,24 @@ export const useChatSocket = (user, {
 
         const cacheKey = `room_${msg.roomId}`;
         if (messageCache.current[cacheKey]) {
-          const already = messageCache.current[cacheKey].messages.some(
-            (m) => String(m.id) === String(newMessage.id)
+          const prevMessages = messageCache.current[cacheKey].messages;
+          const existingOptimisticIndex = prevMessages.findIndex(m =>
+            m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
           );
-          if (!already) {
+
+          let newCacheMessages;
+          if (isOwnMessage && existingOptimisticIndex !== -1) {
+            newCacheMessages = [...prevMessages];
+            newCacheMessages[existingOptimisticIndex] = newMessage;
+          } else {
+            const already = prevMessages.some((m) => String(m.id) === String(newMessage.id));
+            newCacheMessages = already ? prevMessages : [...prevMessages, newMessage];
+          }
+
+          if (newCacheMessages !== prevMessages) {
             messageCache.current[cacheKey] = {
               ...messageCache.current[cacheKey],
-              messages: [...messageCache.current[cacheKey].messages, newMessage]
+              messages: newCacheMessages
             };
           }
         }
@@ -161,10 +172,26 @@ export const useChatSocket = (user, {
       };
 
       if (messageCache.current[cacheKey]) {
-        messageCache.current[cacheKey] = {
-          ...messageCache.current[cacheKey],
-          messages: [...messageCache.current[cacheKey].messages, newMessageObj]
-        };
+        const prevMessages = messageCache.current[cacheKey].messages;
+        const existingOptimisticIndex = prevMessages.findIndex(m =>
+          m.isOwn && m.isPending && m.text === newMessageObj.text && (!!m.media === !!newMessageObj.media)
+        );
+
+        let newCacheMessages;
+        if (isOwnMessage && existingOptimisticIndex !== -1) {
+          newCacheMessages = [...prevMessages];
+          newCacheMessages[existingOptimisticIndex] = newMessageObj;
+        } else {
+          const already = prevMessages.some((m) => String(m.id) === String(newMessageObj.id));
+          newCacheMessages = already ? prevMessages : [...prevMessages, newMessageObj];
+        }
+
+        if (newCacheMessages !== prevMessages) {
+          messageCache.current[cacheKey] = {
+            ...messageCache.current[cacheKey],
+            messages: newCacheMessages
+          };
+        }
       } else {
         messageCache.current[cacheKey] = {
           messages: [newMessageObj],

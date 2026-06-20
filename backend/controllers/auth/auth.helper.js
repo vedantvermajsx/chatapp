@@ -4,9 +4,9 @@ import transformCloudinaryUrl from '../../utils/transformCloudinaryUrl.js';
 import {bloomFilter} from '../../utils/bloomFilterService.js';
 
 const tempAvatar = new Map([
-  [0, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/v1781194083/OIP-1995430945_yqqwfy.avif'],
-  [1, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/v1781194083/OIP-248275201_revjhu.avif'],
-  [2, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/v1781194083/OIP-1995430945_yqqwfy.avif']
+  [0, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1781194083/OIP-1995430945_yqqwfy.avif'],
+  [1, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1781194083/OIP-248275201_revjhu.avif'],
+  [2, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1781194083/OIP-1995430945_yqqwfy.avif']
 ]);
 
 export function getDefaultAvatar(gender) {

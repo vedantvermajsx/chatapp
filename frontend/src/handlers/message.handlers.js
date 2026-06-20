@@ -69,7 +69,6 @@ export const sendMessageHandler = async (
         messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
       };
     }
-    await dbService.addMessage(cacheKey, optimisticMessage);
   } else if (currentPrivateChat) {
     setMessages((prev) => [...prev, optimisticMessage]);
     const cacheKey = `private_${currentPrivateChat.id}`;
@@ -79,7 +78,6 @@ export const sendMessageHandler = async (
         messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
       };
     }
-    await dbService.addMessage(cacheKey, optimisticMessage);
   }
 
   setInputMessage('');

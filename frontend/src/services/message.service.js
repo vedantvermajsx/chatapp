@@ -79,6 +79,16 @@ class MessageService {
     }
   }
 
+  async deletePrivateChat(otherUserId) {
+    try {
+      const response = await api.delete(`${this.basePath}/private/${otherUserId}`);
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete chat');
+      throw error;
+    }
+  }
+
   async uploadFile(file, folder = 'data', skipToast = false) {
     try {
       const formData = new FormData();

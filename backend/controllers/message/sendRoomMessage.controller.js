@@ -12,8 +12,9 @@ export async function sendRoomMessage(req, res) {
       return res.status(400).json({ message: 'roomId required' });
     }
 
-    const room = await roomCacheClient.getRoomById(roomId);
-    if (!room) {
+    const room = await roomCacheClient.isValidRoomId(roomId);
+  
+    if (!room || !room.isValid || room.id!==roomId) {
       return res.status(404).json({ message: 'Room not found' });
     }
 
@@ -51,7 +52,7 @@ export async function sendRoomMessage(req, res) {
     enqueueMessage(messageData);
     emitNewMessage(roomId, payload);
 
-    res.json({
+    res.status(201).json({
       _id: uuid,
       ...messageData
     });

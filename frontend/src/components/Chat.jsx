@@ -86,6 +86,7 @@ function Chat() {
         rooms={rooms}
         currentRoom={currentRoom}
         currentPrivateChat={currentPrivateChat}
+        setCurrentPrivateChat={setCurrentPrivateChat}
         joinRoom={(roomId) => joinRoom(roomId, socket)}
         startPrivateChat={startPrivateChat}
         loadingJoinRoom={loadingJoinRoom}
@@ -115,6 +116,7 @@ function Chat() {
         onFileSelect={handleFileSelect}
         onRemoveFile={handleRemoveFile}
         sendMessage={(e) => sendMessage(e, socket)}
+        leaveRoomSocket={(roomId) => socket.emit('leaveRoom', roomId)}
         showMembersModal={showMembersModal}
         setShowMembersModal={setShowMembersModal}
         roomMembers={roomMembers}

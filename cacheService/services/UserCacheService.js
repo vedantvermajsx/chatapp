@@ -60,8 +60,10 @@ class UserCacheService {
   }
 
   async updateUser(id, data) {
-    const existing = userCache.get(this._cacheKey(id));
-    const updated = existing ? { ...existing, ...data } : data;
+    const existing = await this.getUserById(id);
+    if (existing?.notFound) return null;
+    
+    const updated = { ...existing, ...data };
     userCache.set(this._cacheKey(id), updated, USER_TTL_SECONDS);
     return updated;
   }

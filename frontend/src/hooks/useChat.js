@@ -64,6 +64,14 @@ export const useJoinRoom = () =>
     mutationFn: (roomId) => roomService.joinRoom(roomId),
   });
 
+export const useLeaveRoom = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (roomId) => roomService.leaveRoom(roomId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
+  });
+};
+
 export const useDeleteRoom = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -116,6 +124,17 @@ export const usePrivateChats = () =>
     queryFn: () => messageService.getPrivateChats(),
     staleTime: 20_000,
   });
+
+export const useDeletePrivateChat = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (otherUserId) => messageService.deletePrivateChat(otherUserId),
+    onSuccess: (_, otherUserId) => {
+      qc.invalidateQueries({ queryKey: ['privateChats'] });
+      qc.invalidateQueries({ queryKey: ['privateMessages', otherUserId] });
+    },
+  });
+};
 
 export const useSendRoomMessage = (roomId) => {
   const qc = useQueryClient();

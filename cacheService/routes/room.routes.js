@@ -26,6 +26,52 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/:id/exists',async(req,res)=>{
+  try {
+    const { id } = req.params;
+    const result = await roomCacheService.isValidRoomId(id);
+    if (!result) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
+
+router.get('/:id/hasMember/:userId', async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const hasMember = await roomCacheService.hasMember(id, userId);
+    res.json({ hasMember });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/:id/admin', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = await roomCacheService.getRoomAdmin(id);
+    if (!adminId) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+    res.json({ adminId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/refresh', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await roomCacheService.refreshRoom(id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;

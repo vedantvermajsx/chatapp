@@ -9,6 +9,7 @@ import CreateRoomForm from '../Modals/CreateRoomForm';
 import UserSettingsModal from '../Modals/UserSettingsModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useTheme, THEMES } from '../../../contexts/ThemeContext';
+import { useDeletePrivateChat } from '../../../hooks/useChat';
 
 function RoomSidebar({
   user,
@@ -18,6 +19,7 @@ function RoomSidebar({
   rooms,
   currentRoom,
   currentPrivateChat,
+  setCurrentPrivateChat,
   joinRoom,
   startPrivateChat,
   newRoomName,
@@ -37,6 +39,23 @@ function RoomSidebar({
   const { theme, setTheme } = useTheme();
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const deletePrivateChatMutation = useDeletePrivateChat();
+
+  const handleDeletePrivateChat = async (otherUserId, e) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this private chat?')) {
+      try {
+        await deletePrivateChatMutation.mutateAsync(otherUserId);
+        toast.success('Chat deleted');
+        // If the deleted chat is currently open, close it
+        if (currentPrivateChat?.id === otherUserId) {
+          setCurrentPrivateChat(null);
+        }
+      } catch (err) {
+        toast.error('Failed to delete chat');
+      }
+    }
+  };
 
   const createRoom = useCallback(async (e) => {
     e.preventDefault();
@@ -131,6 +150,7 @@ function RoomSidebar({
           currentPrivateChat={currentPrivateChat}
           handleStartPrivateChat={handleStartPrivateChat}
           loadingPrivateChats={loadingPrivateChats}
+          handleDeletePrivateChat={handleDeletePrivateChat}
         />
       </div>
 

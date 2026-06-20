@@ -37,8 +37,11 @@ export const joinRoomHandler = async (
   setLoadingJoinRoom,
   setLoadingMessages,
   messageCache,
-  CACHE_TTL
+  CACHE_TTL,
+  currentRoom
 ) => {
+  if (currentRoom && currentRoom._id === roomId) return;
+
   setLoadingJoinRoom(true);
   try {
     const room = rooms.find(r => r._id === roomId);

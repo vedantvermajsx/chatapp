@@ -7,20 +7,22 @@ export async function updateRoom(req, res) {
     const { roomId } = req.params;
     const { groupName, groupDescription, groupPic } = req.body;
     
-    const room = await roomCacheClient.getRoomById(roomId);
-    if (!room) {
+    const validCheck = await roomCacheClient.isValidRoomId(roomId);
+    if (!validCheck || !validCheck.isValid) {
       return res.status(404).json({ message: 'Room not found' });
     }
+
+    const groupAdmin = await roomCacheClient.getRoomAdmin(roomId);
     
-    if (room.groupAdmin !== req.user.id && req.user.role !== 'admin') {
+    if (groupAdmin !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Only admin can update room' });
     }
     
     const updates = {};
     
-    if (groupName && groupName !== room.groupName) {
+    if (groupName) {
       const exists = await roomCacheClient.getRoomByName(groupName);
-      if (exists) {
+      if (exists && String(exists._id) !== roomId) {
         return res.status(409).json({ message: 'Room name already taken' });
       }
       updates.groupName = groupName;
@@ -29,11 +31,11 @@ export async function updateRoom(req, res) {
     if (groupDescription !== undefined) updates.groupDescription = groupDescription;
     if (groupPic !== undefined) updates.groupPic = groupPic;
     
-    const updatedRoom = await Room.findByIdAndUpdate(roomId, updates, { new: true });
+    const updatedRoom = await Room.findByIdAndUpdate(roomId, updates, { new: true }).select('-groupMembers');
     if (!updatedRoom) {
       return res.status(404).json({ message: 'Room not found' });
     }
-    await roomCacheClient.addRoomToCache(roomId, updatedRoom);
+    await roomCacheClient.refreshRoomCache(roomId);
     
     emitRoomUpdated(updatedRoom);
     

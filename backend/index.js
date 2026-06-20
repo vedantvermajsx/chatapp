@@ -48,7 +48,7 @@ app.get('/health', (_, res) => res.json({ ok: true }));
 
 
 
-const PORT = process.env.PORT || 3001;
+let currentPort = process.env.PORT || 3001;
 
 connectDB().then(async () => {
   try {
@@ -77,15 +77,14 @@ connectDB().then(async () => {
 
   const io = setupSocket(server);
   app.set('io', io);
-  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  server.listen(currentPort, () => console.log(`Server running on port ${currentPort}`));
 
   
   server.on('error', (error) => {
 
     if (error.code === 'EADDRINUSE') {
-
-      const NEWPORT=(+PORT)+1;
-      server.listen(NEWPORT, () => console.log(`Server running on port ${NEWPORT}`));
+      currentPort = (+currentPort) + 1;
+      server.listen(currentPort, () => console.log(`Server running on port ${currentPort}`));
 
     } else {
       console.error('Server failed:', error);

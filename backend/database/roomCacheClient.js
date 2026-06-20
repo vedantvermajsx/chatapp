@@ -24,6 +24,44 @@ class RoomCacheClient {
     }
   }
 
+  async isValidRoomId(id){
+    try{
+      const response = await this.client.get(`/rooms/${id}/exists`);
+      return response.data;
+    } catch (error) {
+        console.error("Room validation failed", error);
+        return false;
+    }
+  }
+
+  async hasMember(roomId, userId) {
+    try {
+      const response = await this.client.get(`/rooms/${roomId}/hasMember/${userId}`);
+      return response.data.hasMember;
+    } catch (err) {
+      console.error(`[RoomCacheClient] Error in hasMember for room ${roomId}:`, err.message);
+      return false;
+    }
+  }
+
+  async getRoomAdmin(roomId) {
+    try {
+      const response = await this.client.get(`/rooms/${roomId}/admin`);
+      return response.data.adminId;
+    } catch (err) {
+      console.error(`[RoomCacheClient] Error in getRoomAdmin for room ${roomId}:`, err.message);
+      return null;
+    }
+  }
+
+  async refreshRoomCache(roomId) {
+    try {
+      await this.client.post(`/rooms/${roomId}/refresh`);
+    } catch (err) {
+      console.error(`[RoomCacheClient] Error in refreshRoomCache for room ${roomId}:`, err.message);
+    }
+  }
+
   async getRoomById(id) {
     try {
       const response = await this.client.get(`/rooms/${id}`);

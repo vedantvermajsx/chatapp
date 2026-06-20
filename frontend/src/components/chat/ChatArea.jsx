@@ -18,6 +18,7 @@ const ChatArea = memo(function ChatArea({
   onFileSelect,
   onRemoveFile,
   sendMessage,
+  leaveRoomSocket,
   showMembersModal,
   setShowMembersModal,
   roomMembers,
@@ -155,6 +156,7 @@ const ChatArea = memo(function ChatArea({
           loadRoomMembers={loadRoomMembers}
           setShowMembersModal={setShowMembersModal}
           setCurrentRoom={setCurrentRoom}
+          leaveRoomSocket={leaveRoomSocket}
         />
       </div>
 

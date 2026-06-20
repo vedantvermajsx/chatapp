@@ -1,10 +1,11 @@
-import { Users, Menu, Settings } from 'lucide-react';
+import { Users, Menu, Settings, LogOut } from 'lucide-react';
 import { isDesktop } from 'react-device-detect';
 import Avatar from '../common/Avatar';
 import GroupSettingsModal from './Modals/GroupSettingsModal';
 import { useState, memo } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatLastSeen } from '../../utils/dateUtils';
+import { useLeaveRoom } from '../../hooks/useChat';
 
 const ChatHeader = memo(function ChatHeader({
   user,
@@ -13,10 +14,28 @@ const ChatHeader = memo(function ChatHeader({
   onToggleSidebar,
   loadRoomMembers,
   setShowMembersModal,
-  setCurrentRoom
+  setCurrentRoom,
+  leaveRoomSocket
 }) {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const { theme } = useTheme();
+  const leaveRoomMutation = useLeaveRoom();
+
+  const handleLeaveRoom = async () => {
+    if (window.confirm(`Are you sure you want to leave ${currentRoom.groupName}?`)) {
+      try {
+        await leaveRoomMutation.mutateAsync(currentRoom._id);
+        if (leaveRoomSocket) {
+          leaveRoomSocket(currentRoom._id);
+        }
+        setCurrentRoom(null);
+      } catch (err) {
+        console.error('Failed to leave room:', err);
+        alert('Failed to leave room');
+      }
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 border-b flex items-center" style={{
       backgroundColor: theme.background,
@@ -108,6 +127,31 @@ const ChatHeader = memo(function ChatHeader({
                 title="Room Members"
               >
                 <Users className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.otherUsernameColor }} />
+              </button>
+              
+              <button
+                onClick={handleLeaveRoom}
+                disabled={leaveRoomMutation.isPending}
+                className="p-2 sm:p-3 rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50"
+                style={{
+                  backgroundColor: theme.background,
+                  boxShadow: theme.isLight
+                    ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
+                    : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = theme.isLight
+                    ? 'inset 3px 3px 6px rgba(0,0,0,0.1), inset -3px -3px 6px rgba(255,255,255,0.8)'
+                    : 'inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(255,255,255,0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = theme.isLight
+                    ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
+                    : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)';
+                }}
+                title="Leave Room"
+              >
+                <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
           </>
