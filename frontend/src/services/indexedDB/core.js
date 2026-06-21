@@ -1,4 +1,4 @@
-export const DB_NAME = 'whisprgramDB';
+export const DB_NAME = 'hushlineDB';
 export const DB_VERSION = 3; 
 export const MAX_MESSAGES_PER_CHAT = 100;
 
