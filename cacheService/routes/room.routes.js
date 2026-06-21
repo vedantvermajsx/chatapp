@@ -1,5 +1,5 @@
 import express from 'express';
-import roomCacheService from '../services/roomCacheService.js';
+import roomCacheService from '../services/RoomCacheService';
 
 const router = express.Router();
 
@@ -9,6 +9,7 @@ router.post('/', async (req, res) => {
     if (!id || !data) {
       return res.status(400).json({ error: 'id and data are required' });
     }
+    
     await roomCacheService.addRoomToCache(id, data);
     res.status(201).json({ success: true });
   } catch (error) {
