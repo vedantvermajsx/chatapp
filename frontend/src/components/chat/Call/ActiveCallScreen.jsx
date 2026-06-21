@@ -67,7 +67,7 @@ const ActiveCallScreen = () => {
       drag={isMinimized}
       dragMomentum={false}
       className={isMinimized
-        ? "fixed bottom-6 right-6 z-[100] w-48 h-72 bg-gray-950 rounded-2xl shadow-2xl overflow-hidden flex flex-col cursor-pointer border border-white/10 hover:border-white/20 transition-all hover:scale-105"
+        ? "fixed bottom-6 right-6 z-[100] w-[153px] h-[230px] sm:w-48 sm:h-72 bg-gray-950 rounded-2xl shadow-2xl overflow-hidden flex flex-col cursor-pointer border border-white/10 hover:border-white/20 transition-all hover:scale-105"
         : "fixed inset-0 z-[100] bg-gray-950 flex flex-col"
       }
       onDoubleClick={toggleMinimize}

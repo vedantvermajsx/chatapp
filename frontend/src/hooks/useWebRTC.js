@@ -72,7 +72,7 @@ export const useWebRTC = (socket) => {
         throw new Error('Media devices API not available. This might be due to an insecure context or unsupported browser.');
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: isVideo,
+        video: isVideo ? { facingMode: 'user' } : false,
         audio: true
       });
       setLocalStreamSynced(stream);

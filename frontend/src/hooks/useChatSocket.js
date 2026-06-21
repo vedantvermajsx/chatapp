@@ -195,7 +195,7 @@ export const useChatSocket = (user, {
       } else {
         messageCache.current[cacheKey] = {
           messages: [newMessageObj],
-          hasMore: true,
+          hasMore: false,
           timestamp: Date.now()
         };
       }
