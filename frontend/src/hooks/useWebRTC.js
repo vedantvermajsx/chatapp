@@ -31,7 +31,6 @@ export const useWebRTC = (socket) => {
       peerConnection.current.close();
       peerConnection.current = null;
     }
-    // Use ref so we always get the current stream, not a stale closure
     const currentStream = localStreamRef.current;
     if (currentStream) {
       currentStream.getTracks().forEach(track => track.stop());
@@ -54,6 +53,9 @@ export const useWebRTC = (socket) => {
       setLocalStream(null);
     }
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media devices API not available. This might be due to an insecure context or unsupported browser.');
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isVideo,
         audio: true
@@ -64,6 +66,9 @@ export const useWebRTC = (socket) => {
       console.error('Error accessing media devices:', err);
       if (isVideo) {
         try {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Media devices API not available.');
+          }
           const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
             video: false,
             audio: true

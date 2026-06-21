@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { WifiOff, Minimize2, Maximize2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { WifiOff, Minimize2, Maximize2, Mic, MicOff, PhoneOff } from 'lucide-react';
 import { useCall } from '../../../contexts/CallContext';
+import { motion } from 'framer-motion';
 import CallControls from './CallControls';
 
 const ActiveCallScreen = () => {
@@ -11,10 +12,34 @@ const ActiveCallScreen = () => {
     connectionState,
     isMinimized,
     toggleMinimize,
+    endCall,
+    isMuted,
+    toggleMute,
+    callConnectedTime,
   } = useCall();
+
+  const [durationStr, setDurationStr] = useState('00:00:00');
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+
+  useEffect(() => {
+    let interval;
+    if (callConnectedTime && connectionState === 'connected') {
+      const updateTime = () => {
+        const seconds = Math.floor((Date.now() - callConnectedTime) / 1000);
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        setDurationStr(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+      };
+      updateTime();
+      interval = setInterval(updateTime, 1000);
+    } else {
+      setDurationStr('00:00:00');
+    }
+    return () => clearInterval(interval);
+  }, [callConnectedTime, connectionState]);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -38,12 +63,14 @@ const ActiveCallScreen = () => {
   const target = activeCall.targetData;
 
   return (
-    <div
+    <motion.div
+      drag={isMinimized}
+      dragMomentum={false}
       className={isMinimized
         ? "fixed bottom-6 right-6 z-[100] w-48 h-72 bg-gray-950 rounded-2xl shadow-2xl overflow-hidden flex flex-col cursor-pointer border border-white/10 hover:border-white/20 transition-all hover:scale-105"
         : "fixed inset-0 z-[100] bg-gray-950 flex flex-col"
       }
-      onClick={isMinimized ? toggleMinimize : undefined}
+      onDoubleClick={toggleMinimize}
     >
       <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-black">
 
@@ -106,8 +133,8 @@ const ActiveCallScreen = () => {
                   {isConnecting
                     ? 'Calling…'
                     : isVideo
-                      ? 'Video call connected'
-                      : 'Audio call connected'}
+                      ? `Video call · ${durationStr}`
+                      : `Audio call · ${durationStr}`}
                 </p>
               </div>
             )}
@@ -141,16 +168,38 @@ const ActiveCallScreen = () => {
       </div>
 
       {isMinimized ? (
-        <div className="h-12 bg-gray-900 border-t border-white/5 flex flex-col justify-center px-4">
-          <p className="text-white text-sm font-medium truncate">{target?.username}</p>
-          <p className="text-white/50 text-xs truncate">
-            {isConnecting ? 'Calling...' : isVideo ? 'Video Call' : 'Audio Call'}
-          </p>
+        <div className="h-14 bg-gray-900 border-t border-white/5 flex items-center justify-between px-4">
+          <div className="flex flex-col justify-center max-w-[50%] overflow-hidden pointer-events-none">
+            <p className="text-white text-sm font-medium truncate">{target?.username}</p>
+            <p className="text-white/50 text-xs truncate">
+              {isConnecting ? 'Calling...' : isVideo ? `Video Call · ${durationStr}` : `Audio Call · ${durationStr}`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors
+                ${isMuted
+                  ? 'bg-red-500/20 text-red-400 hover:bg-red-500/35'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+            >
+              {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); endCall(); }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white transition-colors"
+            >
+              <PhoneOff className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       ) : (
         <CallControls isVideo={isVideo} />
       )}
-    </div>
+    </motion.div>
   );
 };
 

@@ -260,7 +260,8 @@ export const CallProvider = ({ children, socket }) => {
       isVideoOff: rtc.isVideoOff,
       toggleMute: rtc.toggleMute,
       toggleVideo: rtc.toggleVideo,
-      setCallError
+      setCallError,
+      callConnectedTime: callConnectedTimeRef.current
     }}>
       {children}
     </CallContext.Provider>
