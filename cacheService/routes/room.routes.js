@@ -1,5 +1,5 @@
 import express from 'express';
-import roomCacheService from '../services/RoomCacheService';
+import roomCacheService from '../services/RoomCacheService.js';
 
 const router = express.Router();
 
