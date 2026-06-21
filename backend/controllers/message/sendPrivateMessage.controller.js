@@ -3,6 +3,7 @@ import userCacheClient from '../../database/userCacheClient.js';
 import emitNewPrivateMessage from '../../emitters/newPrivateMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import { v4 as uuidv4 } from 'uuid';
+import { messageCacheClient } from '../../database/messageCacheClient.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
@@ -49,6 +50,8 @@ export async function sendPrivateMessage(req, res) {
 
     enqueueMessage(messageData);
     emitNewPrivateMessage(sender.id, receiverId, payload);
+
+    messageCacheClient.invalidatePrivateMessages(sender.id, receiverId).catch(() => {});
 
     res.json({
       _id: uuid,

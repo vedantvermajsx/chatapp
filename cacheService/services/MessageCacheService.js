@@ -150,9 +150,10 @@ export async function getPrivateChats(userId) {
       $match: {
         $or: [{ senderId: userId }, { receiverId: userId }],
         roomId: null,
-        deletedFor: { $ne: userId }
+        $nor: [{ deletedFor: userId }]
       }
     },
+    { $sort: { timestamp: 1 } },
     {
       $group: {
         _id: {

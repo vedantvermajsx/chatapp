@@ -16,7 +16,8 @@ const messageSchema = new mongoose.Schema(
       type: String,
       enum: ['sent', 'delivered', 'read'],
       default: 'sent'
-    }
+    },
+    deletedFor: [{ type: String }]
   },
   { versionKey: false }
 );

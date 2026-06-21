@@ -1,9 +1,4 @@
 import mongoose from 'mongoose';
-
-// Same schema/collection the queue service writes to. Kept in sync
-// manually since these are two separate services/processes; if the
-// schema changes, update both queueService/models/message.model.js and
-// this file together.
 const messageSchema = new mongoose.Schema(
   {
     _id: { type: String, required: true },
@@ -20,7 +15,8 @@ const messageSchema = new mongoose.Schema(
       type: String,
       enum: ['sent', 'delivered', 'read'],
       default: 'sent'
-    }
+    },
+    deletedFor: [{ type: String }]
   },
   { versionKey: false }
 );

@@ -3,6 +3,7 @@ import xss from 'xss';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import { v4 as uuidv4 } from 'uuid';
+import { messageCacheClient } from '../../database/messageCacheClient.js';
 
 export async function sendRoomMessage(req, res) {
   try {
@@ -51,6 +52,8 @@ export async function sendRoomMessage(req, res) {
     
     enqueueMessage(messageData);
     emitNewMessage(roomId, payload);
+
+    messageCacheClient.invalidateRoomMessages(roomId).catch(() => {});
 
     res.status(201).json({
       _id: uuid,

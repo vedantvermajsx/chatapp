@@ -51,6 +51,14 @@ class MessageCacheClient {
       console.error('[MessageCacheClient] Error invalidating private messages:', err.message);
     }
   }
+
+  async invalidateRoomMessages(roomId) {
+    try {
+      await this.client.post('/messages/invalidate', { roomId });
+    } catch (err) {
+      console.error('[MessageCacheClient] Error invalidating room messages:', err.message);
+    }
+  }
 }
 
 export const messageCacheClient = new MessageCacheClient();
