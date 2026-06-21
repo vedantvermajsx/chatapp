@@ -6,33 +6,24 @@ dotenv.config();
 class MessageCacheClient {
   constructor() {
     this.baseUrl = process.env.CACHE_SERVICE_ROOT_URL;
-
     this.client = axios.create({
       baseURL: this.baseUrl,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
-
     console.log('Message cache service:', this.baseUrl);
   }
 
-  async getRoomMessages(roomId, { limit, before } = {}) {
-    const params = {};
-    if (limit) params.limit = limit;
-    if (before) params.before = before;
-
-    const response = await this.client.get(`/messages/room/${roomId}`, { params });
+  async getRoomMessages(roomId, { limit, before, after } = {}) {
+    const response = await this.client.get(`/messages/room/${roomId}`, {
+      params: { limit, before, after }
+    });
     return response.data;
   }
 
-  async getPrivateMessages(userId, otherUserId, { limit, before } = {}) {
-    const params = {};
-    if (limit) params.limit = limit;
-    if (before) params.before = before;
-
-    const response = await this.client.get(
-      `/messages/private/${userId}/${otherUserId}`,
-      { params }
-    );
+  async getPrivateMessages(userId, otherUserId, { limit, before, after } = {}) {
+    const response = await this.client.get(`/messages/private/${userId}/${otherUserId}`, {
+      params: { limit, before, after }
+    });
     return response.data;
   }
 
@@ -43,10 +34,7 @@ class MessageCacheClient {
 
   async invalidatePrivateMessages(userId, otherUserId) {
     try {
-      await this.client.post('/messages/invalidate', {
-        senderId: userId,
-        receiverId: otherUserId
-      });
+      await this.client.post('/messages/invalidate', { senderId: userId, receiverId: otherUserId });
     } catch (err) {
       console.error('[MessageCacheClient] Error invalidating private messages:', err.message);
     }

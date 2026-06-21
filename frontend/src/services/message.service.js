@@ -12,7 +12,7 @@ class MessageService {
         roomId,
         message: text,
         media,
-        uuid
+        uuid,
       });
       return response.data;
     } catch (error) {
@@ -30,7 +30,7 @@ class MessageService {
         content,
         receiverModel,
         media,
-        uuid
+        uuid,
       });
       return response.data;
     } catch (error) {
@@ -41,13 +41,12 @@ class MessageService {
     }
   }
 
-  async getPrivateMessages(otherUserId, limit = 20, before = null) {
+  async getPrivateMessages(otherUserId, limit = 20, before = null, after = null) {
     try {
-      let url = `${this.basePath}/private/${otherUserId}?limit=${limit}`;
-      if (before) {
-        url += `&before=${encodeURIComponent(before)}`;
-      }
-      const response = await api.get(url);
+      const params = new URLSearchParams({ limit });
+      if (before) params.set('before', before);
+      if (after)  params.set('after', after);
+      const response = await api.get(`${this.basePath}/private/${otherUserId}?${params}`);
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to load messages');
@@ -55,13 +54,12 @@ class MessageService {
     }
   }
 
-  async getRoomMessages(roomId, limit = 20, before = null) {
+  async getRoomMessages(roomId, limit = 20, before = null, after = null) {
     try {
-      let url = `${this.basePath}/room/${roomId}?limit=${limit}`;
-      if (before) {
-        url += `&before=${encodeURIComponent(before)}`;
-      }
-      const response = await api.get(url);
+      const params = new URLSearchParams({ limit });
+      if (before) params.set('before', before);
+      if (after)  params.set('after', after);
+      const response = await api.get(`${this.basePath}/room/${roomId}?${params}`);
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to load messages');
@@ -95,9 +93,7 @@ class MessageService {
       formData.append('file', file);
       formData.append('folder', folder);
       const response = await api.post(`${this.basePath}/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       return response.data;
     } catch (error) {

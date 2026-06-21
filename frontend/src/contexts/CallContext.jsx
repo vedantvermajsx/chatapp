@@ -11,33 +11,33 @@ export const CallProvider = ({ children, socket }) => {
   const [activeCall, setActiveCall] = useState(null);
   const [callError, setCallError] = useState(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [callConnectedTime, setCallConnectedTime] = useState(null);
 
-  const toggleMinimize = () => setIsMinimized(prev => !prev);
+  const toggleMinimize = useCallback(() => setIsMinimized((prev) => !prev), []);
 
   const callStartTimeRef = useRef(null);
   const callConnectedTimeRef = useRef(null);
   const ringtoneRef = useRef(null);
+  const isAcceptingRef = useRef(false);
 
   useEffect(() => {
     ringtoneRef.current = new Audio(ringtoneAudio);
     ringtoneRef.current.loop = true;
   }, []);
 
-  const playRingtone = () => {
-    console.log("played");
+  const playRingtone = useCallback(() => {
     if (ringtoneRef.current) {
-      console.log("playingg");
       ringtoneRef.current.currentTime = 0;
-      ringtoneRef.current.play().catch((e) => console.log('Audio play error:', e));
+      ringtoneRef.current.play().catch((e) => console.warn('Ringtone play error:', e));
     }
-  };
+  }, []);
 
-  const stopRingtone = () => {
+  const stopRingtone = useCallback(() => {
     if (ringtoneRef.current) {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
     }
-  };
+  }, []);
 
   const formatDuration = (ms) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -48,7 +48,6 @@ export const CallProvider = ({ children, socket }) => {
   };
 
   const rtc = useWebRTC(socket);
-
 
   const incomingCallRef = useRef(null);
   const activeCallRef = useRef(null);
@@ -63,6 +62,10 @@ export const CallProvider = ({ children, socket }) => {
     rtc.cleanup();
     setIncomingCall(null);
     setActiveCall(null);
+    setIsMinimized(false);
+    isAcceptingRef.current = false;
+    callConnectedTimeRef.current = null;
+    setCallConnectedTime(null);
   }, [rtc]);
 
   useEffect(() => { endCallLocallyRef.current = endCallLocally; }, [endCallLocally]);
@@ -70,21 +73,14 @@ export const CallProvider = ({ children, socket }) => {
   useEffect(() => {
     const handleBeforeUnload = () => {
       const activeCallSnap = activeCallRef.current;
-      const currentStream = rtc.localStreamRef?.current;
-
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-      }
-
+      rtc.localStreamRef?.current?.getTracks().forEach((t) => t.stop());
       if (socket && activeCallSnap?.targetId) {
         socket.emit('webrtcSignal', { targetId: activeCallSnap.targetId, type: 'end-call' });
       }
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [socket, rtc]);
-
 
   useEffect(() => {
     if (!socket || !user) return;
@@ -95,10 +91,8 @@ export const CallProvider = ({ children, socket }) => {
       const incomingCallSnap = incomingCallRef.current;
       const rtc = rtcRef.current;
 
-      console.log(`[WebRTC Signal Received] Type: ${type}, from: ${senderId}, targetId: ${activeCallSnap?.targetId || incomingCallSnap?.callerId}`);
-
       switch (type) {
-        case 'offer':
+        case 'offer': {
           if (activeCallSnap || incomingCallSnap) {
             socket.emit('webrtcSignal', { targetId: senderId, type: 'reject-call' });
             return;
@@ -106,31 +100,36 @@ export const CallProvider = ({ children, socket }) => {
           setIncomingCall({ callerId: senderId, callerData, offer: data, isVideo: callerData?.isVideo });
           playRingtone();
           break;
-        case 'answer':
-          console.log(`[WebRTC] Received answer from ${senderId}. activeCallSnap.targetId=${activeCallSnap?.targetId}`);
+        }
+
+        case 'answer': {
           if (activeCallSnap && String(activeCallSnap.targetId) === String(senderId)) {
             await rtc.handleAnswer(data);
-            callConnectedTimeRef.current = Date.now();
-            setActiveCall(prev => ({ ...prev, status: 'connected' }));
+            const now = Date.now();
+            callConnectedTimeRef.current = now;
+            setCallConnectedTime(now);
+            setActiveCall((prev) => ({ ...prev, status: 'connected' }));
             stopRingtone();
-          } else {
-            console.log(`[WebRTC] Answer ignored. Mismatch or no active call.`);
           }
           break;
-        case 'ice-candidate':
+        }
+
+        case 'ice-candidate': {
           await rtc.handleIceCandidate(data);
           break;
-        case 'reject-call':
-          if (activeCallSnap && activeCallSnap.targetId === senderId) {
+        }
+
+        case 'reject-call': {
+          if (activeCallSnap && String(activeCallSnap.targetId) === String(senderId)) {
             if (activeCallSnap.status === 'calling' && activeCallSnap.targetData && callStartTimeRef.current) {
               const durationSecs = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
               const messageContent = `__SYSTEM_CALL__Missed ${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call (Rang for ${durationSecs}s)`;
-              import('../services/message.service').then(module => {
+              import('../services/message.service').then((module) => {
                 module.default.sendPrivateMessage({
                   receiverId: activeCallSnap.targetId.toString(),
                   receiverModel: activeCallSnap.targetData.role === 'guest' ? 'Guest' : 'User',
                   content: messageContent,
-                  media: null
+                  media: null,
                 }).catch(console.error);
               });
             }
@@ -139,133 +138,168 @@ export const CallProvider = ({ children, socket }) => {
             endCallLocallyRef.current?.();
           }
           break;
-        case 'end-call':
-          if ((activeCallSnap && activeCallSnap.targetId === senderId) || (incomingCallSnap && incomingCallSnap.callerId === senderId)) {
+        }
+
+        case 'end-call': {
+          const isActiveCall = activeCallSnap && String(activeCallSnap.targetId) === String(senderId);
+          const isIncomingCall = incomingCallSnap && String(incomingCallSnap.callerId) === String(senderId);
+
+          if (isActiveCall || isIncomingCall) {
+            if (isAcceptingRef.current) {
+              isAcceptingRef.current = 'aborted';
+            }
             callConnectedTimeRef.current = null;
+            setCallConnectedTime(null);
             endCallLocallyRef.current?.();
           }
           stopRingtone();
           break;
+        }
+
         default:
           break;
       }
     };
 
     socket.on('webrtcSignal', handleSignal);
-    return () => {
-      socket.off('webrtcSignal', handleSignal);
-    };
-  }, [socket, user]);
+    return () => socket.off('webrtcSignal', handleSignal);
+  }, [socket, user, playRingtone, stopRingtone]);
 
-  const startCall = async (targetId, isVideo = false, targetData = null) => {
+  const startCall = useCallback(async (targetId, isVideo = false, targetData = null) => {
     try {
       setCallError(null);
       const stream = await rtc.initLocalStream(isVideo);
       callStartTimeRef.current = Date.now();
       setActiveCall({ targetId, isVideo, status: 'calling', targetData });
-      await rtc.createOffer(targetId, {
-        username: user.username,
-        avatar: user.avatar,
-        isVideo
-      }, stream);
+      await rtc.createOffer(
+        targetId,
+        { username: user.username, avatar: user.avatar, isVideo },
+        stream
+      );
     } catch (err) {
-      setCallError('Failed to access media devices');
+      console.error('[Call] startCall failed:', err);
+      setCallError('Failed to access camera/microphone. Please allow permissions and try again.');
       endCallLocally();
     } finally {
       stopRingtone();
     }
-  };
+  }, [rtc, user, endCallLocally, stopRingtone]);
 
-  const acceptCall = async () => {
-    if (!incomingCall) return;
+  const acceptCall = useCallback(async () => {
+    const incoming = incomingCallRef.current;
+    if (!incoming || isAcceptingRef.current) return;
+
+    isAcceptingRef.current = true;
+    stopRingtone();
+
+    let stream;
     try {
-      const stream = await rtc.initLocalStream(incomingCall.isVideo);
-      callConnectedTimeRef.current = Date.now();
-      setActiveCall({ targetId: incomingCall.callerId, isVideo: incomingCall.isVideo, status: 'connected', targetData: incomingCall.callerData });
-      await rtc.handleOffer(incomingCall.offer, incomingCall.callerId, stream);
-      setIncomingCall(null);
+      stream = await rtc.initLocalStream(incoming.isVideo);
     } catch (err) {
-      setCallError('Failed to access media devices');
-      rejectCall();
+      console.error('[Call] acceptCall — media access failed:', err);
+      isAcceptingRef.current = false;
+      setCallError('Failed to access camera/microphone. Please allow permissions and try again.');
+      socket?.emit('webrtcSignal', { targetId: incoming.callerId, type: 'reject-call' });
+      endCallLocally();
+      return;
+    }
+
+    if (isAcceptingRef.current === 'aborted') {
+      stream?.getTracks().forEach((t) => t.stop());
+      isAcceptingRef.current = false;
+      return;
+    }
+
+    try {
+      const now = Date.now();
+      callConnectedTimeRef.current = now;
+      setCallConnectedTime(now);
+      setActiveCall({
+        targetId: incoming.callerId,
+        isVideo: incoming.isVideo,
+        status: 'connected',
+        targetData: incoming.callerData,
+      });
+      setIncomingCall(null);
+      await rtc.handleOffer(incoming.offer, incoming.callerId, stream);
+    } catch (err) {
+      console.error('[Call] acceptCall — handleOffer failed:', err);
+      setCallError('Failed to connect call. Please try again.');
+      socket?.emit('webrtcSignal', { targetId: incoming.callerId, type: 'reject-call' });
+      endCallLocally();
     } finally {
-      stopRingtone();
+      isAcceptingRef.current = false;
     }
-  };
+  }, [rtc, socket, endCallLocally, stopRingtone]);
 
-  const rejectCall = () => {
-    if (incomingCall) {
-      socket.emit('webrtcSignal', { targetId: incomingCall.callerId, type: 'reject-call' });
+  const rejectCall = useCallback(() => {
+    const incoming = incomingCallRef.current;
+    if (incoming) {
+      socket?.emit('webrtcSignal', { targetId: incoming.callerId, type: 'reject-call' });
     }
-    endCallLocally();
     stopRingtone();
-  };
+    endCallLocally();
+  }, [socket, endCallLocally, stopRingtone]);
 
-  const endCall = async () => {
-    const targetId = activeCall?.targetId;
+  const endCall = useCallback(async () => {
+    const activeCallSnap = activeCallRef.current;
+    const targetId = activeCallSnap?.targetId;
 
-    if (activeCall?.status === 'calling' && activeCall?.targetData && callStartTimeRef.current) {
+    if (activeCallSnap?.status === 'calling' && activeCallSnap?.targetData && callStartTimeRef.current) {
       const durationSecs = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
-      const messageContent = `__SYSTEM_CALL__Missed ${activeCall.isVideo ? 'Video' : 'Voice'} Call (Rang for ${durationSecs}s)`;
-      try {
-        import('../services/message.service').then(module => {
-          module.default.sendPrivateMessage({
-            receiverId: targetId.toString(),
-            receiverModel: activeCall.targetData.role === 'guest' ? 'Guest' : 'User',
-            content: messageContent,
-            media: null
-          }).catch(console.error);
-        });
-      } catch (err) {
-        console.error('Failed to send missed call message', err);
-      }
-    } else if (activeCall?.status === 'connected' && callConnectedTimeRef.current && activeCall?.targetData) {
+      const messageContent = `__SYSTEM_CALL__Missed ${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call (Rang for ${durationSecs}s)`;
+      import('../services/message.service').then((module) => {
+        module.default.sendPrivateMessage({
+          receiverId: targetId.toString(),
+          receiverModel: activeCallSnap.targetData.role === 'guest' ? 'Guest' : 'User',
+          content: messageContent,
+          media: null,
+        }).catch(console.error);
+      });
+    } else if (activeCallSnap?.status === 'connected' && callConnectedTimeRef.current && activeCallSnap?.targetData) {
       const duration = formatDuration(Date.now() - callConnectedTimeRef.current);
-      const messageContent = `__SYSTEM_CALL__${activeCall.isVideo ? 'Video' : 'Voice'} Call · ${duration}`;
-      try {
-        import('../services/message.service').then(module => {
-          module.default.sendPrivateMessage({
-            receiverId: targetId.toString(),
-            receiverModel: activeCall.targetData.role === 'guest' ? 'Guest' : 'User',
-            content: messageContent,
-            media: null
-          }).catch(console.error);
-        });
-      } catch (err) {
-        console.error('Failed to send call duration message', err);
-      } finally {
-        stopRingtone();
-      }
+      const messageContent = `__SYSTEM_CALL__${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call · ${duration}`;
+      import('../services/message.service').then((module) => {
+        module.default.sendPrivateMessage({
+          receiverId: targetId.toString(),
+          receiverModel: activeCallSnap.targetData.role === 'guest' ? 'Guest' : 'User',
+          content: messageContent,
+          media: null,
+        }).catch(console.error);
+      });
     }
 
-    callConnectedTimeRef.current = null;
+    callStartTimeRef.current = null;
     if (targetId) {
-      socket.emit('webrtcSignal', { targetId, type: 'end-call' });
+      socket?.emit('webrtcSignal', { targetId, type: 'end-call' });
     }
     stopRingtone();
     endCallLocally();
-  };
+  }, [socket, endCallLocally, stopRingtone]);
 
   return (
-    <CallContext.Provider value={{
-      incomingCall,
-      activeCall,
-      callError,
-      connectionState: rtc.connectionState,
-      startCall,
-      acceptCall,
-      rejectCall,
-      endCall,
-      isMinimized,
-      toggleMinimize,
-      localStream: rtc.localStream,
-      remoteStream: rtc.remoteStream,
-      isMuted: rtc.isMuted,
-      isVideoOff: rtc.isVideoOff,
-      toggleMute: rtc.toggleMute,
-      toggleVideo: rtc.toggleVideo,
-      setCallError,
-      callConnectedTime: callConnectedTimeRef.current
-    }}>
+    <CallContext.Provider
+      value={{
+        incomingCall,
+        activeCall,
+        callError,
+        connectionState: rtc.connectionState,
+        startCall,
+        acceptCall,
+        rejectCall,
+        endCall,
+        isMinimized,
+        toggleMinimize,
+        localStream: rtc.localStream,
+        remoteStream: rtc.remoteStream,
+        isMuted: rtc.isMuted,
+        isVideoOff: rtc.isVideoOff,
+        toggleMute: rtc.toggleMute,
+        toggleVideo: rtc.toggleVideo,
+        setCallError,
+        callConnectedTime,
+      }}
+    >
       {children}
     </CallContext.Provider>
   );

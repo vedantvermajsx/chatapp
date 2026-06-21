@@ -21,7 +21,7 @@ export const authenticate = async (req, res, next) => {
     }
 
 
-    if (!user) return res.status(401).json({ message: 'User not found' });
+    if (!user) return res.status(498).json({ message: 'User not found' });
 
     req.user = {
       _id: user._id,
@@ -35,6 +35,6 @@ export const authenticate = async (req, res, next) => {
     };
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' });
+    return res.status(498).json({ message: 'Invalid token' });
   }
 };

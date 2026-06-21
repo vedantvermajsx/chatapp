@@ -6,9 +6,6 @@ dotenv.config();
 let isConnected = false;
 let connectingPromise = null;
 
-// The cache service connects to the SAME MongoDB cluster/database the
-// queue service writes to. It never writes to the messages collection
-// itself - this connection exists purely to serve cache-miss reads.
 export const connectDB = async () => {
   if (isConnected) return;
   if (connectingPromise) return connectingPromise;

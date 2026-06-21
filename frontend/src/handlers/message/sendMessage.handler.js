@@ -1,6 +1,6 @@
-import messageService from '../services/message.service.js';
-import { updatePrivateChatOptimistically } from './private.handlers.js';
-import { dbService } from '../services/indexedDB.service.js';
+import messageService from '../../services/message.service.js';
+import { updatePrivateChatOptimistically } from '../private/updatePrivateChatOptimistically.handler.js';
+import { dbService } from '../../services/indexedDB.service.js';
 
 export const sendMessageHandler = async (
   e,
@@ -32,7 +32,6 @@ export const sendMessageHandler = async (
       isPending: true
     };
   }
-
 
   let fileData = null;
   if (selectedFile) {

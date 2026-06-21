@@ -18,7 +18,7 @@ const ICE_SERVERS = {
       urls: 'turn:openrelay.metered.ca:443?transport=tcp',
       username: 'openrelayproject',
       credential: 'openrelayproject',
-    }
+    },
   ],
 };
 
@@ -31,10 +31,11 @@ export const useWebRTC = (socket) => {
 
   const peerConnection = useRef(null);
   const activeCallTargetId = useRef(null);
- 
   const iceCandidateBuffer = useRef([]);
- 
   const localStreamRef = useRef(null);
+
+  const socketRef = useRef(socket);
+  socketRef.current = socket;
 
   const setLocalStreamSynced = useCallback((stream) => {
     localStreamRef.current = stream;
@@ -43,12 +44,15 @@ export const useWebRTC = (socket) => {
 
   const cleanup = useCallback(() => {
     if (peerConnection.current) {
+      peerConnection.current.onicecandidate = null;
+      peerConnection.current.onconnectionstatechange = null;
+      peerConnection.current.ontrack = null;
       peerConnection.current.close();
       peerConnection.current = null;
     }
     const currentStream = localStreamRef.current;
     if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
+      currentStream.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
       setLocalStream(null);
     }
@@ -63,145 +67,149 @@ export const useWebRTC = (socket) => {
   const initLocalStream = useCallback(async (isVideo = false) => {
     const existing = localStreamRef.current;
     if (existing) {
-      existing.getTracks().forEach(track => track.stop());
+      existing.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
       setLocalStream(null);
     }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error('Media devices API not available. Use HTTPS or check browser support.');
+    }
+
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Media devices API not available. This might be due to an insecure context or unsupported browser.');
-      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isVideo ? { facingMode: { ideal: 'user' } } : false,
-        audio: true
+        audio: { echoCancellation: true, noiseSuppression: true },
       });
       setLocalStreamSynced(stream);
       return stream;
     } catch (err) {
-      console.error('Error accessing media devices:', err);
       if (isVideo) {
+        console.warn('[WebRTC] Video access failed, falling back to audio:', err);
         try {
-          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error('Media devices API not available.');
-          }
-          const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
+          const audioStream = await navigator.mediaDevices.getUserMedia({
             video: false,
-            audio: true
+            audio: { echoCancellation: true, noiseSuppression: true },
           });
-          setLocalStreamSynced(audioOnlyStream);
-          return audioOnlyStream;
+          setLocalStreamSynced(audioStream);
+          return audioStream;
         } catch (audioErr) {
-          console.error('Error accessing audio:', audioErr);
+          console.error('[WebRTC] Audio access also failed:', audioErr);
           throw audioErr;
         }
       }
+      console.error('[WebRTC] Media access failed:', err);
       throw err;
     }
   }, [setLocalStreamSynced]);
 
   const createPeerConnection = useCallback((targetId) => {
+    if (peerConnection.current) {
+      peerConnection.current.onicecandidate = null;
+      peerConnection.current.onconnectionstatechange = null;
+      peerConnection.current.ontrack = null;
+      peerConnection.current.close();
+      peerConnection.current = null;
+    }
+
     const pc = new RTCPeerConnection(ICE_SERVERS);
     activeCallTargetId.current = targetId;
 
     pc.onicecandidate = (event) => {
-      if (event.candidate && socket) {
-        socket.emit('webrtcSignal', {
+      if (event.candidate && socketRef.current) {
+        socketRef.current.emit('webrtcSignal', {
           targetId,
           type: 'ice-candidate',
-          data: event.candidate
+          data: event.candidate,
         });
       }
     };
 
     pc.onconnectionstatechange = () => {
       setConnectionState(pc.connectionState);
+      if (pc.connectionState === 'failed') {
+        console.warn('[WebRTC] Connection failed, attempting ICE restart...');
+        pc.restartIce?.();
+      }
     };
 
     pc.ontrack = (event) => {
-      if (event.streams && event.streams[0]) {
+      if (event.streams?.[0]) {
         setRemoteStream(event.streams[0]);
       }
     };
 
     peerConnection.current = pc;
     return pc;
-  }, [socket]);
+  }, []);
 
   const addTracksToConnection = useCallback((stream) => {
-    if (peerConnection.current && stream) {
-      stream.getTracks().forEach(track => {
+    if (!peerConnection.current || !stream) return;
+    const existingSenders = peerConnection.current.getSenders();
+    stream.getTracks().forEach((track) => {
+      const alreadyAdded = existingSenders.some((s) => s.track === track);
+      if (!alreadyAdded) {
         peerConnection.current.addTrack(track, stream);
-      });
-    }
+      }
+    });
   }, []);
 
   const createOffer = useCallback(async (targetId, callerData, currentStream = null) => {
     const pc = createPeerConnection(targetId);
-    
-    const streamToUse = currentStream || localStream;
-    if (streamToUse) {
-      addTracksToConnection(streamToUse);
-    }
+    const streamToUse = currentStream || localStreamRef.current;
+    if (streamToUse) addTracksToConnection(streamToUse);
 
-    const offer = await pc.createOffer();
+    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
     await pc.setLocalDescription(offer);
 
-    if (socket) {
-      socket.emit('webrtcSignal', {
-        targetId,
-        type: 'offer',
-        data: offer,
-        callerData
-      });
+    if (socketRef.current) {
+      socketRef.current.emit('webrtcSignal', { targetId, type: 'offer', data: offer, callerData });
     }
-  }, [localStream, createPeerConnection, addTracksToConnection, socket]);
+  }, [createPeerConnection, addTracksToConnection]);
 
   const handleOffer = useCallback(async (offer, senderId, currentStream = null) => {
     const pc = createPeerConnection(senderId);
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    
+
     const buffered = iceCandidateBuffer.current.splice(0);
     for (const candidate of buffered) {
       try {
         await pc.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (e) {
-        alert('[ICE] Failed to add buffered candidate:');
+        console.warn('[ICE] Failed to add buffered candidate:', e);
       }
     }
-    
-    const streamToUse = currentStream || localStream;
-    if (streamToUse) {
-      addTracksToConnection(streamToUse);
-    }
+
+    const streamToUse = currentStream || localStreamRef.current;
+    if (streamToUse) addTracksToConnection(streamToUse);
 
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
-    if (socket) {
-      socket.emit('webrtcSignal', {
-        targetId: senderId,
-        type: 'answer',
-        data: answer
-      });
+    if (socketRef.current) {
+      socketRef.current.emit('webrtcSignal', { targetId: senderId, type: 'answer', data: answer });
     }
-  }, [localStream, createPeerConnection, addTracksToConnection, socket]);
+  }, [createPeerConnection, addTracksToConnection]);
 
   const handleAnswer = useCallback(async (answer) => {
-    if (peerConnection.current) {
+    if (!peerConnection.current) return;
+    try {
       await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
       const buffered = iceCandidateBuffer.current.splice(0);
       for (const candidate of buffered) {
         try {
           await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
         } catch (e) {
-          console.warn('[ICE] Failed to add buffered candidate:', e);
+          console.warn('[ICE] Failed to add buffered candidate after answer:', e);
         }
       }
+    } catch (e) {
+      console.error('[WebRTC] handleAnswer failed:', e);
     }
   }, []);
 
   const handleIceCandidate = useCallback(async (candidate) => {
-    if (peerConnection.current && peerConnection.current.remoteDescription) {
+    if (peerConnection.current?.remoteDescription) {
       try {
         await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (e) {
@@ -213,24 +221,24 @@ export const useWebRTC = (socket) => {
   }, []);
 
   const toggleMute = useCallback(() => {
-    if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-      }
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    const audioTrack = stream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      setIsMuted(!audioTrack.enabled);
     }
-  }, [localStream]);
+  }, []);
 
   const toggleVideo = useCallback(() => {
-    if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoOff(!videoTrack.enabled);
-      }
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    const videoTrack = stream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.enabled = !videoTrack.enabled;
+      setIsVideoOff(!videoTrack.enabled);
     }
-  }, [localStream]);
+  }, []);
 
   return {
     localStream,
@@ -246,6 +254,6 @@ export const useWebRTC = (socket) => {
     handleIceCandidate,
     toggleMute,
     toggleVideo,
-    cleanup
+    cleanup,
   };
 };

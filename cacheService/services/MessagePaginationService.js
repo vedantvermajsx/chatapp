@@ -23,9 +23,7 @@ export async function paginateMessages({ query, limit, before, mapMessage = (m) 
       .limit(DB_BATCH_SIZE + 1)
       .lean();
 
-    if (batch.length === 0) {
-      break; 
-    }
+    if (batch.length === 0) break;
 
     const batchHasExtra = batch.length > DB_BATCH_SIZE;
     if (batchHasExtra) batch.pop();
@@ -69,6 +67,34 @@ export async function paginateMessages({ query, limit, before, mapMessage = (m) 
   return {
     messages: selected,
     hasMore,
-    nextCursor: cursor ? cursor.toISOString() : null
+    nextCursor: cursor ? cursor.toISOString() : null,
   };
+}
+
+export async function fetchMessagesAfter({ query, limit, after, mapMessage = (m) => m }) {
+  const cappedLimit = Math.max(1, parseInt(limit, 10) || 50);
+  const afterDate = new Date(after);
+
+  const dbQuery = { ...query, timestamp: { $gt: afterDate } };
+
+  const batch = await Message.find(dbQuery)
+    .sort({ timestamp: 1 })
+    .limit(cappedLimit + 1)
+    .lean();
+
+  const hasMore = batch.length > cappedLimit;
+  if (hasMore) batch.pop();
+
+  let selected = [];
+  let totalBytes = 0;
+
+  for (const raw of batch) {
+    const mapped = mapMessage(raw);
+    const size = byteSize(mapped);
+    if (totalBytes + size > MAX_RESPONSE_BYTES) break;
+    selected.push(mapped);
+    totalBytes += size;
+  }
+
+  return { messages: selected, hasMore: false };
 }

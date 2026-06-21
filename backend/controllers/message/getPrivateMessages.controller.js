@@ -4,19 +4,25 @@ import { messageCacheClient } from '../../database/messageCacheClient.js';
 export const getPrivateMessages = async (req, res) => {
   try {
     const { otherUserId } = req.params;
-    const { limit = 20, before } = req.query;
+    const { limit = 20, before, after } = req.query;
     const { user } = req;
     const userId = user.id;
 
     const { messages, hasMore } = await messageCacheClient.getPrivateMessages(
       userId,
       otherUserId,
-      { limit, before }
+      {
+        limit: parseInt(limit, 10),
+        before: before || undefined,
+        after: after || undefined,
+      }
     );
 
-    const userIds = [
-      ...new Set(messages.flatMap((m) => [m.senderId, m.receiverId]))
-    ];
+    if (!messages.length) {
+      return res.status(200).json({ messages: [], hasMore: false });
+    }
+
+    const userIds = [...new Set(messages.flatMap((m) => [m.senderId, m.receiverId]))];
     const userDetailsMap = await userCacheClient.getUsersByIds(userIds);
 
     const formattedMessages = messages.map((msg) => {
@@ -25,7 +31,7 @@ export const getPrivateMessages = async (req, res) => {
         gender: null,
         avatar: null,
         isOnline: false,
-        lastSeen: null
+        lastSeen: null,
       };
 
       return {
@@ -38,7 +44,7 @@ export const getPrivateMessages = async (req, res) => {
         avatar: senderDetails.avatar,
         isOnline: senderDetails.isOnline,
         lastSeen: senderDetails.lastSeen,
-        media: msg.media || null
+        media: msg.media || null,
       };
     });
 

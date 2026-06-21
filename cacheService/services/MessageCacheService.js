@@ -1,13 +1,10 @@
-import { paginateMessages } from './MessagePaginationService.js';
+import { paginateMessages, fetchMessagesAfter } from './MessagePaginationService.js';
 import { messageCache } from './CacheService.js';
 import Message from '../models/message.model.js';
-
 
 const PAGE_TTL_SECONDS = 60;
 const CHAT_LIST_TTL_SECONDS = 60;
 const COMMON_LIMITS = [10, 20, 25, 50];
-
-
 
 function roomFirstPageKey(roomId, limit) {
   return `messages:room:${roomId}:first:${limit}`;
@@ -18,8 +15,22 @@ function privateFirstPageKey(userA, userB, limit) {
   return `messages:private:${a}:${b}:first:${limit}`;
 }
 
-export async function getRoomMessages({ roomId, limit, before, mapMessage }) {
+function chatListKey(userId) {
+  return `messages:chatlist:${userId}`;
+}
+
+export async function getRoomMessages({ roomId, limit, before, after, mapMessage }) {
   const numericLimit = Math.max(1, parseInt(limit, 10) || 20);
+
+  if (after) {
+    return fetchMessagesAfter({
+      query: { roomId },
+      limit: numericLimit,
+      after,
+      mapMessage,
+    });
+  }
+
   const isFirstPage = !before;
   const cacheKey = isFirstPage ? roomFirstPageKey(roomId, numericLimit) : null;
 
@@ -32,7 +43,7 @@ export async function getRoomMessages({ roomId, limit, before, mapMessage }) {
     query: { roomId },
     limit: numericLimit,
     before,
-    mapMessage
+    mapMessage,
   });
 
   if (cacheKey) {
@@ -42,8 +53,26 @@ export async function getRoomMessages({ roomId, limit, before, mapMessage }) {
   return result;
 }
 
-export async function getPrivateMessages({ userId, otherUserId, limit, before, mapMessage }) {
+export async function getPrivateMessages({ userId, otherUserId, limit, before, after, mapMessage }) {
   const numericLimit = Math.max(1, parseInt(limit, 10) || 20);
+
+  const privateQuery = {
+    $or: [
+      { senderId: userId, receiverId: otherUserId },
+      { senderId: otherUserId, receiverId: userId },
+    ],
+    deletedFor: { $ne: userId },
+  };
+
+  if (after) {
+    return fetchMessagesAfter({
+      query: privateQuery,
+      limit: numericLimit,
+      after,
+      mapMessage,
+    });
+  }
+
   const isFirstPage = !before;
   const cacheKey = isFirstPage ? privateFirstPageKey(userId, otherUserId, numericLimit) : null;
 
@@ -53,16 +82,10 @@ export async function getPrivateMessages({ userId, otherUserId, limit, before, m
   }
 
   const result = await paginateMessages({
-    query: {
-      $or: [
-        { senderId: userId, receiverId: otherUserId },
-        { senderId: otherUserId, receiverId: userId }
-      ],
-      deletedFor: { $ne: userId }
-    },
+    query: privateQuery,
     limit: numericLimit,
     before,
-    mapMessage
+    mapMessage,
   });
 
   if (cacheKey) {
@@ -71,8 +94,6 @@ export async function getPrivateMessages({ userId, otherUserId, limit, before, m
 
   return result;
 }
-
-
 
 export function invalidateRoomMessages(roomId) {
   for (const limit of COMMON_LIMITS) {
@@ -93,18 +114,17 @@ export function appendRoomMessages(roomId, messages) {
     const key = roomFirstPageKey(roomId, limit);
     const cached = messageCache.get(key);
     if (cached) {
-      const newCachedMessages = messages.map(msg => {
+      const newCachedMessages = messages.map((msg) => {
         const formatted = {
           id: msg._id || msg.uuid,
           text: msg.content,
           timestamp: msg.timestamp,
-          senderId: msg.senderId
+          senderId: msg.senderId,
         };
         if (msg.media) formatted.media = msg.media;
         return formatted;
       });
       newCachedMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      
       const updatedMessages = [...newCachedMessages, ...cached.messages];
       messageCache.set(key, { ...cached, messages: updatedMessages.slice(0, limit) }, PAGE_TTL_SECONDS);
     }
@@ -116,16 +136,15 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
     const key = privateFirstPageKey(senderId, receiverId, limit);
     const cached = messageCache.get(key);
     if (cached) {
-      const newCachedMessages = messages.map(msg => ({
+      const newCachedMessages = messages.map((msg) => ({
         id: msg._id || msg.uuid,
         senderId: msg.senderId,
         receiverId: msg.receiverId,
         text: msg.content,
         timestamp: msg.timestamp,
-        media: msg.media || null
+        media: msg.media || null,
       }));
       newCachedMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      
       const updatedMessages = [...newCachedMessages, ...cached.messages];
       messageCache.set(key, { ...cached, messages: updatedMessages.slice(0, limit) }, PAGE_TTL_SECONDS);
     }
@@ -133,12 +152,6 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
   messageCache.delete(chatListKey(senderId));
   messageCache.delete(chatListKey(receiverId));
 }
-
-function chatListKey(userId) {
-  return `messages:chatlist:${userId}`;
-}
-
-
 
 export async function getPrivateChats(userId) {
   const cacheKey = chatListKey(userId);
@@ -150,8 +163,8 @@ export async function getPrivateChats(userId) {
       $match: {
         $or: [{ senderId: userId }, { receiverId: userId }],
         roomId: null,
-        $nor: [{ deletedFor: userId }]
-      }
+        $nor: [{ deletedFor: userId }],
+      },
     },
     { $sort: { timestamp: 1 } },
     {
@@ -160,13 +173,13 @@ export async function getPrivateChats(userId) {
           $cond: {
             if: { $eq: ['$senderId', userId] },
             then: '$receiverId',
-            else: '$senderId'
-          }
+            else: '$senderId',
+          },
         },
-        lastMessage: { $last: '$$ROOT' }
-      }
+        lastMessage: { $last: '$$ROOT' },
+      },
     },
-    { $sort: { 'lastMessage.timestamp': -1 } }
+    { $sort: { 'lastMessage.timestamp': -1 } },
   ]);
 
   messageCache.set(cacheKey, chats, CHAT_LIST_TTL_SECONDS);

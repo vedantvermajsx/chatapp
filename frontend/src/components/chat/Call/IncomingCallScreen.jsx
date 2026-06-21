@@ -1,4 +1,3 @@
-
 import { Phone, PhoneOff, Video } from 'lucide-react';
 import { useCall } from '../../../contexts/CallContext';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -20,7 +19,6 @@ const IncomingCallScreen = () => {
           borderColor: theme.isLight ? '#e2e8f0' : '#374151',
         }}
       >
-
         <div className="px-8 pt-8 pb-10 text-center">
           <div className="relative mx-auto w-24 h-24 mb-5">
             {caller?.avatar ? (
@@ -36,7 +34,6 @@ const IncomingCallScreen = () => {
                 </span>
               </div>
             )}
-
             <span className="absolute inset-0 rounded-full border-2 border-purple-400 opacity-60 animate-ping" />
           </div>
 

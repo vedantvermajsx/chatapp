@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/auth.service';
+import { dbService } from '../services/indexedDB.service';
 
 const AuthContext = createContext();
 
@@ -51,10 +52,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    try {
+      await dbService.clearAllData();
+    } catch (err) {
+      console.error('Error clearing IndexedDB on logout:', err);
+    }
   };
 
   const updateUser = (userData) => {

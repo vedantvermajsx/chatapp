@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { toast } from 'sonner';
+import { dbService } from './indexedDB.service';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_LOAD_BALENCER_URL_,
@@ -34,6 +35,19 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     const isOffline = !navigator.onLine;
+
+    if (error.response?.status === 498) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      dbService.clearAllData().catch(console.error);
+      toast.error('Session expired or invalid. Please log in again.');
+      
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      return Promise.reject(error);
+    }
+
     if (!isOffline) {
       const msg =
         error.response?.data?.message ||

@@ -1,118 +1,16 @@
 import express from 'express';
-import {
-  getRoomMessages,
-  getPrivateMessages,
-  getPrivateChats,
-  invalidateRoomMessages,
-  invalidatePrivateMessages,
-  appendRoomMessages,
-  appendPrivateMessages
-} from '../services/MessageCacheService.js';
+import { getRoomMessages } from '../controllers/message/getRoomMessages.controller.js';
+import { getPrivateMessages } from '../controllers/message/getPrivateMessages.controller.js';
+import { getPrivateChats } from '../controllers/message/getPrivateChats.controller.js';
+import { invalidateMessages } from '../controllers/message/invalidateMessages.controller.js';
+import { appendMessages } from '../controllers/message/appendMessages.controller.js';
 
 const router = express.Router();
 
-function mapRoomMessage(msg) {
-  const formatted = {
-    id: msg._id,
-    text: msg.content,
-    timestamp: msg.timestamp,
-    senderId: msg.senderId
-  };
-  if (msg.media) formatted.media = msg.media;
-  return formatted;
-}
-
-function mapPrivateMessage(msg) {
-  return {
-    id: msg._id,
-    senderId: msg.senderId,
-    receiverId: msg.receiverId,
-    text: msg.content,
-    timestamp: msg.timestamp,
-    media: msg.media || null
-  };
-}
-
-router.get('/room/:roomId', async (req, res) => {
-  try {
-    const { roomId } = req.params;
-    const { limit = 20, before } = req.query;
-
-    const result = await getRoomMessages({
-      roomId,
-      limit,
-      before,
-      mapMessage: mapRoomMessage
-    });
-
-    res.json(result);
-  } catch (error) {
-    console.error('[CacheService] error getting room messages:', error);
-    res.status(500).json({ message: 'Failed to get room messages', error: error.message });
-  }
-});
-
-router.get('/private/:userId/:otherUserId', async (req, res) => {
-  try {
-    const { userId, otherUserId } = req.params;
-    const { limit = 20, before } = req.query;
-
-    const result = await getPrivateMessages({
-      userId,
-      otherUserId,
-      limit,
-      before,
-      mapMessage: mapPrivateMessage
-    });
-
-    res.json(result);
-  } catch (error) {
-    console.error('[CacheService] error getting private messages:', error);
-    res.status(500).json({ message: 'Failed to get private messages', error: error.message });
-  }
-});
-
-router.get('/private-chats/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const chats = await getPrivateChats(userId);
-    res.json({ chats });
-  } catch (error) {
-    console.error('[CacheService] error getting private chats:', error);
-    res.status(500).json({ message: 'Failed to get private chats', error: error.message });
-  }
-});
-
-router.post('/invalidate', (req, res) => {
-  const { roomId, senderId, receiverId } = req.body;
-
-  if (roomId) {
-    invalidateRoomMessages(roomId);
-  } else if (senderId && receiverId) {
-    invalidatePrivateMessages(senderId, receiverId);
-  } else {
-    return res.status(400).json({ error: 'roomId or (senderId and receiverId) required' });
-  }
-
-  res.json({ success: true });
-});
-
-router.post('/append', (req, res) => {
-  const { roomId, senderId, receiverId, messages } = req.body;
-
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'messages array required' });
-  }
-
-  if (roomId) {
-    appendRoomMessages(roomId, messages);
-  } else if (senderId && receiverId) {
-    appendPrivateMessages(senderId, receiverId, messages);
-  } else {
-    return res.status(400).json({ error: 'roomId or (senderId and receiverId) required' });
-  }
-
-  res.json({ success: true });
-});
+router.get('/room/:roomId', getRoomMessages);
+router.get('/private/:userId/:otherUserId', getPrivateMessages);
+router.get('/private-chats/:userId', getPrivateChats);
+router.post('/invalidate', invalidateMessages);
+router.post('/append', appendMessages);
 
 export default router;
