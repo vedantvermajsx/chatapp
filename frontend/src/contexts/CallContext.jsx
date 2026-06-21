@@ -53,9 +53,11 @@ export const CallProvider = ({ children, socket }) => {
   const incomingCallRef = useRef(null);
   const activeCallRef = useRef(null);
   const endCallLocallyRef = useRef(null);
+  const rtcRef = useRef(rtc);
 
   useEffect(() => { incomingCallRef.current = incomingCall; }, [incomingCall]);
   useEffect(() => { activeCallRef.current = activeCall; }, [activeCall]);
+  useEffect(() => { rtcRef.current = rtc; }, [rtc]);
 
   const endCallLocally = useCallback(() => {
     rtc.cleanup();
@@ -91,6 +93,7 @@ export const CallProvider = ({ children, socket }) => {
       const { type, senderId, data, callerData } = payload;
       const activeCallSnap = activeCallRef.current;
       const incomingCallSnap = incomingCallRef.current;
+      const rtc = rtcRef.current;
 
       console.log(`[WebRTC Signal Received] Type: ${type}, from: ${senderId}, targetId: ${activeCallSnap?.targetId || incomingCallSnap?.callerId}`);
 
@@ -152,7 +155,7 @@ export const CallProvider = ({ children, socket }) => {
     return () => {
       socket.off('webrtcSignal', handleSignal);
     };
-  }, [socket, user, rtc]);
+  }, [socket, user]);
 
   const startCall = async (targetId, isVideo = false, targetData = null) => {
     try {

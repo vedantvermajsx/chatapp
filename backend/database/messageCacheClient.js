@@ -59,6 +59,22 @@ class MessageCacheClient {
       console.error('[MessageCacheClient] Error invalidating room messages:', err.message);
     }
   }
+
+  async appendRoomMessage(roomId, messageData) {
+    try {
+      await this.client.post('/messages/append', { roomId, messages: [messageData] });
+    } catch (err) {
+      console.error('[MessageCacheClient] Error appending room message:', err.message);
+    }
+  }
+
+  async appendPrivateMessage(senderId, receiverId, messageData) {
+    try {
+      await this.client.post('/messages/append', { senderId, receiverId, messages: [messageData] });
+    } catch (err) {
+      console.error('[MessageCacheClient] Error appending private message:', err.message);
+    }
+  }
 }
 
 export const messageCacheClient = new MessageCacheClient();

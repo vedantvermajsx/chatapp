@@ -49,11 +49,11 @@ export async function sendRoomMessage(req, res) {
       media: media || null
     };
 
-    
-    enqueueMessage(messageData);
+
+    enqueueMessage(messageData); 
     emitNewMessage(roomId, payload);
 
-    messageCacheClient.invalidateRoomMessages(roomId).catch(() => {});
+    await messageCacheClient.appendRoomMessage(roomId, messageData);
 
     res.status(201).json({
       _id: uuid,

@@ -48,10 +48,10 @@ export async function sendPrivateMessage(req, res) {
       media: media || null
     };
 
-    enqueueMessage(messageData);
+    enqueueMessage(messageData); 
     emitNewPrivateMessage(sender.id, receiverId, payload);
 
-    messageCacheClient.invalidatePrivateMessages(sender.id, receiverId).catch(() => {});
+    await messageCacheClient.appendPrivateMessage(sender.id, receiverId, messageData);
 
     res.json({
       _id: uuid,
