@@ -23,3 +23,14 @@ export async function invalidateMessageCache({ roomId, senderId, receiverId }) {
     );
   }
 }
+
+export async function appendMessageCache({ roomId, senderId, receiverId, messages }) {
+  try {
+    await client.post('/messages/append', { roomId, senderId, receiverId, messages });
+  } catch (err) {
+    console.error(
+      '[QueueService] failed to append message cache:',
+      err.response?.data?.message || err.message
+    );
+  }
+}

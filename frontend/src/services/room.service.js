@@ -27,8 +27,10 @@ class RoomService {
     return response.data;
   }
 
-  async getRoomMembers(roomId) {
-    const response = await api.get(`${this.basePath}/${roomId}/members`);
+  async getRoomMembers(roomId, skip = 0, search = '') {
+    const response = await api.get(`${this.basePath}/${roomId}/members`, {
+      params: { skip, limit: 20, search }
+    });
     return response.data;
   }
 

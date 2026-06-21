@@ -33,10 +33,12 @@ export const useChatState = (user) => {
   const [loadingJoinRoom, setLoadingJoinRoom] = useState(false);
   const [loadingRoomMembers, setLoadingRoomMembers] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [hasMoreMembers, setHasMoreMembers] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
 
   const messageCache = useRef({});
   const loadingMoreMessages = useRef(false);
+  const loadingMoreMembersRef = useRef(false);
   const CACHE_TTL = 30000;
 
   const loadRooms = useCallback(async () => {
@@ -47,20 +49,37 @@ export const useChatState = (user) => {
     await loadPrivateChatsHandler(setPrivateChats, setLoadingPrivateChats);
   }, []);
 
-  const loadRoomMembers = useCallback(async () => {
+  const loadRoomMembers = useCallback(async (search = '') => {
     if (!currentRoom) return;
     
     setLoadingRoomMembers(true);
     
     try {
-      const res = await roomService.getRoomMembers(currentRoom._id);
-      setRoomMembers(res || []);
+      const res = await roomService.getRoomMembers(currentRoom._id, 0, search);
+      setRoomMembers(res?.members || []);
+      setHasMoreMembers(res?.hasMore || false);
     } catch (error) {
       toast.error('Failed to load room members');
     } finally {
       setLoadingRoomMembers(false);
     }
-  }, [currentRoom, setRoomMembers, setLoadingRoomMembers]);
+  }, [currentRoom, setRoomMembers, setLoadingRoomMembers, setHasMoreMembers]);
+
+  const loadMoreRoomMembers = useCallback(async (search = '') => {
+    if (!currentRoom || loadingMoreMembersRef.current || !hasMoreMembers) return;
+    
+    loadingMoreMembersRef.current = true;
+    
+    try {
+      const res = await roomService.getRoomMembers(currentRoom._id, roomMembers.length, search);
+      setRoomMembers(prev => [...prev, ...(res?.members || [])]);
+      setHasMoreMembers(res?.hasMore || false);
+    } catch (error) {
+      toast.error('Failed to load more members');
+    } finally {
+      loadingMoreMembersRef.current = false;
+    }
+  }, [currentRoom, roomMembers.length, hasMoreMembers, setRoomMembers, setHasMoreMembers]);
 
   const sendMessage = useCallback(async (e, socket) => {
     await sendMessageHandler(
@@ -214,11 +233,13 @@ export const useChatState = (user) => {
     loadingJoinRoom,
     loadingRoomMembers, setLoadingRoomMembers,
     hasMoreMessages,
+    hasMoreMembers,
     showSidebar, setShowSidebar,
     messageCache,
     loadRooms,
     loadPrivateChats,
     loadRoomMembers,
+    loadMoreRoomMembers,
     sendMessage,
     joinRoom,
     startPrivateChat,

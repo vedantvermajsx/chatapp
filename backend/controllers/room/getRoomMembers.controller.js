@@ -11,15 +11,15 @@ export async function getRoomMembers(req, res) {
       MAX_PAGE_SIZE,
       Math.max(1, parseInt(req.query.limit, 10) || DEFAULT_PAGE_SIZE)
     );
+    const search = req.query.search || '';
 
-    const page = await roomCacheClient.getRoomMembers(roomId, { skip, limit });
+    const page = await roomCacheClient.getRoomMembers(roomId, { skip, limit, search });
 
     if (page === null) {
       return res.status(404).json({ message: 'Room not found' });
     }
 
-
-    res.json(page.members);
+    res.json(page);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

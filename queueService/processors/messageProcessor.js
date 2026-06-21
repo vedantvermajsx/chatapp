@@ -1,6 +1,6 @@
 import Message from '../models/message.model.js';
 import { connectDB } from '../database/db.js';
-import { invalidateMessageCache } from '../cacheClient.js';
+import {appendMessageCache } from '../cacheClient.js';
 
 export const processMessageBatch = async (batch) => {
   await connectDB();
@@ -36,12 +36,14 @@ export const processMessageBatch = async (batch) => {
       invalidationTargets.set(key, {
         roomId: msg.roomId || null,
         senderId: msg.roomId ? null : msg.senderId,
-        receiverId: msg.roomId ? null : msg.receiverId
+        receiverId: msg.roomId ? null : msg.receiverId,
+        messages: []
       });
     }
+    invalidationTargets.get(key).messages.push(msg);
   }
 
   await Promise.all(
-    [...invalidationTargets.values()].map((target) => invalidateMessageCache(target))
+    [...invalidationTargets.values()].map((target) => appendMessageCache(target))
   );
 };

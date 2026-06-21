@@ -5,6 +5,7 @@ import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useNeumorphism } from '../../../hooks/useNeumorphism';
 import ChatMediaPreview from './ChatMediaPreview';
 import ChatVoiceRecorder from './ChatVoiceRecorder';
 import { SUPPORTED_FORMATS} from '../../../utils/constants.js';
@@ -28,6 +29,7 @@ const ChatInput = memo(forwardRef(({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const { theme } = useTheme();
+  const { getShadow } = useNeumorphism();
   const MAX_CHARS = 1000;
 
   useEffect(() => {
@@ -257,9 +259,7 @@ const ChatInput = memo(forwardRef(({
         )}
         <div className="w-full sm:w-4/5 lg:w-3/4 flex items-center gap-2 sm:gap-3 rounded-2xl px-4 sm:px-6 py-2 sm:py-1 relative" style={{
           backgroundColor: theme.background,
-          boxShadow: theme.isLight
-            ? '2px 2px 5px rgba(0,0,0,0.1), -2px -2px 5px rgba(255,255,255,0.8)'
-            : '2px 2px 5px rgba(0,0,0,0.4), -2px -2px 5px rgba(255,255,255,0.05)'
+          boxShadow: getShadow(theme.isLight, false, 2, 5)
         }}>
           <input
             ref={fileInputRef}

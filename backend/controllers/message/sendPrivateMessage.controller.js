@@ -47,7 +47,6 @@ export async function sendPrivateMessage(req, res) {
       media: media || null
     };
 
-    // Add to queue and emit immediately
     enqueueMessage(messageData);
     emitNewPrivateMessage(sender.id, receiverId, payload);
 

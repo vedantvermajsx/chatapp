@@ -88,6 +88,52 @@ export function invalidatePrivateMessages(userA, userB) {
   messageCache.delete(chatListKey(userB));
 }
 
+export function appendRoomMessages(roomId, messages) {
+  for (const limit of COMMON_LIMITS) {
+    const key = roomFirstPageKey(roomId, limit);
+    const cached = messageCache.get(key);
+    if (cached) {
+      const newCachedMessages = messages.map(msg => {
+        const formatted = {
+          id: msg._id || msg.uuid,
+          text: msg.content,
+          timestamp: msg.timestamp,
+          senderId: msg.senderId
+        };
+        if (msg.media) formatted.media = msg.media;
+        return formatted;
+      });
+      newCachedMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      const updatedMessages = [...newCachedMessages, ...cached.messages];
+      messageCache.set(key, { ...cached, messages: updatedMessages.slice(0, limit) }, PAGE_TTL_SECONDS);
+    }
+  }
+}
+
+export function appendPrivateMessages(senderId, receiverId, messages) {
+  for (const limit of COMMON_LIMITS) {
+    const key = privateFirstPageKey(senderId, receiverId, limit);
+    const cached = messageCache.get(key);
+    if (cached) {
+      const newCachedMessages = messages.map(msg => ({
+        id: msg._id || msg.uuid,
+        senderId: msg.senderId,
+        receiverId: msg.receiverId,
+        text: msg.content,
+        timestamp: msg.timestamp,
+        media: msg.media || null
+      }));
+      newCachedMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      const updatedMessages = [...newCachedMessages, ...cached.messages];
+      messageCache.set(key, { ...cached, messages: updatedMessages.slice(0, limit) }, PAGE_TTL_SECONDS);
+    }
+  }
+  messageCache.delete(chatListKey(senderId));
+  messageCache.delete(chatListKey(receiverId));
+}
+
 function chatListKey(userId) {
   return `messages:chatlist:${userId}`;
 }

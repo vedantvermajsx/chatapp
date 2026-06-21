@@ -30,7 +30,9 @@ const ChatArea = memo(function ChatArea({
   hasMoreMessages,
   loadMoreMessages,
   onToggleSidebar,
-  loadRoomMembers
+  loadRoomMembers,
+  hasMoreMembers,
+  loadMoreRoomMembers
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -194,6 +196,9 @@ const ChatArea = memo(function ChatArea({
         onStartPrivateChat={onStartPrivateChat}
         currentUserId={user.id}
         loading={loadingRoomMembers}
+        hasMoreMembers={hasMoreMembers}
+        loadMoreRoomMembers={loadMoreRoomMembers}
+        loadRoomMembers={loadRoomMembers}
       />
 
       <ImageZoomModal

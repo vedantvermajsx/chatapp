@@ -13,6 +13,7 @@ const CORE_CHANNELS = [
   'newRoom',
   'roomUpdated',
   'roomDeleted',
+  'webrtcSignal',
 ];
 
 let ws = null;
@@ -32,7 +33,7 @@ export function connectToBroker() {
     isOpen = true;
     console.log('Connected to Message Broker');
 
-    CORE_CHANNELS.forEach(subscribe);
+    CORE_CHANNELS.forEach((channel) => subscribedChannels.add(channel));
     subscribedChannels.forEach((channel) => sendRaw({ type: 'SUBSCRIBE', channel }));
 
     flushOutbox();
@@ -82,6 +83,9 @@ function flushOutbox() {
 }
 
 export function subscribe(channel) {
+  if (subscribedChannels.has(channel)) {
+    return;
+  }
   subscribedChannels.add(channel);
   sendRaw({ type: 'SUBSCRIBE', channel });
 }
@@ -101,11 +105,13 @@ export function publish(channel, payload) {
 export function on(channel, handler) {
   if (!messageHandlers.has(channel)) {
     messageHandlers.set(channel, new Set());
+    subscribe(channel);
   }
   messageHandlers.get(channel).add(handler);
 }
 
 export function off(channel, handler) {
+  
   if (messageHandlers.has(channel)) {
     messageHandlers.get(channel).delete(handler);
     if (messageHandlers.get(channel).size === 0) {

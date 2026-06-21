@@ -95,9 +95,9 @@ class RoomCacheClient {
     }
   }
 
-  async getRoomMembers(roomId, { skip = 0, limit = 20 } = {}) {
+  async getRoomMembers(roomId, { skip = 0, limit = 20, search = '' } = {}) {
     try {
-      const params = { skip, limit };
+      const params = { skip, limit, search };
       const response = await this.client.get(`/rooms/${roomId}/members`, { params });
       return response.data;
     } catch (err) {

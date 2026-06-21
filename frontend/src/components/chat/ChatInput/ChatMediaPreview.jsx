@@ -1,14 +1,15 @@
 import { X, Loader2, Mic } from 'lucide-react';
+import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
 export default function ChatMediaPreview({ selectedFile, isProcessingMedia, onRemoveFile, theme }) {
+  const { getShadow } = useNeumorphism();
+
   if (!selectedFile && !isProcessingMedia) return null;
 
   return (
     <div className="mb-3 flex items-center gap-3 rounded-xl p-3" style={{
       backgroundColor: theme.background,
-      boxShadow: theme.isLight
-        ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-        : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
+      boxShadow: getShadow(theme.isLight, false, 1, 3)
     }}>
       {isProcessingMedia ? (
         <>

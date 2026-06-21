@@ -2,6 +2,7 @@ import { MessageSquare } from 'lucide-react';
 import Admin from './Admin';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
 const getGenderLabel = (gender) => {
     const labels = ['Male', 'Female', 'Other'];
@@ -16,6 +17,7 @@ function Member({
     isOnline,
 }) {
     const { theme } = useTheme();
+    const { getShadow, getNeumorphicProps } = useNeumorphism();
 
     if (admin) return <Admin admin={member} currentUserId={currentUserId} onStartPrivateChat={onStartPrivateChat} isOnline={isOnline} />
 
@@ -24,7 +26,7 @@ function Member({
             className="flex items-center gap-3 p-3 rounded-2xl"
             style={{ 
                 backgroundColor: theme.background,
-                boxShadow: theme.isLight ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)' : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
+                boxShadow: getShadow(theme.isLight, false, 1, 3)
             }}
         >
             <Avatar url={member.avatar} name={member.username} gender={member.gender} size={10} isOnline={isOnline} />
@@ -50,20 +52,7 @@ function Member({
                 <button
                     onClick={() => onStartPrivateChat(member)}
                     className="p-2 rounded-full transition-all"
-                    style={{ 
-                        backgroundColor: theme.background,
-                        boxShadow: theme.isLight ? '3px 3px 6px rgba(0,0,0,0.1), -3px -3px 6px rgba(255,255,255,0.8)' : '3px 3px 6px rgba(0,0,0,0.4), -3px -3px 6px rgba(255,255,255,0.05)'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.boxShadow = theme.isLight 
-                            ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)' 
-                            : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.boxShadow = theme.isLight 
-                            ? '3px 3px 6px rgba(0,0,0,0.1), -3px -3px 6px rgba(255,255,255,0.8)' 
-                            : '3px 3px 6px rgba(0,0,0,0.4), -3px -3px 6px rgba(255,255,255,0.05)';
-                    }}
+                    {...getNeumorphicProps(3, 6, 2, 4)}
                     title="Private Chat"
                 >
                     <MessageSquare

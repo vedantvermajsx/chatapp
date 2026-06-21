@@ -1,34 +1,16 @@
 import { memo } from 'react';
 import Avatar from '../../common/Avatar';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
 const Room = memo(function Room({ room, currentRoom, handleJoinRoom }) {
-    const { theme } = useTheme();
-    const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
+    const { theme, getNeumorphicProps } = useNeumorphism();
+    const isActive = currentRoom?._id === room._id;
+
     return (
         <div
             onClick={() => handleJoinRoom(room._id)}
             className={`p-3 md:p-5 rounded-2xl cursor-pointer transition-all`}
-            style={{
-                backgroundColor: theme.background,
-                boxShadow: currentRoom?._id === room._id
-                    ? (isLight ? 'inset 3px 3px 6px rgba(0,0,0,0.1), inset -3px -3px 6px rgba(255,255,255,0.8)' : 'inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(255,255,255,0.05)')
-                    : (isLight ? '2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.8)' : '2px 2px 4px rgba(0,0,0,0.4), -2px -2px 4px rgba(255,255,255,0.05)')
-            }}
-            onMouseEnter={(e) => {
-                if (currentRoom?._id !== room._id) {
-                    e.currentTarget.style.boxShadow = isLight
-                        ? '3px 3px 6px rgba(0,0,0,0.15), -3px -3px 6px rgba(255,255,255,0.9)'
-                        : '3px 3px 6px rgba(0,0,0,0.5), -3px -3px 6px rgba(255,255,255,0.08)';
-                }
-            }}
-            onMouseLeave={(e) => {
-                if (currentRoom?._id !== room._id) {
-                    e.currentTarget.style.boxShadow = isLight
-                        ? '2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.8)'
-                        : '2px 2px 4px rgba(0,0,0,0.4), -2px -2px 4px rgba(255,255,255,0.05)';
-                }
-            }}
+            {...getNeumorphicProps(2, 4, 3, 6, isActive, true)}
         >
             <div className="flex items-start gap-3 md:gap-4">
                 <div className="flex-shrink-0">

@@ -6,12 +6,14 @@ import RoomSidebar from './chat/Sidebar/RoomSidebar';
 import ChatArea from './chat/ChatArea';
 import { useChatState } from '../hooks/useChatState';
 import { useChatSocket } from '../hooks/useChatSocket';
+import { CallProvider } from '../contexts/CallContext';
+import CallOverlay from './chat/Call/CallOverlay';
 
 function Chat() {
   const { user, logout } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
-  
+
   const chatState = useChatState(user);
   const {
     messages, setMessages,
@@ -33,11 +35,13 @@ function Chat() {
     loadingJoinRoom,
     loadingRoomMembers, setLoadingRoomMembers,
     hasMoreMessages,
+    hasMoreMembers,
     showSidebar, setShowSidebar,
     messageCache,
     loadRooms,
     loadPrivateChats,
     loadRoomMembers,
+    loadMoreRoomMembers,
     sendMessage,
     joinRoom,
     startPrivateChat,
@@ -98,38 +102,44 @@ function Chat() {
         setShowCreateRoom={setShowCreateRoom}
         loadRooms={loadRooms}
         privateChats={privateChats}
+        setPrivateChats={setPrivateChats}
         loadingRooms={loadingRooms}
         loadingPrivateChats={loadingPrivateChats}
         showSidebar={showSidebar}
         onCloseSidebar={() => setShowSidebar(false)}
       />
 
-      <ChatArea
-        user={user}
-        currentRoom={currentRoom}
-        currentPrivateChat={currentPrivateChat}
-        setCurrentRoom={setCurrentRoom}
-        messages={messages}
-        inputMessage={inputMessage}
-        setInputMessage={setInputMessage}
-        selectedFile={selectedFile}
-        onFileSelect={handleFileSelect}
-        onRemoveFile={handleRemoveFile}
-        sendMessage={(e) => sendMessage(e, socket)}
-        leaveRoomSocket={(roomId) => socket.emit('leaveRoom', roomId)}
-        showMembersModal={showMembersModal}
-        setShowMembersModal={setShowMembersModal}
-        roomMembers={roomMembers}
-        setRoomMembers={setRoomMembers}
-        loadingRoomMembers={loadingRoomMembers}
-        setLoadingRoomMembers={setLoadingRoomMembers}
-        onStartPrivateChat={startPrivateChat}
-        loadingMessages={loadingMessages}
-        hasMoreMessages={hasMoreMessages}
-        loadMoreMessages={loadMoreMessages}
-        onToggleSidebar={() => setShowSidebar(s => !s)}
-        loadRoomMembers={loadRoomMembers}
-      />
+      <CallProvider socket={socket}>
+        <CallOverlay />
+        <ChatArea
+          user={user}
+          currentRoom={currentRoom}
+          currentPrivateChat={currentPrivateChat}
+          setCurrentRoom={setCurrentRoom}
+          messages={messages}
+          inputMessage={inputMessage}
+          setInputMessage={setInputMessage}
+          selectedFile={selectedFile}
+          onFileSelect={handleFileSelect}
+          onRemoveFile={handleRemoveFile}
+          sendMessage={(e) => sendMessage(e, socket)}
+          leaveRoomSocket={(roomId) => socket.emit('leaveRoom', roomId)}
+          showMembersModal={showMembersModal}
+          setShowMembersModal={setShowMembersModal}
+          roomMembers={roomMembers}
+          setRoomMembers={setRoomMembers}
+          loadingRoomMembers={loadingRoomMembers}
+          setLoadingRoomMembers={setLoadingRoomMembers}
+          onStartPrivateChat={startPrivateChat}
+          loadingMessages={loadingMessages}
+          hasMoreMessages={hasMoreMessages}
+          loadMoreMessages={loadMoreMessages}
+          onToggleSidebar={() => setShowSidebar(s => !s)}
+          loadRoomMembers={loadRoomMembers}
+          hasMoreMembers={hasMoreMembers}
+          loadMoreRoomMembers={loadMoreRoomMembers}
+        />
+      </CallProvider>
     </div>
   );
 }

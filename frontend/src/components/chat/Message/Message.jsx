@@ -3,9 +3,11 @@ import { Play, Loader2 } from 'lucide-react';
 import Avatar from '../../common/Avatar';
 import AudioPlayer from './AudioPlayer';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
 const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen }) {
   const { theme } = useTheme();
+  const { getShadow } = useNeumorphism();
 
   const [showMedia, setShowMedia] = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
@@ -20,20 +22,22 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
 
   const mediaDisplayUrl = msg.media?.type === 'image' ? thumbnailUrl || msg.media?.url : msg.media?.url;
 
-  if (msg.type === 'system') {
+  const isMissedCall = msg.text && msg.text.startsWith('__SYSTEM_CALL__');
+  const displayText = isMissedCall ? msg.text.replace('__SYSTEM_CALL__', '') : msg.text;
+
+  if (msg.type === 'system' || isMissedCall) {
     return (
       <div className="flex justify-center my-6">
         <span
-          className="text-xs px-6 py-3 rounded-2xl font-semibold"
+          className="text-xs px-6 py-3 rounded-2xl font-semibold flex items-center gap-2 border"
           style={{
-            backgroundColor: theme.isLight ? '#fee2e2' : '#7f1d1d',
-            color: theme.isLight ? '#991b1b' : '#fee2e2',
-            boxShadow: theme.isLight
-              ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-              : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
+            backgroundColor: theme.background,
+            borderColor: isMissedCall ? (theme.isLight ? '#fca5a5' : '#7f1d1d') : (theme.isLight ? '#e2e8f0' : '#4a5568'),
+            color: isMissedCall ? (theme.isLight ? '#dc2626' : '#fca5a5') : theme.otherMessageText,
+            boxShadow: getShadow(theme.isLight, false, 2, 5)
           }}
         >
-          {msg.text}
+          {displayText}
         </span>
       </div>
     );
@@ -62,9 +66,7 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
         style={{
           backgroundColor: bubbleBg,
           color: textColor,
-          boxShadow: theme.isLight
-            ? '1px 1px 4px rgba(0,0,0,0.1), -1px -1px 4px rgba(255,255,255,0.8)'
-            : '1px 1px 4px rgba(0,0,0,0.4), -1px -1px 4px rgba(255,255,255,0.05)'
+          boxShadow: getShadow(theme.isLight, false, 1, 4)
         }}
         className={`max-w-[280px] md:max-w-sm lg:max-w-md px-4 py-3 md:px-6 md:py-4 rounded-2xl transition-all duration-300 ${isOwn ? 'rounded-br-none' : 'rounded-bl-none'}`}
       >

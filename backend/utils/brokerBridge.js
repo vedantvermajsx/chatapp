@@ -42,4 +42,11 @@ export function registerBrokerBridge(io, onlineUsers) {
   on('userLeftRoom', ({ roomId, data }) => {
     io.to(roomId).emit('userLeftRoom', data);
   });
+
+  on('webrtcSignal', (payload) => {
+    const { targetId } = payload;
+    if (targetId) {
+      io.to(String(targetId)).emit('webrtcSignal', payload);
+    }
+  });
 }

@@ -1,4 +1,4 @@
-import { Users, Menu, Settings, LogOut } from 'lucide-react';
+import { Users, Menu, Settings, LogOut, Phone, Video } from 'lucide-react';
 import { isDesktop } from 'react-device-detect';
 import Avatar from '../common/Avatar';
 import GroupSettingsModal from './Modals/GroupSettingsModal';
@@ -6,6 +6,8 @@ import { useState, memo } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatLastSeen } from '../../utils/dateUtils';
 import { useLeaveRoom } from '../../hooks/useChat';
+import { useCall } from '../../contexts/CallContext';
+import { useNeumorphism } from '../../hooks/useNeumorphism';
 
 const ChatHeader = memo(function ChatHeader({
   user,
@@ -20,6 +22,8 @@ const ChatHeader = memo(function ChatHeader({
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const { theme } = useTheme();
   const leaveRoomMutation = useLeaveRoom();
+  const { startCall } = useCall() || {};
+  const { getNeumorphicProps } = useNeumorphism();
 
   const handleLeaveRoom = async () => {
     if (window.confirm(`Are you sure you want to leave ${currentRoom.groupName}?`)) {
@@ -45,22 +49,7 @@ const ChatHeader = memo(function ChatHeader({
         <button
           onClick={onToggleSidebar}
           className="p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30"
-          style={{
-            backgroundColor: theme.background,
-            boxShadow: theme.isLight
-              ? '2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.8)'
-              : '2px 2px 4px rgba(0,0,0,0.4), -2px -2px 4px rgba(255,255,255,0.05)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = theme.isLight
-              ? 'inset 3px 3px 6px rgba(0,0,0,0.1), inset -3px -3px 6px rgba(255,255,255,0.8)'
-              : 'inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(255,255,255,0.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = theme.isLight
-              ? '2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.8)'
-              : '2px 2px 4px rgba(0,0,0,0.4), -2px -2px 4px rgba(255,255,255,0.05)';
-          }}
+          {...getNeumorphicProps(2, 4, 3, 6)}
           aria-label="Open sidebar"
         >
           <Menu className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
@@ -84,22 +73,7 @@ const ChatHeader = memo(function ChatHeader({
                 <button
                   onClick={() => setShowGroupSettings(true)}
                   className="p-2 sm:p-3 rounded-full transition-all"
-                  style={{
-                    backgroundColor: theme.background,
-                    boxShadow: theme.isLight
-                      ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-                      : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = theme.isLight
-                      ? 'inset 3px 3px 6px rgba(0,0,0,0.1), inset -3px -3px 6px rgba(255,255,255,0.8)'
-                      : 'inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(255,255,255,0.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = theme.isLight
-                      ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-                      : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)';
-                  }}
+                  {...getNeumorphicProps(1, 3, 3, 6)}
                   title="Group Settings"
                 >
                   <Settings className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.otherUsernameColor }} />
@@ -108,47 +82,17 @@ const ChatHeader = memo(function ChatHeader({
               <button
                 onClick={() => { loadRoomMembers(); setShowMembersModal(true); }}
                 className="p-2 sm:p-3 rounded-full transition-all"
-                style={{
-                  backgroundColor: theme.background,
-                  boxShadow: theme.isLight
-                    ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-                    : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = theme.isLight
-                    ? 'inset 3px 3px 6px rgba(0,0,0,0.1), inset -3px -3px 6px rgba(255,255,255,0.8)'
-                    : 'inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(255,255,255,0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = theme.isLight
-                    ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-                    : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)';
-                }}
+                {...getNeumorphicProps(1, 3, 3, 6)}
                 title="Room Members"
               >
                 <Users className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.otherUsernameColor }} />
               </button>
-              
+
               <button
                 onClick={handleLeaveRoom}
                 disabled={leaveRoomMutation.isPending}
                 className="p-2 sm:p-3 rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50"
-                style={{
-                  backgroundColor: theme.background,
-                  boxShadow: theme.isLight
-                    ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-                    : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = theme.isLight
-                    ? 'inset 3px 3px 6px rgba(0,0,0,0.1), inset -3px -3px 6px rgba(255,255,255,0.8)'
-                    : 'inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(255,255,255,0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = theme.isLight
-                    ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-                    : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)';
-                }}
+                {...getNeumorphicProps(1, 3, 3, 6)}
                 title="Leave Room"
               >
                 <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -171,6 +115,26 @@ const ChatHeader = memo(function ChatHeader({
                 </p>
               </div>
             </div>
+            {currentPrivateChat.isOnline && (
+              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                <button
+                  onClick={() => startCall && startCall(currentPrivateChat.id, false, currentPrivateChat)}
+                  className="p-2 sm:p-3 rounded-full transition-all text-green-500 hover:text-green-600"
+                  {...getNeumorphicProps(1, 3, 3, 6)}
+                  title="Voice Call"
+                >
+                  <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+                <button
+                  onClick={() => startCall && startCall(currentPrivateChat.id, true, currentPrivateChat)}
+                  className="p-2 sm:p-3 rounded-full transition-all text-blue-500 hover:text-blue-600"
+                  {...getNeumorphicProps(1, 3, 3, 6)}
+                  title="Video Call"
+                >
+                  <Video className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex items-center justify-center w-full h-10 sm:h-12">

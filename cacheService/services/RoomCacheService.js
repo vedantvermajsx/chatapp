@@ -64,8 +64,10 @@ class RoomCacheService {
     return Room.find({ groupMembers: userId }).select('_id').lean();
   }
 
-  async getRoomMembers(roomId, { skip = 0, limit = 20 } = {}) {
-    const cacheKey = `roommembers:${roomId}:${skip}:${limit}`;
+  async getRoomMembers(roomId, { skip = 0, limit = 20, search = '' } = {}) {
+    const cacheKey = search 
+      ? `roommembers:${roomId}:${skip}:${limit}:${search}` 
+      : `roommembers:${roomId}:${skip}:${limit}`;
     const cached = roomCache.get(cacheKey);
     if (cached) return cached;
 
@@ -93,6 +95,7 @@ class RoomCacheService {
           pipeline: [{ $match: { _id: { $in: memberIds } } }]
         }
       },
+      ...(search ? [{ $match: { username: { $regex: search, $options: 'i' } } }] : []),
       { $sort: { username: 1 } },
       {
         $facet: {

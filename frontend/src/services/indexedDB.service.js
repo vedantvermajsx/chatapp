@@ -203,5 +203,31 @@ export const dbService = {
     } catch (error) {
       console.error('Error removing pending message from IndexedDB:', error);
     }
+  },
+
+  async deletePrivateChat(id) {
+    try {
+      const store = await getStore(STORES.privateChats, 'readwrite');
+      store.delete(id);
+    } catch (error) {
+      console.error('Error deleting private chat from IndexedDB:', error);
+    }
+  },
+
+  async deleteMessages(chatKey) {
+    try {
+      const store = await getStore(STORES.messages, 'readwrite');
+      const index = store.index('chatKey');
+      const cursorRequest = index.openCursor(IDBKeyRange.only(chatKey));
+      cursorRequest.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+          store.delete(cursor.value.id);
+          cursor.continue();
+        }
+      };
+    } catch (error) {
+      console.error('Error deleting messages from IndexedDB:', error);
+    }
   }
 };

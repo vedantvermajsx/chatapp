@@ -20,7 +20,10 @@ export default {
       },
       minHeight: {
         'dvh': '100dvh',
-      }
+      },
+      animation: {
+        'small-ping': 'small-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
+      },
     },
   },
   plugins: [],

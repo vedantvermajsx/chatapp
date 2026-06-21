@@ -26,12 +26,11 @@ export async function joinRoom(req, res) {
       }
       
       await roomCacheClient.refreshRoomCache(roomId);
+      emitUserJoinedRoom(roomId, { username, userId });
+      return res.json({ message: 'Joined room successfully' });
     }
 
-    console.log('user joined');
-    emitUserJoinedRoom(roomId, { username, userId });
-
-    res.json({ message: 'Joined room successfully' });
+    return res.json({ alreadyMember: true });
   } catch (err) {
     console.error('joinRoom error:', err);
     res.status(500).json({ message: err.message });

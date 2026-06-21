@@ -1,13 +1,35 @@
-import { X, Users, Search } from 'lucide-react';
+import { X, Users, Search, Loader2 } from 'lucide-react';
 import Member from './Member';
 import MemberSkeleton from './MemberSkeleton';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { memo, useState } from 'react';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
 
-const MembersPanel = memo(function MembersPanel({ show, onClose, members, admin, onStartPrivateChat, currentUserId, loading }) {
+const MembersPanel = memo(function MembersPanel({
+  show, onClose, members, admin, onStartPrivateChat, currentUserId, loading,
+  hasMoreMembers, loadMoreRoomMembers, loadRoomMembers
+}) {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (show) {
+      const timer = setTimeout(() => {
+        loadRoomMembers(searchQuery);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery, show, loadRoomMembers]);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current || !hasMoreMembers || loading) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    if (scrollHeight - scrollTop - clientHeight < 100) {
+      loadMoreRoomMembers(searchQuery);
+    }
+  }, [hasMoreMembers, loading, loadMoreRoomMembers, searchQuery]);
+
   if (!show) return null;
 
   const filteredMembers = members ? members.filter(m => m.username.toLowerCase().includes(searchQuery.toLowerCase())) : [];
@@ -73,8 +95,13 @@ const MembersPanel = memo(function MembersPanel({ show, onClose, members, admin,
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5" style={{ backgroundColor: theme.background }}>
-          {loading && !members ? (
+        <div
+          className="flex-1 overflow-y-auto p-5"
+          style={{ backgroundColor: theme.background }}
+          ref={scrollRef}
+          onScroll={handleScroll}
+        >
+          {loading && (!members || members.length === 0) ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
                 <MemberSkeleton key={i} />
@@ -119,6 +146,11 @@ const MembersPanel = memo(function MembersPanel({ show, onClose, members, admin,
                 </div>
               )}
             </>
+          )}
+          {loading && members && members.length > 0 && (
+            <div className="flex justify-center p-4">
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: theme.otherUsernameColor }} />
+            </div>
           )}
         </div>
       </div>

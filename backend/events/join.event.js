@@ -9,7 +9,7 @@ export default function handleJoin(socket, io) {
     console.log('User joining:', username);
 
 
-    socket.join(userId);
+    socket.join(String(userId));
     
     try {
       const memberRooms = await roomCacheClient.getRoomsByUserId(userId);
