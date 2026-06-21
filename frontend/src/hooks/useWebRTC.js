@@ -72,7 +72,7 @@ export const useWebRTC = (socket) => {
         throw new Error('Media devices API not available. This might be due to an insecure context or unsupported browser.');
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: isVideo ? { facingMode: 'user' } : false,
+        video: isVideo ? { facingMode: { ideal: 'user' } } : false,
         audio: true
       });
       setLocalStreamSynced(stream);
@@ -159,6 +159,15 @@ export const useWebRTC = (socket) => {
   const handleOffer = useCallback(async (offer, senderId, currentStream = null) => {
     const pc = createPeerConnection(senderId);
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    
+    const buffered = iceCandidateBuffer.current.splice(0);
+    for (const candidate of buffered) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        alert('[ICE] Failed to add buffered candidate:');
+      }
+    }
     
     const streamToUse = currentStream || localStream;
     if (streamToUse) {

@@ -55,7 +55,6 @@ class ServerHealthManager {
       const server = this.servers[this.currentIndex];
       this.currentIndex = (this.currentIndex + 1) % this.servers.length;
 
-      await this.checkServerHealth(server);
       if (this.serverStatus.get(server).healthy) {
         return server;
       }
