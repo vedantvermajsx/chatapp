@@ -41,7 +41,8 @@ function RoomSidebar({
   loadingPrivateChats,
   showSidebar,
   onCloseSidebar,
-  setPrivateChats
+  setPrivateChats,
+  unreadCounts = {}
 }) {
   const { updateUser } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -100,6 +101,7 @@ function RoomSidebar({
           currentRoom={currentRoom}
           handleJoinRoom={handleJoinRoom}
           loadingRooms={loadingRooms}
+          unreadCounts={unreadCounts}
         />
 
         <PrivateChatList
@@ -108,6 +110,7 @@ function RoomSidebar({
           handleStartPrivateChat={handleStartPrivateChat}
           loadingPrivateChats={loadingPrivateChats}
           handleDeletePrivateChat={handleDeletePrivateChat}
+          unreadCounts={unreadCounts}
         />
       </div>
 

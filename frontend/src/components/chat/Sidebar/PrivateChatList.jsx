@@ -5,7 +5,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 import { formatLastSeenShort } from '../../../utils/dateUtils';
 
-const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat }) => {
+const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat, unreadCounts = {} }) => {
   const { theme } = useTheme();
   const { getNeumorphicProps } = useNeumorphism();
   const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
@@ -21,7 +21,9 @@ const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateC
             <Spinner />
           </div>
         ) : (
-          privateChats.map((chat) => (
+          privateChats.map((chat) => {
+            const unread = unreadCounts[`private_${chat.otherUser.id}`] || 0;
+            return (
             <div
               key={chat.otherUser.id}
               onClick={() => handleStartPrivateChat(chat.otherUser)}
@@ -45,9 +47,16 @@ const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateC
                     <h3 className="font-bold text-xs md:text-sm truncate" style={{ color: theme.otherMessageText }}>
                       {chat.otherUser.username}
                     </h3>
-                    <span className="text-[10px] md:text-xs flex-shrink-0" style={{ color: theme.otherUsernameColor }}>
-                      {chat.otherUser.isOnline ? 'Online' : formatLastSeenShort(chat.otherUser.lastSeen)}
-                    </span>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {unread > 0 && (
+                        <span className="min-w-[1.1rem] h-[1.1rem] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
+                      <span className="text-[10px] md:text-xs" style={{ color: theme.otherUsernameColor }}>
+                        {chat.otherUser.isOnline ? 'Online' : formatLastSeenShort(chat.otherUser.lastSeen)}
+                      </span>
+                    </div>
                   </div>
                   <p className="text-xs md:text-sm truncate mt-1 md:mt-2" style={{ color: theme.otherMessageText, opacity: 0.8 }}>
                     {chat.lastMessage?.content ? chat.lastMessage.content.replace('__SYSTEM_CALL__', '') : 'Start a conversation'}
@@ -62,7 +71,8 @@ const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateC
                 </button>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

@@ -1,11 +1,11 @@
 import { useState, memo } from 'react';
-import { Play, Loader2 } from 'lucide-react';
+import { Play, Loader2, Send, Loader } from 'lucide-react';
 import Avatar from '../../common/Avatar';
 import AudioPlayer from './AudioPlayer';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
-const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen }) {
+const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false }) {
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
 
@@ -55,32 +55,31 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
 
   return (
     <div className={`flex items-end gap-3 w-full ${isOwn ? 'flex-row-reverse' : 'justify-start'} animate-fade-in-up`}>
-      {msg.isPending && (
-        <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin flex-shrink-0" style={{ color: textColor }} />
-      )}
+
       <div className="flex-shrink-0">
-        <Avatar url={senderAvatar} name={msg.username} size={8} mdSize={10} isOnline={isOnline} lastSeen={lastSeen} />
+        <Avatar url={senderAvatar} name={msg.username} size={8} mdSize={8} isOnline={isOnline} lastSeen={lastSeen} />
       </div>
 
       <div
         style={{
           backgroundColor: bubbleBg,
           color: textColor,
-          boxShadow: getShadow(theme.isLight, false, 1, 4)
+          boxShadow: getShadow(theme.isLight, false, 2, 5)
         }}
-        className={`max-w-[280px] md:max-w-sm lg:max-w-md px-4 py-3 md:px-6 md:py-4 rounded-2xl transition-all duration-300 ${isOwn ? 'rounded-br-none' : 'rounded-bl-none'}`}
+        className={`max-w-[280px] md:max-w-sm lg:max-w-md px-4 py-3 md:px-6 md:py-4 rounded-2xl transition-all duration-300 ${isOwn ? 'rounded-br-none' : 'rounded-bl-none'} relative`}
       >
-        <p className="text-[10px] md:text-xs mb-1 md:mb-2 font-semibold" style={{ color: usernameColor }}>
-          {msg.username.length > 15 ? msg.username.substring(0, 15) : msg.username}
-        </p>
 
-        {msg.text && <p className="text-xs md:text-sm break-words whitespace-normal mb-2 md:mb-3" style={{ color: textColor }}>{msg.text}</p>}
+        {!isPrivateChat && (<p className="text-[10px] md:text-xs mb-1 md:mb-2 font-semibold" style={{ color: usernameColor }}>
+          {msg.username.length > 15 ? msg.username.substring(0, 15) : msg.username}
+        </p>)}
+
+        {msg.text && <p className="text-xs md:text-sm break-words whitespace-normal mb-1 md:mb-2" style={{ color: textColor }}>{msg.text}</p>}
 
         {msg.media && (
-          <div className="mt-2">
+          <div className="mt-1">
             {msg.media.isPending && (
               <div className="flex items-center gap-2 mb-2">
-                <Loader2 className="w-4 h-4 animate-spin" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }} />
+                <Loader2 className="w-3 h-3 animate-spin" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }} />
                 <span className="text-xs" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }}>Uploading...</span>
               </div>
             )}
@@ -187,7 +186,14 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
             )}
           </div>
         )}
+
+
+        {msg.isPending && (
+          <Loader className="z-10 w-3 h-3 md:w-3 md:h-3 absolute right-1 bottom-1 animate-spin flex-shrink-0" style={{ color: textColor }} />
+        )}
+
       </div>
+
     </div>
   );
 });

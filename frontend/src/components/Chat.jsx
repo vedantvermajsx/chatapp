@@ -81,7 +81,7 @@ function Chat() {
   }, [user, navigate, searchQuery, loadRooms, loadPrivateChats]);
 
   return (
-    <div className="flex w-full h-dvh overflow-hidden relative" style={{ backgroundColor: theme.background }}>
+    <div className="flex w-full h-dvh overflow-hidden overflow-y-hidden relative" style={{ backgroundColor: theme.background }}>
       <RoomSidebar
         user={user}
         logout={logout}

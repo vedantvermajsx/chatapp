@@ -3,7 +3,7 @@ import Spinner from '../../common/Spinner';
 import Room from './Room';
 import { useTheme } from '../../../contexts/ThemeContext';
 
-const RoomList = ({ rooms, currentRoom, handleJoinRoom, loadingRooms }) => {
+const RoomList = ({ rooms, currentRoom, handleJoinRoom, loadingRooms, unreadCounts = {} }) => {
   const { theme } = useTheme();
   return (
     <div>
@@ -17,7 +17,7 @@ const RoomList = ({ rooms, currentRoom, handleJoinRoom, loadingRooms }) => {
           </div>
         ) : (
           rooms?.map((room) => (
-            <Room key={room._id} room={room} currentRoom={currentRoom} handleJoinRoom={handleJoinRoom} />
+            <Room key={room._id} room={room} currentRoom={currentRoom} handleJoinRoom={handleJoinRoom} unreadCounts={unreadCounts} />
           ))
         )}
       </div>

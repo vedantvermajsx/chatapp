@@ -15,7 +15,8 @@ export const useChatSocket = (user, {
   messageCache,
   roomMembers,
   setRoomMembers,
-  loadRoomMembers
+  loadRoomMembers,
+  setUnreadCounts
 }) => {
   const socketRef = useRef(null);
   const userRef = useRef(user);
@@ -130,6 +131,10 @@ export const useChatSocket = (user, {
         }
         
         await dbService.addMessage(cacheKey, newMessage);
+
+        if (!isOwnMessage && String(currentRoomRef.current?._id) !== String(msg.roomId)) {
+          setUnreadCounts(prev => ({ ...prev, [cacheKey]: (prev[cacheKey] || 0) + 1 }));
+        }
       }
     };
 
@@ -216,6 +221,10 @@ export const useChatSocket = (user, {
       }
       
       await dbService.addMessage(cacheKey, newMessageObj);
+
+      if (!isOwnMessage && currentPrivateChatRef.current?.id !== otherUserId) {
+        setUnreadCounts(prev => ({ ...prev, [cacheKey]: (prev[cacheKey] || 0) + 1 }));
+      }
     };
 
     const handleNewRoom = () => { loadRooms(); };

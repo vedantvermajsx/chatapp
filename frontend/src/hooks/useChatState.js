@@ -35,11 +35,23 @@ export const useChatState = (user) => {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [hasMoreMembers, setHasMoreMembers] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  // unreadCounts: { 'room_{id}': number, 'private_{userId}': number }
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   const messageCache = useRef({});
   const loadingMoreMessages = useRef(false);
   const loadingMoreMembersRef = useRef(false);
+  const currentSwitchId = useRef(0); 
   const CACHE_TTL = 30000;
+
+  const clearUnread = useCallback((chatKey) => {
+    setUnreadCounts(prev => {
+      if (!prev[chatKey]) return prev;
+      const next = { ...prev };
+      delete next[chatKey];
+      return next;
+    });
+  }, []);
 
   const loadRooms = useCallback(async () => {
     await loadRoomsHandler(searchQuery, setRooms, setLoadingRooms);
@@ -100,6 +112,8 @@ export const useChatState = (user) => {
   }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile]);
 
   const joinRoom = useCallback(async (roomId, socket) => {
+    const switchId = ++currentSwitchId.current;
+
     await joinRoomHandler(
       roomId,
       rooms,
@@ -112,45 +126,50 @@ export const useChatState = (user) => {
       setLoadingMessages,
       messageCache,
       CACHE_TTL,
-      currentRoom  // <-- guard: skip if already in this room
+      currentRoom
     );
     setRoomMembers([]);
-    
+    clearUnread(`room_${roomId}`);
+
     const cacheKey = `room_${roomId}`;
     const cachedData = messageCache.current[cacheKey];
-    
+
     if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
-      setMessages(cachedData.messages);
-      setHasMoreMessages(cachedData.hasMore);
+      if (currentSwitchId.current === switchId) {
+        setMessages(cachedData.messages);
+        setHasMoreMessages(cachedData.hasMore);
+      }
     }
-    
+
     await loadRoomMessagesHandler(
       roomId,
       user,
-      setMessages,
-      setLoadingMessages,
-      setHasMoreMessages,
+      (msgs) => { if (currentSwitchId.current === switchId) setMessages(msgs); },
+      (val) => { if (currentSwitchId.current === switchId) setLoadingMessages(val); },
+      (val) => { if (currentSwitchId.current === switchId) setHasMoreMessages(val); },
       messageCache,
       CACHE_TTL
     );
     setShowSidebar(false);
-  }, [rooms, user, CACHE_TTL, setRoomMembers, currentRoom]);
+  }, [rooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread]);
 
   const startPrivateChat = useCallback(async (otherUser) => {
+    const switchId = ++currentSwitchId.current;
+    clearUnread(`private_${otherUser.id}`);
     await startPrivateChatHandler(
       otherUser,
       user,
       setCurrentPrivateChat,
       setCurrentRoom,
       setShowMembersModal,
-      setMessages,
-      setLoadingMessages,
-      setHasMoreMessages,
+      (msgs) => { if (currentSwitchId.current === switchId) setMessages(msgs); },
+      (val) => { if (currentSwitchId.current === switchId) setLoadingMessages(val); },
+      (val) => { if (currentSwitchId.current === switchId) setHasMoreMessages(val); },
       messageCache,
       CACHE_TTL
     );
     setShowSidebar(false);
-  }, [user, CACHE_TTL]);
+  }, [user, CACHE_TTL, clearUnread]);
 
   const loadMoreMessages = useCallback(async () => {
     if (currentPrivateChat) {
@@ -235,6 +254,7 @@ export const useChatState = (user) => {
     hasMoreMessages,
     hasMoreMembers,
     showSidebar, setShowSidebar,
+    unreadCounts, setUnreadCounts,
     messageCache,
     loadRooms,
     loadPrivateChats,

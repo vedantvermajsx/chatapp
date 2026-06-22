@@ -2,9 +2,10 @@ import { memo } from 'react';
 import Avatar from '../../common/Avatar';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
-const Room = memo(function Room({ room, currentRoom, handleJoinRoom }) {
+const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unreadCounts = {} }) {
     const { theme, getNeumorphicProps } = useNeumorphism();
     const isActive = currentRoom?._id === room._id;
+    const unread = unreadCounts[`room_${room._id}`] || 0;
 
     return (
         <div
@@ -21,9 +22,16 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom }) {
                         <h3 className="font-bold text-xs md:text-sm truncate" style={{ color: theme.otherMessageText }}>
                             {room.groupName}
                         </h3>
-                        <span className="text-[10px] md:text-xs font-semibold ml-2 flex-shrink-0" style={{ color: theme.otherUsernameColor }}>
-                            {room.memberCount ?? 0}
-                        </span>
+                        <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                            {unread > 0 && (
+                                <span className="min-w-[1.1rem] h-[1.1rem] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
+                                    {unread > 99 ? '99+' : unread}
+                                </span>
+                            )}
+                            <span className="text-[10px] md:text-xs font-semibold" style={{ color: theme.otherUsernameColor }}>
+                                {room.memberCount ?? 0}
+                            </span>
+                        </div>
                     </div>
                     <p className="text-xs md:text-sm truncate mt-1 md:mt-2" style={{ color: theme.otherMessageText, opacity: 0.8 }}>
                         {room.groupDescription}

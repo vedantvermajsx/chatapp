@@ -9,7 +9,8 @@ const MessageList = ({
   hasMoreMessages,
   loadingMessages,
   messages,
-  messagesEndRef
+  messagesEndRef,
+  isPrivateChat
 }) => {
   const { theme } = useTheme();
   return (
@@ -30,7 +31,7 @@ const MessageList = ({
         </div>
       ) : (
         messages.map((msg) => (
-          <Message key={msg.id} msg={msg} isOwn={msg.isOwn} senderAvatar={msg.avatar} gender={msg.gender} />
+          <Message key={msg.id} msg={msg} isOwn={msg.isOwn} senderAvatar={msg.avatar} gender={msg.gender} isPrivateChat={isPrivateChat} />
         ))
       )}
       <div ref={messagesEndRef} />

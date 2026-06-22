@@ -42,7 +42,11 @@ const ChatArea = memo(function ChatArea({
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [containerHeight, setContainerHeight] = useState(null);
   const [offsetTop, setOffsetTop] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+  const prevChatKey = useRef(null);
+
   const { theme } = useTheme();
+
 
   const oldScrollHeight = useRef(0);
   const oldFirstMessageId = useRef(null);
@@ -82,6 +86,18 @@ const ChatArea = memo(function ChatArea({
       }
     }
   }
+
+
+
+  const chatKey = currentRoom?._id || currentPrivateChat?.id || null;
+  useEffect(() => {
+    if (prevChatKey.current !== null && prevChatKey.current !== chatKey) {
+      setIsFading(true);
+      const t = setTimeout(() => setIsFading(false), 180);
+      return () => clearTimeout(t);
+    }
+    prevChatKey.current = chatKey;
+  }, [chatKey]);
 
   useLayoutEffect(() => {
     if (messages.length > 0 && messagesContainerRef.current && oldScrollHeight.current > 0) {
@@ -162,7 +178,7 @@ const ChatArea = memo(function ChatArea({
         />
       </div>
 
-      <div className="flex-1 min-h-0 h-full pt-[73px] sm:pt-[97px]">
+      <div className="flex-1 min-h-0" style={{ opacity: isFading ? 0 : 1, transition: 'opacity 1s ease' }}>
         <MessageList
           messagesContainerRef={messagesContainerRef}
           handleScroll={handleScroll}
@@ -170,6 +186,7 @@ const ChatArea = memo(function ChatArea({
           loadingMessages={loadingMessages}
           messages={messages}
           messagesEndRef={messagesEndRef}
+          isPrivateChat={!!currentPrivateChat}
         />
       </div>
 
@@ -211,3 +228,13 @@ const ChatArea = memo(function ChatArea({
 });
 
 export default ChatArea;
+
+
+
+
+
+
+
+
+
+
