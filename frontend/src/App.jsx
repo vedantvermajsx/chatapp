@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Spinner from './components/common/Spinner';
+import GroupSettingsModal from './components/chat/Modals/GroupSettingsModal';
 
 const Login = lazy(() => import('./components/auth/Login'));
 const Chat = lazy(() => import('./components/Chat'));

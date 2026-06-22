@@ -20,7 +20,7 @@ export async function updateProfile(req, res) {
       user.avatar = transformCloudinaryUrl(avatar);
     }
 
-    await User.save();
+    await user.save();
     await userCacheClient.addUserToCache(userId, Promise.resolve(user));
 
     const userData = {

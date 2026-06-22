@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import roomService from '../../../services/room.service';
@@ -13,13 +14,21 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef(null);
 
+  const hasChanges = useMemo(() => {
+    return (
+      groupName.trim() !== (room.groupName || '').trim() ||
+      groupDescription.trim() !== (room.groupDescription || '').trim() ||
+      groupPic.trim() !== (room.groupPic || '').trim()
+    );
+  }, [groupName, groupDescription, groupPic, room.groupName, room.groupDescription, room.groupPic]);
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file');
-        return;
+      toast.error('Please select an image file');
+      return;
     }
 
     setIsUploading(true);
@@ -56,10 +65,14 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-[#e6e6e6] rounded-3xl w-full max-w-md overflow-hidden shadow-[5px_5px_10px_#c9c9c9,-5px_-5px_10px_#ffffff] flex flex-col max-h-[90vh]">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={onClose}
+      />
+
+      <div className="relative bg-[#e6e6e6] rounded-3xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-[2px_2px_4px_#c9c9c9,-2px_-2px_4px_#ffffff] flex flex-col">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">Group Settings</h2>
           <button onClick={onClose} className="p-2 rounded-full bg-[#e6e6e6] shadow-[1px_1px_3px_#c9c9c9,-1px_-1px_3px_#ffffff] hover:bg-[#c0b6b6] transition-all">
@@ -71,12 +84,12 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
           <form id="group-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
-                <Avatar url={groupPic} name={groupName} size={24} className="w-24 h-24 text-3xl shadow-[inset_3px_3px_6px_#c9c9c9,inset_-3px_-3px_6px_#ffffff]" isGroup />
+                <Avatar url={groupPic} name={groupName} size={24} className="w-24 h-24 text-3xl shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff]" isGroup />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="absolute bottom-0 right-0 p-2 rounded-full bg-[#e6e6e6] shadow-[2px_2px_4px_#c9c9c9,-2px_-2px_4px_#ffffff] text-gray-700 hover:text-blue-600 transition-all border border-gray-100 disabled:opacity-50"
+                  className="absolute bottom-0 right-0 p-2 rounded-full bg-[#e6e6e6] shadow-[1px_1px_3px_#c9c9c9,-1px_-1px_3px_#ffffff] text-gray-700 hover:text-blue-600 transition-all border border-gray-100 disabled:opacity-50"
                   title="Upload group picture"
                 >
                   {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -107,8 +120,8 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
                 required
               />
             </div>
-            
-             <div>
+
+            <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Or, Image URL</label>
               <input
                 type="text"
@@ -126,14 +139,21 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
           <button
             type="submit"
             form="group-form"
-            disabled={isSaving || isUploading}
-            className="w-full py-4 bg-[#e6e6e6] text-[#008080] font-bold rounded-2xl transition-all shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] hover:bg-[#d9d9d9] flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSaving || isUploading || !hasChanges}
+            className={`w-full py-4 font-bold rounded-2xl transition-all flex justify-center items-center gap-2 ${hasChanges && !isSaving && !isUploading
+              ? "bg-[#e6e6e6] text-[#008080] shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] hover:bg-[#d9d9d9]"
+              : "bg-[#e6e6e6] text-gray-400 shadow-[inset_2px_2px_4px_#d4d4d4,inset_-2px_-2px_4px_#ffffff] opacity-60 cursor-not-allowed"
+              }`}
           >
-            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Changes'}
+            {isSaving ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              "Save Changes"
+            )}
           </button>
         </div>
       </div>
-    </div>
+    </div>, document.body
   );
 };
 
