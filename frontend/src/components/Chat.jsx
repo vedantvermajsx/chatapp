@@ -45,7 +45,9 @@ function Chat() {
     sendMessage,
     joinRoom,
     startPrivateChat,
-    loadMoreMessages
+    loadMoreMessages,
+    unreadCounts,
+    setUnreadCounts
   } = chatState;
 
   const handleFileSelect = (file) => {
@@ -68,7 +70,8 @@ function Chat() {
     messageCache,
     roomMembers,
     setRoomMembers,
-    loadRoomMembers
+    loadRoomMembers,
+    setUnreadCounts
   });
 
   useEffect(() => {
