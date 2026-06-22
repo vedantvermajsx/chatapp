@@ -37,33 +37,41 @@ const ChatArea = memo(function ChatArea({
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const chatInputRef = useRef(null);
+  const chatHeaderRef = useRef(null);
   const prevLastMessageId = useRef(null);
+  const isUserAtBottom = useRef(true);
+  const wasAwayFromChat = useRef(false);
   const [zoomImageUrl, setZoomImageUrl] = useState(null);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [containerHeight, setContainerHeight] = useState(null);
   const [offsetTop, setOffsetTop] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(64);
   const [isFading, setIsFading] = useState(false);
+  const [newMsgCount, setNewMsgCount] = useState(0);
+  const [showNewMsgBanner, setShowNewMsgBanner] = useState(false);
   const prevChatKey = useRef(null);
+  const oldScrollHeight = useRef(0);
+  const oldFirstMessageId = useRef(null);
 
   const { theme } = useTheme();
 
 
-  const oldScrollHeight = useRef(0);
-  const oldFirstMessageId = useRef(null);
+  useEffect(() => {
+    if (!chatHeaderRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setHeaderHeight(entry.contentRect.height);
+    });
+    ro.observe(chatHeaderRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!window.visualViewport) return;
-
     const update = () => {
-      setContainerHeight(window.visualViewport.height + window.visualViewport.offsetTop);
+      setContainerHeight(window.visualViewport.height);
       setOffsetTop(window.visualViewport.offsetTop);
-
-
-      if (window.scrollY !== 0) {
-        window.scrollTo(0, 0);
-      }
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
     };
-
     update();
     window.visualViewport.addEventListener('resize', update);
     window.visualViewport.addEventListener('scroll', update);
@@ -73,9 +81,28 @@ const ChatArea = memo(function ChatArea({
     };
   }, []);
 
-  const handleSendMessage = useCallback(async (e) => {
-    await sendMessage(e);
-  }, [sendMessage]);
+  const updateAtBottom = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const threshold = 80;
+    isUserAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  }, []);
+
+  const chatKey = currentRoom?._id || currentPrivateChat?.id || null;
+  useEffect(() => {
+    if (prevChatKey.current !== null && prevChatKey.current !== chatKey) {
+      setIsFading(true);
+      const t = setTimeout(() => setIsFading(false), 180);
+
+      wasAwayFromChat.current = true;
+      setNewMsgCount(0);
+      setShowNewMsgBanner(false);
+      prevLastMessageId.current = null;
+
+      return () => clearTimeout(t);
+    }
+    prevChatKey.current = chatKey;
+  }, [chatKey]);
 
   if (messages.length > 0 && messagesContainerRef.current) {
     const currentFirstMsgId = messages[0].id;
@@ -87,28 +114,13 @@ const ChatArea = memo(function ChatArea({
     }
   }
 
-
-
-  const chatKey = currentRoom?._id || currentPrivateChat?.id || null;
-  useEffect(() => {
-    if (prevChatKey.current !== null && prevChatKey.current !== chatKey) {
-      setIsFading(true);
-      const t = setTimeout(() => setIsFading(false), 180);
-      return () => clearTimeout(t);
-    }
-    prevChatKey.current = chatKey;
-  }, [chatKey]);
-
   useLayoutEffect(() => {
     if (messages.length > 0 && messagesContainerRef.current && oldScrollHeight.current > 0) {
       const newScrollHeight = messagesContainerRef.current.scrollHeight;
-      const heightDifference = newScrollHeight - oldScrollHeight.current;
-      if (heightDifference > 0) {
-        messagesContainerRef.current.scrollTop += heightDifference;
-      }
+      const diff = newScrollHeight - oldScrollHeight.current;
+      if (diff > 0) messagesContainerRef.current.scrollTop += diff;
       oldScrollHeight.current = 0;
     }
-
     if (messages.length > 0) {
       oldFirstMessageId.current = messages[0].id;
     } else {
@@ -122,49 +134,75 @@ const ChatArea = memo(function ChatArea({
     }
   }, []);
 
-  const handleScroll = useCallback(() => {
-    if (!messagesContainerRef.current || !hasMoreMessages || loadingMessages) return;
-    const { scrollTop } = messagesContainerRef.current;
-    if (scrollTop < 150) {
-      loadMoreMessages();
-    }
-  }, [hasMoreMessages, loadMoreMessages, loadingMessages]);
-
   useEffect(() => {
-    if (!loadingMessages) {
-      if (messages.length === 0) {
-        prevLastMessageId.current = null;
-      } else {
-        const lastMessage = messages[messages.length - 1];
-        if (prevLastMessageId.current !== lastMessage.id) {
-          scrollToBottom();
-          prevLastMessageId.current = lastMessage.id;
-        }
-      }
+    if (loadingMessages || messages.length === 0) return;
+
+    const lastMessage = messages[messages.length - 1];
+
+    if (wasAwayFromChat.current) {
+      prevLastMessageId.current = lastMessage.id;
+      wasAwayFromChat.current = false;
+      scrollToBottom();
+      return;
+    }
+
+    if (prevLastMessageId.current === lastMessage.id) return;
+
+    const isNewMsg = prevLastMessageId.current !== null;
+    prevLastMessageId.current = lastMessage.id;
+
+    if (!isNewMsg) {
+      scrollToBottom();
+      return;
+    }
+
+    if (isUserAtBottom.current || lastMessage.isOwn) {
+      scrollToBottom();
+      setShowNewMsgBanner(false);
+      setNewMsgCount(0);
+    } else {
+      setNewMsgCount(prev => prev + 1);
+      setShowNewMsgBanner(true);
     }
   }, [messages, loadingMessages, scrollToBottom]);
 
+  const handleScroll = useCallback(() => {
+    updateAtBottom();
+    if (!messagesContainerRef.current || !hasMoreMessages || loadingMessages) return;
+    if (messagesContainerRef.current.scrollTop < 150) loadMoreMessages();
+  }, [hasMoreMessages, loadMoreMessages, loadingMessages, updateAtBottom]);
+
+  const handleScrollWithBanner = useCallback(() => {
+    handleScroll();
+    if (isUserAtBottom.current) {
+      setShowNewMsgBanner(false);
+      setNewMsgCount(0);
+    }
+  }, [handleScroll]);
+
+  const handleSendMessage = useCallback(async (e) => {
+    await sendMessage(e);
+  }, [sendMessage]);
+
   useEffect(() => {
-    const handleOpenZoom = (e) => {
-      setZoomImageUrl(e.detail.url);
-    };
+    const handleOpenZoom = (e) => setZoomImageUrl(e.detail.url);
     window.addEventListener('openImageZoom', handleOpenZoom);
-    return () => {
-      window.removeEventListener('openImageZoom', handleOpenZoom);
-    };
+    return () => window.removeEventListener('openImageZoom', handleOpenZoom);
   }, []);
 
   return (
     <div
-      className="flex-1 flex flex-col min-w-0 overflow-hidden overflow-y-hidden relative"
+      className="flex-1 flex flex-col min-w-0 relative overflow-hidden"
       style={{
         backgroundColor: theme.background,
-        height: containerHeight != null ? `${containerHeight}px` : undefined,
+        height: containerHeight != null ? `${containerHeight}px` : '100%',
+        position: 'relative',
+        transform: offsetTop ? `translateY(${offsetTop}px)` : undefined,
       }}
     >
       <div
+        ref={chatHeaderRef}
         className="absolute top-0 left-0 right-0 z-30"
-        style={{ transform: `translateY(${offsetTop}px)` }}
       >
         <ChatHeader
           user={user}
@@ -178,16 +216,38 @@ const ChatArea = memo(function ChatArea({
         />
       </div>
 
-      <div className="flex-1 min-h-0" style={{ opacity: isFading ? 0 : 1, transition: 'opacity 1s ease' }}>
+      <div
+        className="flex-1 min-h-0 relative"
+        style={{ opacity: isFading ? 0 : 1, transition: 'opacity 0.18s ease' }}
+      >
         <MessageList
           messagesContainerRef={messagesContainerRef}
-          handleScroll={handleScroll}
+          handleScroll={handleScrollWithBanner}
           hasMoreMessages={hasMoreMessages}
           loadingMessages={loadingMessages}
           messages={messages}
           messagesEndRef={messagesEndRef}
           isPrivateChat={!!currentPrivateChat}
+          topPadding={headerHeight}
         />
+
+        {showNewMsgBanner && (
+          <button
+            onClick={() => {
+              scrollToBottom();
+              setShowNewMsgBanner(false);
+              setNewMsgCount(0);
+            }}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium shadow-lg transition-all"
+            style={{
+              backgroundColor: theme.primary || '#6366f1',
+              color: '#fff',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+            }}
+          >
+            <span>↓ {newMsgCount} new message{newMsgCount !== 1 ? 's' : ''}</span>
+          </button>
+        )}
       </div>
 
       <div className="flex-shrink-0 z-10 pb-[env(safe-area-inset-bottom)]">
@@ -228,13 +288,3 @@ const ChatArea = memo(function ChatArea({
 });
 
 export default ChatArea;
-
-
-
-
-
-
-
-
-
-
