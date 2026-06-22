@@ -32,7 +32,8 @@ const ChatArea = memo(function ChatArea({
   onToggleSidebar,
   loadRoomMembers,
   hasMoreMembers,
-  loadMoreRoomMembers
+  loadMoreRoomMembers,
+  unreadCounts = {}
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -41,6 +42,10 @@ const ChatArea = memo(function ChatArea({
   const prevLastMessageId = useRef(null);
   const isUserAtBottom = useRef(true);
   const wasAwayFromChat = useRef(false);
+  const prevChatKey = useRef(null);
+  const oldScrollHeight = useRef(0);
+  const oldFirstMessageId = useRef(null);
+
   const [zoomImageUrl, setZoomImageUrl] = useState(null);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [containerHeight, setContainerHeight] = useState(null);
@@ -49,18 +54,12 @@ const ChatArea = memo(function ChatArea({
   const [isFading, setIsFading] = useState(false);
   const [newMsgCount, setNewMsgCount] = useState(0);
   const [showNewMsgBanner, setShowNewMsgBanner] = useState(false);
-  const prevChatKey = useRef(null);
-  const oldScrollHeight = useRef(0);
-  const oldFirstMessageId = useRef(null);
 
   const { theme } = useTheme();
 
-
   useEffect(() => {
     if (!chatHeaderRef.current) return;
-    const ro = new ResizeObserver(([entry]) => {
-      setHeaderHeight(entry.contentRect.height);
-    });
+    const ro = new ResizeObserver(([entry]) => setHeaderHeight(entry.contentRect.height));
     ro.observe(chatHeaderRef.current);
     return () => ro.disconnect();
   }, []);
@@ -84,21 +83,19 @@ const ChatArea = memo(function ChatArea({
   const updateAtBottom = useCallback(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
-    const threshold = 80;
-    isUserAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    isUserAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   }, []);
 
   const chatKey = currentRoom?._id || currentPrivateChat?.id || null;
+
   useEffect(() => {
     if (prevChatKey.current !== null && prevChatKey.current !== chatKey) {
       setIsFading(true);
       const t = setTimeout(() => setIsFading(false), 180);
-
       wasAwayFromChat.current = true;
       setNewMsgCount(0);
       setShowNewMsgBanner(false);
       prevLastMessageId.current = null;
-
       return () => clearTimeout(t);
     }
     prevChatKey.current = chatKey;
@@ -108,30 +105,22 @@ const ChatArea = memo(function ChatArea({
     const currentFirstMsgId = messages[0].id;
     if (oldFirstMessageId.current !== null && oldFirstMessageId.current !== currentFirstMsgId) {
       const isPrepend = messages.some((m, idx) => idx > 0 && m.id === oldFirstMessageId.current);
-      if (isPrepend) {
-        oldScrollHeight.current = messagesContainerRef.current.scrollHeight;
-      }
+      if (isPrepend) oldScrollHeight.current = messagesContainerRef.current.scrollHeight;
     }
   }
 
   useLayoutEffect(() => {
     if (messages.length > 0 && messagesContainerRef.current && oldScrollHeight.current > 0) {
-      const newScrollHeight = messagesContainerRef.current.scrollHeight;
-      const diff = newScrollHeight - oldScrollHeight.current;
+      const diff = messagesContainerRef.current.scrollHeight - oldScrollHeight.current;
       if (diff > 0) messagesContainerRef.current.scrollTop += diff;
       oldScrollHeight.current = 0;
     }
-    if (messages.length > 0) {
-      oldFirstMessageId.current = messages[0].id;
-    } else {
-      oldFirstMessageId.current = null;
-    }
+    oldFirstMessageId.current = messages.length > 0 ? messages[0].id : null;
   }, [messages]);
 
   const scrollToBottom = useCallback(() => {
-    if (messagesContainerRef.current) {
+    if (messagesContainerRef.current)
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-    }
   }, []);
 
   useEffect(() => {
@@ -140,9 +129,20 @@ const ChatArea = memo(function ChatArea({
     const lastMessage = messages[messages.length - 1];
 
     if (wasAwayFromChat.current) {
-      prevLastMessageId.current = lastMessage.id;
       wasAwayFromChat.current = false;
-      scrollToBottom();
+      prevLastMessageId.current = lastMessage.id;
+      const awayKey = currentRoom?._id
+        ? `room_${currentRoom._id}`
+        : currentPrivateChat?.id
+          ? `private_${currentPrivateChat.id}`
+          : null;
+      const awayUnread = awayKey ? (unreadCounts[awayKey] || 0) : 0;
+      if (awayUnread > 0) {
+        setNewMsgCount(awayUnread);
+        setShowNewMsgBanner(true);
+      } else {
+        scrollToBottom();
+      }
       return;
     }
 
@@ -196,14 +196,10 @@ const ChatArea = memo(function ChatArea({
       style={{
         backgroundColor: theme.background,
         height: containerHeight != null ? `${containerHeight}px` : '100%',
-        position: 'relative',
         transform: offsetTop ? `translateY(${offsetTop}px)` : undefined,
       }}
     >
-      <div
-        ref={chatHeaderRef}
-        className="absolute top-0 left-0 right-0 z-30"
-      >
+      <div ref={chatHeaderRef} className="absolute top-0 left-0 right-0 z-30">
         <ChatHeader
           user={user}
           currentRoom={currentRoom}
@@ -245,7 +241,7 @@ const ChatArea = memo(function ChatArea({
               boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
             }}
           >
-            <span>↓ {newMsgCount} new message{newMsgCount !== 1 ? 's' : ''}</span>
+            <span>↓ {newMsgCount > 99 ? '99+' : newMsgCount > 9 ? '9+' : newMsgCount} new message{newMsgCount === 1 ? '' : 's'}</span>
           </button>
         )}
       </div>

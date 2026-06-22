@@ -33,8 +33,14 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unreadCount
                             </span>
                         </div>
                     </div>
-                    <p className="text-xs md:text-sm truncate mt-1 md:mt-2" style={{ color: theme.otherMessageText, opacity: 0.8 }}>
-                        {room.groupDescription}
+                    <p className="text-xs md:text-sm truncate mt-1 md:mt-2 font-medium" style={{
+                        color: unread > 0 ? (theme.primary || '#6366f1') : theme.otherMessageText,
+                        opacity: unread > 0 ? 1 : 0.8,
+                    }}>
+                        {unread > 0
+                            ? `${unread > 99 ? '99+' : unread > 9 ? '9+' : unread} new message${unread === 1 ? '' : 's'}`
+                            : room.groupDescription
+                        }
                     </p>
                 </div>
             </div>

@@ -138,6 +138,7 @@ function Chat() {
           loadRoomMembers={loadRoomMembers}
           hasMoreMembers={hasMoreMembers}
           loadMoreRoomMembers={loadMoreRoomMembers}
+          unreadCounts={unreadCounts}
         />
       </CallProvider>
     </div>
