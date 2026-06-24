@@ -118,6 +118,8 @@ export function appendRoomMessages(roomId, messages) {
         const formatted = {
           id: msg._id || msg.uuid,
           text: msg.content,
+          isSystemMessage: msg.isSystemMessage,
+          systemType: msg.systemType,
           timestamp: msg.timestamp,
           senderId: msg.senderId,
         };
@@ -141,6 +143,8 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
         senderId: msg.senderId,
         receiverId: msg.receiverId,
         text: msg.content,
+        isSystemMessage: msg.isSystemMessage,
+        systemType: msg.systemType,
         timestamp: msg.timestamp,
         media: msg.media || null,
       }));
