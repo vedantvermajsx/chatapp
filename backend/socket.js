@@ -10,6 +10,7 @@ import handleUserLeftRoom from './events/userLeftRoom.event.js';
 import handleRoomUpdated from './events/roomUpdated.event.js';
 import handleRoomDeleted from './events/roomDeleted.event.js';
 import handleWebrtcSignal from './events/webrtc/webrtcSignal.event.js';
+import handleMarkRead from './events/markRead.event.js';
 
 const onlineUsers = new Map();
 const userRooms = new Map();
@@ -53,6 +54,10 @@ export const setupSocket = (server) => {
     socket.on('roomUpdated', handleRoomUpdated(socket, io));
     socket.on('roomDeleted', handleRoomDeleted(socket, io));
     socket.on('webrtcSignal', handleWebrtcSignal(socket, io));
+    socket.on('markRead', handleMarkRead(socket, io));
+    socket.on('error', (data) => {
+      console.log("error", data);
+    })
   });
 }
 

@@ -43,4 +43,5 @@ router.get('/private/:otherUserId', authenticate, getPrivateMessages);
 router.get('/private', authenticate, getPrivateChats);
 router.delete('/private/:otherUserId', authenticate, deletePrivateChat);
 
+
 export default router;

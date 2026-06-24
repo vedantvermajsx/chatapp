@@ -16,10 +16,25 @@ export const getRoomMessages = async (req, res) => {
       return res.status(200).json({ messages: [], hasMore: false });
     }
 
-    const senderIds = [...new Set(messages.map((m) => m.senderId))];
-    const userDetailsMap = await userCacheClient.getUsersByIds(senderIds);
+    const nonSystemMessages = messages.filter((m) => !m.isSystemMessage);
+    const senderIds = [...new Set(nonSystemMessages.map((m) => m.senderId))];
+    const userDetailsMap = senderIds.length
+      ? await userCacheClient.getUsersByIds(senderIds)
+      : new Map();
+
+      console.log(messages);
 
     const formattedMessages = messages.map((msg) => {
+      if (msg.isSystemMessage) {
+        return {
+          id: msg.id,
+          isSystemMessage: true,
+          systemType: msg.systemType || null,
+          text: msg.content || msg.text || '',
+          timestamp: msg.timestamp,
+        };
+      }
+
       const senderDetails = userDetailsMap.get(msg.senderId) || {
         username: 'Deleted User',
         gender: null,
@@ -28,7 +43,7 @@ export const getRoomMessages = async (req, res) => {
 
       const formatted = {
         id: msg.id,
-        text: msg.text,
+        text: msg.content || msg.text || '',
         isOwn: msg.senderId === req.user.id,
         timestamp: msg.timestamp,
         username: senderDetails.username,
@@ -40,6 +55,8 @@ export const getRoomMessages = async (req, res) => {
     });
 
     formattedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    console.log(formattedMessages);
 
     res.status(200).json({ messages: formattedMessages, hasMore });
   } catch (error) {

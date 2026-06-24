@@ -12,6 +12,10 @@ export const getPrivateChats = async (req, res) => {
 
     const userDetailsMap = await userCacheClient.getUsersByIds(otherUserIds);
 
+    console.log(userDetailsMap);
+
+
+
     const chatsWithUserInfo = chats
       .filter((chat) => chat._id)
       .map((chat) => {

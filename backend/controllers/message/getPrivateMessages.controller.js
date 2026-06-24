@@ -1,5 +1,6 @@
-import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
+import ConversationRead from '../../models/conversationRead.model.js';
+import userCacheClient from '../../database/userCacheClient.js';
 
 export const getPrivateMessages = async (req, res) => {
   try {
@@ -8,43 +9,54 @@ export const getPrivateMessages = async (req, res) => {
     const { user } = req;
     const userId = user.id;
 
-    const { messages, hasMore } = await messageCacheClient.getPrivateMessages(
-      userId,
-      otherUserId,
-      {
-        limit: parseInt(limit, 10),
-        before: before || undefined,
-        after: after || undefined,
-      }
-    );
+    const { messages, hasMore } = await messageCacheClient.getPrivateMessages(userId, otherUserId, {
+      limit: parseInt(limit, 10),
+      before: before || undefined,
+      after: after || undefined,
+    });
 
-    if (!messages.length) {
+    if (!messages || !messages.length) {
       return res.status(200).json({ messages: [], hasMore: false });
     }
 
-    const userIds = [...new Set(messages.flatMap((m) => [m.senderId, m.receiverId]))];
-    const userDetailsMap = await userCacheClient.getUsersByIds(userIds);
+    const theirReadReceipt = await ConversationRead.findOne({
+      senderId: otherUserId,
+      receiverId: userId,
+    });
+
+    const participantIds = [...new Set([userId, otherUserId])];
+    const userDetailsMap = await userCacheClient.getUsersByIds(participantIds);
 
     const formattedMessages = messages.map((msg) => {
+      const isOwn = msg.senderId === userId;
+
       const senderDetails = userDetailsMap.get(msg.senderId) || {
-        username: 'Deleted User',
-        gender: null,
-        avatar: null,
-        isOnline: false,
-        lastSeen: null,
+        username: msg.username || msg.senderUsername || 'Unknown',
+        avatar: msg.avatar || null,
+        gender: msg.gender || null,
       };
+
+      let seenAt = null;
+      if (isOwn && theirReadReceipt) {
+        const msgTime = new Date(msg.timestamp).getTime();
+        const seenTime = new Date(theirReadReceipt.lastSeenAt).getTime();
+        if (msg.id === theirReadReceipt.messageId || msgTime <= seenTime) {
+          seenAt = theirReadReceipt.lastSeenAt;
+        }
+      }
 
       return {
         id: msg.id,
+        senderId: msg.senderId,
+        receiverId: msg.receiverId,
         username: senderDetails.username,
-        text: msg.text,
-        isOwn: msg.senderId === userId,
-        timestamp: msg.timestamp,
-        gender: senderDetails.gender,
         avatar: senderDetails.avatar,
-        isOnline: senderDetails.isOnline,
-        lastSeen: senderDetails.lastSeen,
+        gender: senderDetails.gender,
+        text: msg.content || msg.text || '',
+        isOwn,
+        timestamp: msg.timestamp,
         media: msg.media || null,
+        seenAt,
       };
     });
 

@@ -1,4 +1,5 @@
 import { onlineUsers } from '../socket.js';
+import { disconnectTimers } from './disconnect.event.js';
 import userCacheClient from '../database/userCacheClient.js';
 import roomCacheClient from '../database/roomCacheClient.js';
 import { publish } from '../utils/messageBroker.js';
@@ -8,6 +9,12 @@ export default function handleJoin(socket, io) {
     const { userId, role, username, gender } = data;
     console.log('User joining:', username);
 
+
+    const pendingTimer = disconnectTimers.get(userId);
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      disconnectTimers.delete(userId);
+    }
 
     socket.join(String(userId));
     
