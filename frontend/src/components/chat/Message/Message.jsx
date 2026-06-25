@@ -4,12 +4,12 @@ import Avatar from '../../common/Avatar';
 import AudioPlayer from './AudioPlayer';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
-import getThumbnailUrl from '../../../utils/getThumbnailUrl.js';
-import getZoomUrl from '../../../utils/getZoomUrl.js';
+import { formatSeenAt } from '../../../utils/dateUtils';
 
 const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false }) {
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
+
 
   const [showMedia, setShowMedia] = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
@@ -17,8 +17,8 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
 
   const isGif = msg.media?.url?.toLowerCase().endsWith('.gif');
 
-  const thumbnailUrl = getThumbnailUrl(msg.media?.url);
-  const mediaDisplayUrl = getZoomUrl(msg.media?.url);
+  const mediaDisplayUrl = msg.media?.url;
+  const thumbnailUrl = msg.media?.thumbnailUrl || msg.media?.url;
 
   const bubbleBg = isOwn
     ? (msg.isPending ? `${theme.myMessageBubble}CC` : theme.myMessageBubble)
@@ -82,10 +82,10 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
                   />
                 )}
                 <img
-                  src={mediaDisplayUrl}
+                  src={thumbnailUrl}
                   alt="media"
                   className={`object-contain w-full max-h-48 md:max-h-64 cursor-pointer hover:opacity-90 transition ${!mediaLoaded ? 'opacity-0 absolute inset-0' : 'block rounded-lg opacity-100'}`}
-                  onClick={() => window.dispatchEvent(new CustomEvent('openImageZoom', { detail: { url: msg.media.url } }))}
+                  onClick={() => window.dispatchEvent(new CustomEvent('openImageZoom', { detail: { url: mediaDisplayUrl } }))}
                   loading="lazy"
                   onLoad={() => setMediaLoaded(true)}
                 />
@@ -93,23 +93,28 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
             )}
 
             {msg.media.type === 'video' && !showMedia && (
-              <button
+              <div
+                className="relative cursor-pointer"
                 onClick={() => setShowMedia(true)}
-                className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg hover:opacity-80 transition text-sm"
-                style={{
-                  backgroundColor: theme.myMessageBubble,
-                  color: theme.myMessageText
-                }}
               >
-                <Play className="w-3 h-3 md:w-4 md:h-4" />
-                Load Video
-              </button>
+                <img
+                  src={thumbnailUrl}
+                  alt="Video thumbnail"
+                  className="rounded-lg max-h-64 w-full object-contain"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-black/60 rounded-full p-3">
+                    <Play className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+              </div>
             )}
 
             {msg.media.type === 'video' && showMedia && (
               <video
                 src={msg.media.url}
                 controls
+                autoPlay
                 className="rounded-lg max-h-48 md:max-h-64 w-full"
               />
             )}
@@ -152,10 +157,10 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
                   />
                 )}
                 <img
-                  src={mediaDisplayUrl}
+                  src={thumbnailUrl}
                   alt="media"
                   className={`object-contain w-full max-h-48 md:max-h-64 cursor-pointer hover:opacity-90 transition ${!mediaLoaded ? 'opacity-0 absolute inset-0' : 'block rounded-lg opacity-100'}`}
-                  onClick={() => window.dispatchEvent(new CustomEvent('openImageZoom', { detail: { url: msg.media.url } }))}
+                  onClick={() => window.dispatchEvent(new CustomEvent('openImageZoom', { detail: { url: mediaDisplayUrl } }))}
                   loading="lazy"
                   onLoad={() => setMediaLoaded(true)}
                 />
@@ -164,18 +169,18 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
           </div>
         )}
 
-
         {msg.isPending && (
           <Loader className="z-10 w-3 h-3 md:w-3 md:h-3 absolute right-1 bottom-1 animate-spin flex-shrink-0" style={{ color: textColor }} />
         )}
 
       </div>
 
-      {isOwn && !msg.isPending && isPrivateChat && msg.seenAt && (
-        <p className="text-[10px] mt-1 mr-1" style={{ color: theme.otherUsernameColor, opacity: 0.7 }}>Seen</p>
+
+      {isOwn && !msg.isPending && isPrivateChat && msg.isSeen && (
+        <p className="text-[10px] " style={{ color: theme.isLight ? '#4b5563' : '#9ca3af', opacity: 0.7 }}>
+          {formatSeenAt(msg.seenAt)}
+        </p>
       )}
-
-
 
     </div>
   );

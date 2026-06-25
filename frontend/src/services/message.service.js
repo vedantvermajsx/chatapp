@@ -23,7 +23,7 @@ class MessageService {
     }
   }
 
-  async sendPrivateMessage({ receiverId, content, receiverModel = 'User', media, uuid, skipToast = false }) {
+  async sendPrivateMessage({ receiverId, content, receiverModel = 'User', media, uuid, isSystemMessage, systemType, skipToast = false }) {
     try {
       const response = await api.post(`${this.basePath}/private/send`, {
         receiverId,
@@ -31,6 +31,7 @@ class MessageService {
         receiverModel,
         media,
         uuid,
+        ...(isSystemMessage && { isSystemMessage: true, systemType }),
       });
       return response.data;
     } catch (error) {

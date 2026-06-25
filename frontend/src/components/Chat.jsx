@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
@@ -83,14 +83,19 @@ function Chat() {
     loadPrivateChats();
   }, [user, navigate, searchQuery, loadRooms, loadPrivateChats]);
 
+  const lastMarkedReadRef = useRef({});
+
   const handleChatRead = useCallback((chatKey, lastMessage) => {
     if (!socket || !chatKey || !user) return;
     if (chatKey.startsWith('private_') && lastMessage?.senderId && lastMessage?.id) {
-      socket.emit('markRead', {
-        senderId: lastMessage.senderId,
-        receiverId: lastMessage.receiverId,
-        messageId: lastMessage.id,
-      });
+      if (lastMarkedReadRef.current[chatKey] !== lastMessage.id) {
+        lastMarkedReadRef.current[chatKey] = lastMessage.id;
+        socket.emit('markRead', {
+          senderId: lastMessage.senderId,
+          receiverId: lastMessage.receiverId,
+          messageId: lastMessage.id,
+        });
+      }
     }
     setUnreadCounts(prev => {
       if (!prev[chatKey]) return prev;
@@ -108,7 +113,7 @@ function Chat() {
         ? `private_${currentPrivateChat.id}`
         : null;
     if (!chatKey) return;
-    const lastNonOwnMessage = [...messages].reverse().find(m => !m.isOwn) ?? null;
+    const lastNonOwnMessage = [...messages].reverse().find(m => !m.isOwn && !m.isSystemMessage) ?? null;
     handleChatRead(chatKey, lastNonOwnMessage);
   }, [currentRoom?._id, currentPrivateChat?.id, handleChatRead, messages]);
 

@@ -24,7 +24,6 @@ const MessageList = ({
   const lastNonOwnIndex = (() => {
     if (!messages) return -1;
     for (let i = messages.length - 1; i >= 0; i--) {
-      // Skip system messages - they don't need read receipts
       if (!messages[i].isSystemMessage && !messages[i].isOwn) return i;
     }
     return -1;

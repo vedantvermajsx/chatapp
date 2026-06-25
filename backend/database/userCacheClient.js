@@ -17,8 +17,6 @@ class UserCacheClient {
       const res = await this.client.get(`/users/${id}`);
       return res.data;
     } catch (err) {
-      if (err.response?.status === 404) return null;
-      console.error(`[UserCache] getUserById(${id}):`, err.message);
       return null;
     }
   }

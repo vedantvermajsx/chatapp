@@ -1,9 +1,8 @@
 import Room from '../../models/room.model.js';
-import Message from '../../models/message.model.js';
-import emitUserLeftRoom from '../../emitters/userLeftRoom.emitter.js';
+import emitNewMessage from '../../emitters/newMessage.emitter.js';
+import { enqueueMessage } from '../../utils/queueClient.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
-import { onlineUsers } from '../../socket.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function leaveRoom(req, res) {
@@ -30,40 +29,40 @@ export async function leaveRoom(req, res) {
       }
     }
 
-    // Build and persist the system message
-    const msgId = uuidv4();
+    // Build system message the same way sendRoomMessage does
+    const uuid = uuidv4();
+    const content = `${username} left the group`;
     const timestamp = new Date();
-    const systemMessageData = {
-      uuid: msgId,
-      id: msgId,
+
+    const messageData = {
+      uuid,
+      content,
       senderId: userId,
-      roomId,
-      receiverId: null,
-      content: `${username} left the group`,
       isSystemMessage: true,
       systemType: 'member-left',
+      roomId,
+      receiverId: null,
+      media: null,
       timestamp,
     };
 
-    Message.create({
-      _id: msgId,
-      senderId: userId,
+    const payload = {
+      id: uuid,
       roomId,
-      content: `${username} left the group`,
+      userId,
+      username,
+      text: content,
       isSystemMessage: true,
       systemType: 'member-left',
       timestamp,
-    }).catch(err => console.error('[leaveRoom] Failed to save system message:', err));
+      gender: req.user.gender,
+      avatar: req.user.avatar,
+      media: null,
+    };
 
-    messageCacheClient.appendRoomMessage(roomId, systemMessageData).catch(err =>
-      console.error('[leaveRoom] Failed to append system message to cache:', err)
-    );
-
-    // Get sender's socketId so the emitter can exclude them
-    const senderSocketId = onlineUsers.get(userId)?.socketId ?? null;
-
-    // Emit to all room members EXCEPT the sender themselves
-    emitUserLeftRoom(roomId, { username, userId, roomId, msgId }, senderSocketId);
+    enqueueMessage(messageData);
+    emitNewMessage(roomId, payload);
+    await messageCacheClient.appendRoomMessage(roomId, messageData);
 
     res.json({ message: 'Left room successfully' });
   } catch (err) {

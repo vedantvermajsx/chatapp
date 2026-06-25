@@ -7,7 +7,7 @@ import { messageCacheClient } from '../../database/messageCacheClient.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
-    const { receiverId, content, media } = req.body;
+    const { receiverId, content, media, isSystemMessage, systemType } = req.body;
     if (!receiverId) {
       return res.status(400).json({ message: 'receiverId required' });
     }
@@ -30,7 +30,9 @@ export async function sendPrivateMessage(req, res) {
       roomId: null,
       media: media || null,
       timestamp,
-      status: 'sent'
+      status: 'sent',
+      isSystemMessage: isSystemMessage || false,
+      systemType: systemType || null,
     };
 
     const payload = {
@@ -45,17 +47,19 @@ export async function sendPrivateMessage(req, res) {
       avatar: sender.avatar,
       isOnline: sender.isOnline,
       lastSeen: sender.lastSeen,
-      media: media || null
+      media: media || null,
+      isSystemMessage: isSystemMessage || false,
+      systemType: systemType || null,
     };
 
-    enqueueMessage(messageData); 
+    enqueueMessage(messageData);
     emitNewPrivateMessage(sender.id, receiverId, payload);
 
     await messageCacheClient.appendPrivateMessage(sender.id, receiverId, messageData);
 
     res.json({
       _id: uuid,
-      ...messageData
+      ...messageData,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

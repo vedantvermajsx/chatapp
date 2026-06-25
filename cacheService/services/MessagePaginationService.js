@@ -64,6 +64,8 @@ export async function paginateMessages({ query, limit, before, mapMessage = (m) 
     if (!batchHasExtra) break;
   }
 
+  selected.reverse();
+
   return {
     messages: selected,
     hasMore,

@@ -15,7 +15,6 @@ export const useChatSocket = (user, {
   messageCache,
   roomMembers,
   setRoomMembers,
-  loadRoomMembers,
   setUnreadCounts
 }) => {
   const socketRef = useRef(null);
@@ -90,7 +89,11 @@ export const useChatSocket = (user, {
           isOnline: msg?.isOnline,
           lastSeen: msg?.lastSeen,
           media: msg?.media || null,
-          isPending: false
+          isPending: false,
+          ...(msg?.isSystemMessage && {
+            isSystemMessage: true,
+            systemType: msg.systemType || null,
+          }),
         };
 
         setMessages((prev) => {
@@ -175,7 +178,11 @@ export const useChatSocket = (user, {
         isOnline: msg.isOnline,
         lastSeen: msg.lastSeen,
         media: msg.media || null,
-        isPending: false
+        isPending: false,
+        ...(msg?.isSystemMessage && {
+          isSystemMessage: true,
+          systemType: msg.systemType || null,
+        }),
       };
 
       if (messageCache.current[cacheKey]) {
@@ -209,7 +216,7 @@ export const useChatSocket = (user, {
 
       if (currentPrivateChat?.id === otherUserId || currentPrivateChat?.id === msg.receiverId) {
         setMessages((prev) => {
-          const existingOptimisticIndex = prev.findIndex(m =>
+          const existingOptimisticIndex = newMessageObj.isSystemMessage ? -1 : prev.findIndex(m =>
             m.isOwn && m.isPending && m.text === newMessageObj.text && (!!m.media === !!newMessageObj.media)
           );
           if (isOwnMessage && existingOptimisticIndex !== -1) {
@@ -224,31 +231,25 @@ export const useChatSocket = (user, {
       
       await dbService.addMessage(cacheKey, newMessageObj);
 
-      if (!isOwnMessage && currentPrivateChatRef.current?.id !== otherUserId) {
+      if (!isOwnMessage && currentPrivateChatRef.current?.id !== otherUserId && !newMessageObj.isSystemMessage) {
         setUnreadCounts(prev => ({ ...prev, [cacheKey]: (prev[cacheKey] || 0) + 1 }));
       }
     };
 
     const handleReadReceipt = async ({ senderId, receiverId, messageId, lastSeenAt }) => {
       const currentPrivateChat = currentPrivateChatRef.current;
-      // senderId is the person who sent the original messages (= current user)
-      // receiverId is the person who read them (= the chat partner)
       if (!currentPrivateChat || String(currentPrivateChat.id) !== String(receiverId)) return;
 
       const cacheKey = `private_${receiverId}`;
-      const seenTime = new Date(lastSeenAt).getTime();
 
       setMessages(prev => {
         const updated = prev.map(msg => {
-          if (!msg.isOwn) return msg;
-          const msgTime = new Date(msg.timestamp).getTime();
-          if (msg.id === messageId || msgTime <= seenTime) {
-            return { ...msg, seenAt: lastSeenAt };
-          }
+          if (!msg.isOwn || msg.isSystemMessage) return msg;
+          if (msg.id === messageId) return { ...msg, isSeen: true, seenAt: lastSeenAt };
+          if (msg.isSeen) return { ...msg, isSeen: false, seenAt: null };
           return msg;
         });
 
-        // Persist updated seenAt values to IndexedDB so they survive refresh
         const changed = updated.filter((msg, i) => msg !== prev[i]);
         if (changed.length) {
           changed.forEach(msg => dbService.addMessage(cacheKey, msg));
@@ -259,82 +260,6 @@ export const useChatSocket = (user, {
     };
 
     const handleNewRoom = () => { loadRooms(); };
-
-    const handleUserJoinedRoom = ({ username, userId, roomId, msgId }) => {
-      const currentRoom = currentRoomRef.current;
-      const currentUser = userRef.current;
-      if (!currentRoom || String(currentRoom._id) !== String(roomId)) return;
-      if (currentUser && String(currentUser.id) === String(userId)) return;
-
-      const cacheKey = `room_${roomId}`;
-      const systemMsg = {
-        id: msgId,
-        isSystemMessage: true,
-        systemType: 'member-joined',
-        text: `${username} joined the group`,
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages((prev) => {
-        if (prev.some(m => String(m.id) === String(msgId))) return prev;
-        return [...prev, systemMsg];
-      });
-
-      // Persist to IDB with the correct shape so refresh shows it properly
-      dbService.addMessage(cacheKey, systemMsg);
-
-      // Keep in-memory cache in sync
-      const messageCache = messageCacheRef.current;
-      if (messageCache.current?.[cacheKey]) {
-        const prev = messageCache.current[cacheKey].messages;
-        if (!prev.some(m => String(m.id) === String(msgId))) {
-          messageCache.current[cacheKey] = {
-            ...messageCache.current[cacheKey],
-            messages: [...prev, systemMsg],
-          };
-        }
-      }
-
-      loadRoomMembers();
-    };
-
-    const handleUserLeftRoom = ({ username, userId, roomId, msgId }) => {
-      const currentRoom = currentRoomRef.current;
-      const currentUser = userRef.current;
-      if (!currentRoom || String(currentRoom._id) !== String(roomId)) return;
-      if (currentUser && String(currentUser.id) === String(userId)) return;
-
-      const cacheKey = `room_${roomId}`;
-      const systemMsg = {
-        id: msgId,
-        isSystemMessage: true,
-        systemType: 'member-left',
-        text: `${username} left the group`,
-        timestamp: new Date().toISOString(),
-      };
-
-      setMessages((prev) => {
-        if (prev.some(m => String(m.id) === String(msgId))) return prev;
-        return [...prev, systemMsg];
-      });
-
-      // Persist to IDB with the correct shape so refresh shows it properly
-      dbService.addMessage(cacheKey, systemMsg);
-
-      // Keep in-memory cache in sync
-      const messageCache = messageCacheRef.current;
-      if (messageCache.current?.[cacheKey]) {
-        const prev = messageCache.current[cacheKey].messages;
-        if (!prev.some(m => String(m.id) === String(msgId))) {
-          messageCache.current[cacheKey] = {
-            ...messageCache.current[cacheKey],
-            messages: [...prev, systemMsg],
-          };
-        }
-      }
-
-      loadRoomMembers();
-    };
 
     const handleUserOnline = ({ userId }) => {
       const roomMembers = roomMembersRef.current;
@@ -386,8 +311,6 @@ export const useChatSocket = (user, {
     socket.on('newMessage', handleNewMessage);
     socket.on('newPrivateMessage', handleNewPrivateMessage);
     socket.on('newRoom', handleNewRoom);
-    socket.on('userJoinedRoom', handleUserJoinedRoom);
-    socket.on('userLeftRoom', handleUserLeftRoom);
     socket.on('userOnline', handleUserOnline);
     socket.on('userOffline', handleUserOffline);
     socket.on('readReceipt', handleReadReceipt);
@@ -401,13 +324,11 @@ export const useChatSocket = (user, {
       socket.off('newMessage', handleNewMessage);
       socket.off('newPrivateMessage', handleNewPrivateMessage);
       socket.off('newRoom', handleNewRoom);
-      socket.off('userJoinedRoom', handleUserJoinedRoom);
-      socket.off('userLeftRoom', handleUserLeftRoom);
       socket.off('userOnline', handleUserOnline);
       socket.off('userOffline', handleUserOffline);
       socket.off('readReceipt', handleReadReceipt);
     };
-  }, [setMessages, setPrivateChats, setRoomMembers, setUnreadCounts, loadRooms, loadPrivateChats, loadRoomMembers]);
+  }, [setMessages, setPrivateChats, setRoomMembers, setUnreadCounts, loadRooms, loadPrivateChats]);
 
   return socketRef.current;
 };

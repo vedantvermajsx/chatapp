@@ -7,17 +7,25 @@ function mapRoomMessage(msg) {
     timestamp: msg.timestamp,
     senderId: msg.senderId,
   };
-  if (msg.media) formatted.media = msg.media;
+  if (msg.media){
+    formatted.media = msg.media;
+    
+  }
+  if(msg.isSystemMessage){
+    formatted.isSystemMessage = true;
+    formatted.systemType = msg.systemType;
+  }
   return formatted;
 }
 
 export const getRoomMessages = async (req, res) => {
   try {
     const { roomId } = req.params;
-    const { limit = 20, before, after } = req.query;
+    const { limit = 20, before, after ,userId} = req.query;
 
     const result = await getRoomMessagesService({
       roomId,
+      userId,
       limit,
       before,
       after,

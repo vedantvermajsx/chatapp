@@ -17,8 +17,8 @@ class RoomService {
     return response.data;
   }
 
-  async joinRoom(roomId) {
-    const response = await api.post(`${this.basePath}/join`, { roomId });
+  async joinRoom(roomId, req) {
+    const response = await api.post(`${this.basePath}/join`, { roomId,req });
     return response.data;
   }
 

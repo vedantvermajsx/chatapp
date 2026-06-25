@@ -1,9 +1,8 @@
 import Room from '../../models/room.model.js';
-import Message from '../../models/message.model.js';
-import emitUserJoinedRoom from '../../emitters/userJoinedRoom.emitter.js';
+import emitNewMessage from '../../emitters/newMessage.emitter.js';
+import { enqueueMessage } from '../../utils/queueClient.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
-import { onlineUsers } from '../../socket.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function joinRoom(req, res) {
@@ -31,44 +30,42 @@ export async function joinRoom(req, res) {
 
       await roomCacheClient.refreshRoomCache(roomId);
 
-      // Build and persist the system message
-      const msgId = uuidv4();
+      // Build system message the same way sendRoomMessage does
+      const uuid = uuidv4();
+      const content = `${username} joined the group`;
       const timestamp = new Date();
-      const systemMessageData = {
-        uuid: msgId,
-        id: msgId,
+
+      const messageData = {
+        uuid,
+        content,
         senderId: userId,
-        roomId,
-        receiverId: null,
-        content: `${username} joined the group`,
         isSystemMessage: true,
         systemType: 'member-joined',
+        roomId,
+        receiverId: null,
+        media: null,
         timestamp,
       };
 
-      // Save to DB (non-blocking)
-      Message.create({
-        _id: msgId,
-        senderId: userId,
+      const payload = {
+        id: uuid,
         roomId,
-        content: `${username} joined the group`,
+        userId,
+        username,
+        text: content,
         isSystemMessage: true,
         systemType: 'member-joined',
         timestamp,
-      }).catch(err => console.error('[joinRoom] Failed to save system message:', err));
+        gender: req.user.gender,
+        avatar: req.user.avatar,
+        media: null,
+      };
 
-      // Append to message cache so it appears in history
-      messageCacheClient.appendRoomMessage(roomId, systemMessageData).catch(err =>
-        console.error('[joinRoom] Failed to append system message to cache:', err)
-      );
+      enqueueMessage(messageData);
+      emitNewMessage(roomId, payload);
+      await messageCacheClient.appendRoomMessage(roomId, messageData);
 
-      // Get sender's socketId so the emitter can exclude them
-      const senderSocketId = onlineUsers.get(userId)?.socketId ?? null;
-
-      // Emit to all room members EXCEPT the sender themselves
-      emitUserJoinedRoom(roomId, { username, userId, roomId, msgId }, senderSocketId);
-
-      return res.json({ message: 'Joined room successfully' });
+      return res.status(200).json({ message: 'Joined room successfully' });
     }
 
     return res.json({ alreadyMember: true });

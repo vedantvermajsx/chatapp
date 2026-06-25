@@ -1,6 +1,7 @@
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import ConversationRead from '../../models/conversationRead.model.js';
 import userCacheClient from '../../database/userCacheClient.js';
+import getThumbnail from '../../utils/getThumbnail.js';
 
 export const getPrivateMessages = async (req, res) => {
   try {
@@ -9,11 +10,17 @@ export const getPrivateMessages = async (req, res) => {
     const { user } = req;
     const userId = user.id;
 
-    const { messages, hasMore } = await messageCacheClient.getPrivateMessages(userId, otherUserId, {
-      limit: parseInt(limit, 10),
-      before: before || undefined,
-      after: after || undefined,
-    });
+    
+
+    const { messages, hasMore } = await messageCacheClient.getPrivateMessages(
+      userId,
+      otherUserId,
+      {
+        limit: parseInt(limit, 10),
+        before: before || undefined,
+        after: after || undefined,
+      }
+    );
 
     if (!messages || !messages.length) {
       return res.status(200).json({ messages: [], hasMore: false });
@@ -27,6 +34,8 @@ export const getPrivateMessages = async (req, res) => {
     const participantIds = [...new Set([userId, otherUserId])];
     const userDetailsMap = await userCacheClient.getUsersByIds(participantIds);
 
+    console.log(userDetailsMap);
+
     const formattedMessages = messages.map((msg) => {
       const isOwn = msg.senderId === userId;
 
@@ -36,14 +45,16 @@ export const getPrivateMessages = async (req, res) => {
         gender: msg.gender || null,
       };
 
-      let seenAt = null;
-      if (isOwn && theirReadReceipt) {
-        const msgTime = new Date(msg.timestamp).getTime();
-        const seenTime = new Date(theirReadReceipt.lastSeenAt).getTime();
-        if (msg.id === theirReadReceipt.messageId || msgTime <= seenTime) {
-          seenAt = theirReadReceipt.lastSeenAt;
-        }
-      }
+      const media = msg.media?.url
+        ? {
+            ...msg.media,
+            thumbnailUrl: getThumbnail(
+              msg.media.url,
+              msg.media.type === 'video',
+              msg.media.type === 'audio'
+            ),
+          }
+        : null;
 
       return {
         id: msg.id,
@@ -55,12 +66,23 @@ export const getPrivateMessages = async (req, res) => {
         text: msg.content || msg.text || '',
         isOwn,
         timestamp: msg.timestamp,
-        media: msg.media || null,
-        seenAt,
+        media,
+        isSeen: false, 
+        seenAt: null,  
       };
     });
-
-    formattedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    if (theirReadReceipt) {
+      const idx = formattedMessages.findIndex(
+        (msg) => msg.isOwn && msg.id === theirReadReceipt.messageId
+      );
+      if (idx !== -1) {
+        formattedMessages[idx] = {
+          ...formattedMessages[idx],
+          isSeen: true,
+          seenAt: theirReadReceipt.lastSeenAt,
+        };
+      }
+    }
 
     res.status(200).json({ messages: formattedMessages, hasMore });
   } catch (error) {

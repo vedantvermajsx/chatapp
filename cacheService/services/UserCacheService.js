@@ -9,7 +9,7 @@ const NOT_FOUND_USER = {
   username: 'Deleted User',
   gender: '2',
   role: 'NOT_FOUND',
-  avatar: 'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1781429485/not-found_1_hts9gb.avif',
+  avatar:'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1782368437/c7fb3065-1fe7-4b99-ab82-715b4e5d6dd3_eb5znr.avif',
   isOnline: false,
   lastSeen: 0,
   notFound: true
@@ -44,17 +44,26 @@ class UserCacheService {
     const cached = userCache.get(this._cacheKey(id));
     if (cached) return cached;
 
-    const user = await this._model(id).findById(id)
+    let user = await this._model(id).findById(id)
       .select('_id username gender role avatar isOnline lastSeen');
 
-      if(!user){
-        user={_id:id};
-      }
+   
+    if (!user) {
+      user = {
+        _id: id,
+        username: NOT_FOUND_USER.username,
+        gender: NOT_FOUND_USER.gender,
+        role: NOT_FOUND_USER.role,
+        avatar: NOT_FOUND_USER.avatar,
+        isOnline: NOT_FOUND_USER.isOnline,
+        lastSeen: NOT_FOUND_USER.lastSeen
+      };
+    }
 
-    
+
     const formatted = formatUser(user);
-    console.log(formatted);
     userCache.set(this._cacheKey(id), formatted, USER_TTL_SECONDS);
+
     return formatted;
   }
 

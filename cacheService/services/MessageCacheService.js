@@ -4,6 +4,7 @@ import Message from '../models/message.model.js';
 
 const PAGE_TTL_SECONDS = 60;
 const CHAT_LIST_TTL_SECONDS = 60;
+const DIRECT_MESSAGE_TTL_SECONDS = 60 * 60 * 24; 
 const COMMON_LIMITS = [10, 20, 25, 50];
 
 function roomFirstPageKey(roomId, limit) {
@@ -19,7 +20,11 @@ function chatListKey(userId) {
   return `messages:chatlist:${userId}`;
 }
 
-export async function getRoomMessages({ roomId, limit, before, after, mapMessage }) {
+function privateMessageDirectKey(senderId, receiverId, messageId) {
+  return `messages:private:${senderId}:${receiverId}:msg:${messageId}`;
+}
+
+export async function getRoomMessages({ roomId, userId, limit, before, after, mapMessage }) {
   const numericLimit = Math.max(1, parseInt(limit, 10) || 20);
 
   if (after) {
@@ -46,11 +51,29 @@ export async function getRoomMessages({ roomId, limit, before, after, mapMessage
     mapMessage,
   });
 
+  console.log(result);
+
   if (cacheKey) {
     messageCache.set(cacheKey, result, PAGE_TTL_SECONDS);
   }
 
-  return result;
+  const filteredData = _filterOutSystemMessages(result, userId);
+
+  return filteredData;
+}
+
+function _filterOutSystemMessages(result, userId) {
+  return {
+    ...result,
+    messages: result.messages.filter(
+      (msg) =>
+        !(
+          msg.senderId === userId &&
+          msg.isSystemMessage &&
+          ['member-joined', 'member-left'].includes(msg.systemType)
+        )
+    ),
+  };
 }
 
 export async function getPrivateMessages({ userId, otherUserId, limit, before, after, mapMessage }) {
@@ -113,48 +136,94 @@ export function appendRoomMessages(roomId, messages) {
   for (const limit of COMMON_LIMITS) {
     const key = roomFirstPageKey(roomId, limit);
     const cached = messageCache.get(key);
-    if (cached) {
-      const newCachedMessages = messages.map((msg) => {
+    if (!cached) continue;
+
+    const existingIds = new Set(cached.messages.map((m) => String(m.id)));
+
+    const newMapped = messages
+      .filter((msg) => !existingIds.has(String(msg._id || msg.uuid)))
+      .map((msg) => {
         const formatted = {
           id: msg._id || msg.uuid,
-          text: msg.content,
-          isSystemMessage: msg.isSystemMessage,
-          systemType: msg.systemType,
-          timestamp: msg.timestamp,
           senderId: msg.senderId,
+          text: msg.content,
+          timestamp: msg.timestamp,
         };
+        if (msg.isSystemMessage) {
+          formatted.isSystemMessage = true;
+          formatted.systemType = msg.systemType || null;
+        }
         if (msg.media) formatted.media = msg.media;
         return formatted;
       });
-      newCachedMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      const updatedMessages = [...newCachedMessages, ...cached.messages];
-      messageCache.set(key, { ...cached, messages: updatedMessages.slice(0, limit) }, PAGE_TTL_SECONDS);
-    }
+
+    if (!newMapped.length) continue;
+
+    const updatedMessages = [...cached.messages, ...newMapped].slice(-limit);
+    messageCache.set(key, { ...cached, messages: updatedMessages }, PAGE_TTL_SECONDS);
   }
 }
 
 export function appendPrivateMessages(senderId, receiverId, messages) {
+  const msg = messages[0];
+  if (msg) {
+    const msgId = msg._id || msg.uuid;
+    messageCache.set(
+      privateMessageDirectKey(msg.senderId, msg.receiverId, msgId),
+      { id: msgId, senderId: msg.senderId, receiverId: msg.receiverId, timestamp: msg.timestamp },
+      DIRECT_MESSAGE_TTL_SECONDS
+    );
+  }
+
   for (const limit of COMMON_LIMITS) {
     const key = privateFirstPageKey(senderId, receiverId, limit);
     const cached = messageCache.get(key);
-    if (cached) {
-      const newCachedMessages = messages.map((msg) => ({
-        id: msg._id || msg.uuid,
-        senderId: msg.senderId,
-        receiverId: msg.receiverId,
-        text: msg.content,
-        isSystemMessage: msg.isSystemMessage,
-        systemType: msg.systemType,
-        timestamp: msg.timestamp,
-        media: msg.media || null,
-      }));
-      newCachedMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      const updatedMessages = [...newCachedMessages, ...cached.messages];
-      messageCache.set(key, { ...cached, messages: updatedMessages.slice(0, limit) }, PAGE_TTL_SECONDS);
-    }
+    if (!cached) continue;
+
+    const existingIds = new Set(cached.messages.map((m) => String(m.id)));
+
+    const newMapped = messages
+      .filter((msg) => !existingIds.has(String(msg._id || msg.uuid)))
+      .map((msg) => {
+        const formatted = {
+          id: msg._id || msg.uuid,
+          senderId: msg.senderId,
+          receiverId: msg.receiverId,
+          text: msg.content,
+          timestamp: msg.timestamp,
+          media: msg.media || null,
+        };
+        if (msg.isSystemMessage) {
+          formatted.isSystemMessage = true;
+          formatted.systemType = msg.systemType || null;
+        }
+        return formatted;
+      });
+
+    if (!newMapped.length) continue;
+
+    const updatedMessages = [...cached.messages, ...newMapped].slice(-limit);
+    messageCache.set(key, { ...cached, messages: updatedMessages }, PAGE_TTL_SECONDS);
   }
+
   messageCache.delete(chatListKey(senderId));
   messageCache.delete(chatListKey(receiverId));
+}
+
+export function getPrivateMessageById(senderId, receiverId, messageId) {
+  const key = privateMessageDirectKey(senderId, receiverId, messageId);
+  const cached = messageCache.get(key);
+  if (cached) return cached;
+
+  return null;
+}
+
+export function storePrivateMessageDirect({ senderId, receiverId, messageId, timestamp }) {
+  messageCache.set(
+    privateMessageDirectKey(senderId, receiverId, messageId),
+    { id: messageId, senderId, receiverId, timestamp },
+    DIRECT_MESSAGE_TTL_SECONDS
+  );
 }
 
 export async function getPrivateChats(userId) {

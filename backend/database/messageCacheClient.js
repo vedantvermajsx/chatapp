@@ -13,17 +13,22 @@ class MessageCacheClient {
     console.log('Message cache service:', this.baseUrl);
   }
 
-  async getRoomMessages(roomId, { limit, before, after } = {}) {
+  async getRoomMessages(roomId, { userId, limit, before, after } = {}) {
     const response = await this.client.get(`/messages/room/${roomId}`, {
-      params: { limit, before, after }
+      params: { userId, limit, before, after },
     });
     return response.data;
   }
 
   async getPrivateMessages(userId, otherUserId, { limit, before, after } = {}) {
     const response = await this.client.get(`/messages/private/${userId}/${otherUserId}`, {
-      params: { limit, before, after }
+      params: { limit, before, after },
     });
+    return response.data;
+  }
+
+  async getPrivateMessage(senderId, receiverId, messageId) {
+    const response = await this.client.get(`/messages/private/${senderId}/${receiverId}/${messageId}`);
     return response.data;
   }
 

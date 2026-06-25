@@ -1,44 +1,47 @@
 import ConversationRead from "../models/conversationRead.model.js";
+import { messageCacheClient } from "../database/messageCacheClient.js";
 import { getIO } from "../socket.js";
 
-export default function handleMarkRead(socket) {
-  return async ({ senderId, receiverId, messageId }) => {
-    console.log("markRead", senderId, receiverId, messageId);
-    if (!senderId || !receiverId || !messageId) return;
+const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId }) => {
+  if (!senderId || !receiverId || !messageId) return;
 
-    const userId = socket.user._id || socket.user.id;
+  const userId = socket.user._id || socket.user.id;
 
-    if (receiverId !== userId) {
-      socket.emit("error", {
-        message: "Forbidden",
-      });
-      return;
-    }
+  if (receiverId !== userId) {
+    socket.emit("error", { message: "Forbidden" });
+    return;
+  }
 
-    const now = new Date();
+  // Fixed: was called with object destructuring { senderId, receiverId, messageId }
+  // but getPrivateMessage expects 3 positional args (senderId, receiverId, messageId)
+  const message = await messageCacheClient.getPrivateMessage(senderId, receiverId, messageId);
+  if (!message) return;
 
-    await ConversationRead.findOneAndUpdate(
-      {
-        senderId,
-        receiverId,
-      },
-      {
-        messageId,
-        lastSeenAt: now,
-      },
-      {
-        upsert: true,
-        new: true,
-      }
-    );
+  const messageTimestamp = new Date(message.timestamp);
 
-    const io = getIO();
+  const existing = await ConversationRead.findOne({ senderId, receiverId })
+    .select("messageId lastSeenAt")
+    .lean();
 
-    io.to(senderId).emit("readReceipt", {
-      senderId,
-      receiverId,
-      messageId,
-      lastSeenAt: now,
-    });
-  };
-}
+  if (existing) {
+    if (existing.messageId === messageId) return;
+    if (existing.lastSeenAt && messageTimestamp <= new Date(existing.timestamp)) return;
+  }
+
+  const now = new Date();
+
+  await ConversationRead.findOneAndUpdate(
+    { senderId, receiverId },
+    { messageId, timestamp:messageTimestamp, lastSeenAt: now },
+    { upsert: true, new: true }
+  );
+
+  getIO().to(senderId).emit("readReceipt", {
+    senderId,
+    receiverId,
+    messageId,
+    lastSeenAt: now,
+  });
+};
+
+export default handleMarkRead;

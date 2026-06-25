@@ -123,13 +123,15 @@ export const CallProvider = ({ children, socket }) => {
           if (activeCallSnap && String(activeCallSnap.targetId) === String(senderId)) {
             if (activeCallSnap.status === 'calling' && activeCallSnap.targetData && callStartTimeRef.current) {
               const durationSecs = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
-              const messageContent = `__SYSTEM_CALL__Missed ${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call (Rang for ${durationSecs}s)`;
+              const messageContent = `Missed ${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call (Rang for ${durationSecs}s)`;
               import('../services/message.service').then((module) => {
                 module.default.sendPrivateMessage({
                   receiverId: activeCallSnap.targetId.toString(),
                   receiverModel: activeCallSnap.targetData.role === 'guest' ? 'Guest' : 'User',
                   content: messageContent,
                   media: null,
+                  isSystemMessage: true,
+                  systemType: 'missed-call',
                 }).catch(console.error);
               });
             }
@@ -247,24 +249,28 @@ export const CallProvider = ({ children, socket }) => {
 
     if (activeCallSnap?.status === 'calling' && activeCallSnap?.targetData && callStartTimeRef.current) {
       const durationSecs = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
-      const messageContent = `__SYSTEM_CALL__Missed ${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call (Rang for ${durationSecs}s)`;
+      const messageContent = `Missed ${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call (Rang for ${durationSecs}s)`;
       import('../services/message.service').then((module) => {
         module.default.sendPrivateMessage({
           receiverId: targetId.toString(),
           receiverModel: activeCallSnap.targetData.role === 'guest' ? 'Guest' : 'User',
           content: messageContent,
           media: null,
+          isSystemMessage: true,
+          systemType: 'missed-call',
         }).catch(console.error);
       });
     } else if (activeCallSnap?.status === 'connected' && callConnectedTimeRef.current && activeCallSnap?.targetData) {
       const duration = formatDuration(Date.now() - callConnectedTimeRef.current);
-      const messageContent = `__SYSTEM_CALL__${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call · ${duration}`;
+      const messageContent = `${activeCallSnap.isVideo ? 'Video' : 'Voice'} Call · ${duration}`;
       import('../services/message.service').then((module) => {
         module.default.sendPrivateMessage({
           receiverId: targetId.toString(),
           receiverModel: activeCallSnap.targetData.role === 'guest' ? 'Guest' : 'User',
           content: messageContent,
           media: null,
+          isSystemMessage: true,
+          systemType: 'call',
         }).catch(console.error);
       });
     }

@@ -53,9 +53,7 @@ const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateC
                             {unread > 99 ? '99+' : unread}
                           </span>
                         )}
-                        <span className="text-[10px] md:text-xs" style={{ color: theme.otherUsernameColor }}>
-                          {chat.otherUser.isOnline ? 'Online' : formatLastSeenShort(chat.otherUser.lastSeen)}
-                        </span>
+
                       </div>
                     </div>
                     <p className="text-xs md:text-sm truncate mt-1 md:mt-2 font-medium" style={{

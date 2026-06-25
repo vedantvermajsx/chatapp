@@ -6,6 +6,8 @@ function mapPrivateMessage(msg) {
     senderId: msg.senderId,
     receiverId: msg.receiverId,
     text: msg.content,
+    isSystemMessage:msg.isSystemMessage,
+    systemType:msg.systemType,
     timestamp: msg.timestamp,
     media: msg.media || null,
   };

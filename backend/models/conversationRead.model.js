@@ -20,6 +20,11 @@ const conversationReadSchema = new mongoose.Schema(
       default: null
     },
 
+    timestamp: {
+      type: Date,
+      default: null
+    },
+
     lastSeenAt: {
       type: Date,
       default: null

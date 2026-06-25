@@ -1,5 +1,6 @@
 import { cloudinaryService } from '../../utils/cloudinary.utils.js';
 import { ALL_SUPPORTED_FORMATS } from '../../utils/constants.js';
+import getThumbnailUrl from '../../utils/getThumbnail.js';
 
 export async function uploadMedia(req, res) {
   try {
@@ -46,6 +47,7 @@ export async function uploadMedia(req, res) {
 
     res.json({
       url: result.secure_url,
+      thumbnailUrl: getThumbnailUrl(result.secure_url),
       type: mediaType
     });
   } catch (err) {

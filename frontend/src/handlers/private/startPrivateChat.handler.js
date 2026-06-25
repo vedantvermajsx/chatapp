@@ -78,8 +78,7 @@ async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, set
     const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
     if (!reallyNew.length) return;
 
-    const merged = [...currentCache.messages, ...reallyNew]
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const merged = [...currentCache.messages, ...reallyNew];
     messageCache.current[cacheKey] = {
       messages: merged,
       hasMore: currentCache.hasMore,

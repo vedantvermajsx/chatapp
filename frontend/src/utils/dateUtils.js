@@ -38,3 +38,20 @@ export const formatLastSeenShort = (lastSeen) => {
   if (diffDays < 7) return `${diffDays}d ago`;
   return lastSeenDate.toLocaleDateString();
 };
+
+export const formatSeenAt = (seenAt) => {
+  if (!seenAt) return 'Seen';
+
+  const now = new Date();
+  const seenDate = new Date(seenAt);
+  const diffSecs = Math.floor((now - seenDate) / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return 'Seen just now';
+  if (diffMins < 60) return `Seen ${diffMins}m ago`;
+  if (diffHours < 24) return `Seen ${diffHours}h ago`;
+  if (diffDays < 7) return `Seen ${diffDays}d ago`;
+  return `Seen on ${seenDate.toLocaleDateString()}`;
+};

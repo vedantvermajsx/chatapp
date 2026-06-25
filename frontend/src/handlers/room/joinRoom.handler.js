@@ -30,8 +30,18 @@ export const joinRoomHandler = async (
       setLoadingMessages(true);
     }
 
-    await roomService.joinRoom(roomId);
-    socket.emit('joinRoom', { roomId, userId: user.id, username: user.username });
+    const data = {
+      roomId,
+      message: `${user.username} joined the room`,
+      media: null,
+      isSystemMessage: true,
+      systemType: 'member-joined',
+      userId: user.id,
+      username: user.username,
+    }
+
+    await roomService.joinRoom(roomId, data);
+    socket.emit('joinRoom', data);
   } catch (error) {
     toast.error(error.response?.data?.message || 'Failed to join room');
   } finally {
