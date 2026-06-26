@@ -1,4 +1,5 @@
 import Room from '../../models/room.model.js';
+import UserRoom from '../../models/userRoom.model.js';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
@@ -29,6 +30,13 @@ export async function joinRoom(req, res) {
       }
 
       await roomCacheClient.refreshRoomCache(roomId);
+
+      // Keep UserRoom index in sync
+      await UserRoom.findOneAndUpdate(
+        { userId },
+        { $addToSet: { roomIds: roomId } },
+        { upsert: true }
+      );
 
       // Build system message the same way sendRoomMessage does
       const uuid = uuidv4();

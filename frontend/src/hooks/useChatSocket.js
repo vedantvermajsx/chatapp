@@ -11,10 +11,12 @@ export const useChatSocket = (user, {
   setPrivateChats,
   setMessages,
   loadRooms,
+  loadJoinedRooms,
   loadPrivateChats,
   messageCache,
   roomMembers,
   setRoomMembers,
+  loadRoomMembers,
   setUnreadCounts
 }) => {
   const socketRef = useRef(null);
@@ -71,31 +73,32 @@ export const useChatSocket = (user, {
 
     const handleNewMessage = async (msg) => {
       const currentUser = userRef.current;
-      const currentRoom = currentRoomRef.current;
       const messageCache = messageCacheRef.current;
 
       const isOwnMessage = msg.userId === currentUser?.id;
-      const roomMatch = String(currentRoom?._id) === String(msg.roomId);
+      // Is the user currently viewing this room?
+      const isActiveRoom = String(currentRoomRef.current?._id) === String(msg.roomId);
 
-      if (roomMatch) {
-        const newMessage = {
-          id: msg?.id || (Date.now() + Math.random()),
-          username: msg?.username,
-          text: msg?.text,
-          isOwn: isOwnMessage,
-          timestamp: msg?.timestamp || new Date().toISOString(),
-          gender: msg?.gender,
-          avatar: msg?.avatar || null,
-          isOnline: msg?.isOnline,
-          lastSeen: msg?.lastSeen,
-          media: msg?.media || null,
-          isPending: false,
-          ...(msg?.isSystemMessage && {
-            isSystemMessage: true,
-            systemType: msg.systemType || null,
-          }),
-        };
+      const newMessage = {
+        id: msg?.id || (Date.now() + Math.random()),
+        username: msg?.username,
+        text: msg?.text,
+        isOwn: isOwnMessage,
+        timestamp: msg?.timestamp || new Date().toISOString(),
+        gender: msg?.gender,
+        avatar: msg?.avatar || null,
+        isOnline: msg?.isOnline,
+        lastSeen: msg?.lastSeen,
+        media: msg?.media || null,
+        isPending: false,
+        ...(msg?.isSystemMessage && {
+          isSystemMessage: true,
+          systemType: msg.systemType || null,
+        }),
+      };
 
+      // Only push into the visible message list if this is the active room
+      if (isActiveRoom) {
         setMessages((prev) => {
           const existingOptimisticIndex = prev.findIndex(m =>
             m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
@@ -108,36 +111,47 @@ export const useChatSocket = (user, {
           if (msg.id && prev.some(m => m.id === msg.id)) return prev;
           return [...prev, newMessage];
         });
+      }
 
-        const cacheKey = `room_${msg.roomId}`;
-        if (messageCache.current[cacheKey]) {
-          const prevMessages = messageCache.current[cacheKey].messages;
-          const existingOptimisticIndex = prevMessages.findIndex(m =>
-            m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
-          );
+      // Always update the in-memory cache for this room
+      const cacheKey = `room_${msg.roomId}`;
+      if (messageCache.current[cacheKey]) {
+        const prevMessages = messageCache.current[cacheKey].messages;
+        const existingOptimisticIndex = prevMessages.findIndex(m =>
+          m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
+        );
 
-          let newCacheMessages;
-          if (isOwnMessage && existingOptimisticIndex !== -1) {
-            newCacheMessages = [...prevMessages];
-            newCacheMessages[existingOptimisticIndex] = newMessage;
-          } else {
-            const already = prevMessages.some((m) => String(m.id) === String(newMessage.id));
-            newCacheMessages = already ? prevMessages : [...prevMessages, newMessage];
-          }
-
-          if (newCacheMessages !== prevMessages) {
-            messageCache.current[cacheKey] = {
-              ...messageCache.current[cacheKey],
-              messages: newCacheMessages
-            };
-          }
+        let newCacheMessages;
+        if (isOwnMessage && existingOptimisticIndex !== -1) {
+          newCacheMessages = [...prevMessages];
+          newCacheMessages[existingOptimisticIndex] = newMessage;
+        } else {
+          const already = prevMessages.some((m) => String(m.id) === String(newMessage.id));
+          newCacheMessages = already ? prevMessages : [...prevMessages, newMessage];
         }
-        
-        await dbService.addMessage(cacheKey, newMessage);
 
-        if (!isOwnMessage && String(currentRoomRef.current?._id) !== String(msg.roomId)) {
-          setUnreadCounts(prev => ({ ...prev, [cacheKey]: (prev[cacheKey] || 0) + 1 }));
+        if (newCacheMessages !== prevMessages) {
+          messageCache.current[cacheKey] = {
+            ...messageCache.current[cacheKey],
+            messages: newCacheMessages
+          };
         }
+      }
+
+      await dbService.addMessage(cacheKey, newMessage);
+
+      // If this is the active room, tell server the messages are read
+      if (isActiveRoom && !msg.isSystemMessage) {
+        socket.emit('markRoomRead', {
+          roomId: msg.roomId,
+          messageId: newMessage.id,
+          timestamp: newMessage.timestamp
+        });
+      }
+
+      // Increment unread badge if user is NOT viewing this room and it's not their own message
+      if (!isOwnMessage && !isActiveRoom && !msg.isSystemMessage) {
+        setUnreadCounts(prev => ({ ...prev, [cacheKey]: (prev[cacheKey] || 0) + 1 }));
       }
     };
 
@@ -214,7 +228,10 @@ export const useChatSocket = (user, {
         };
       }
 
-      if (currentPrivateChat?.id === otherUserId || currentPrivateChat?.id === msg.receiverId) {
+      // Only push into visible list if user is currently viewing this conversation
+      const isActiveChat = currentPrivateChatRef.current?.id === otherUserId;
+
+      if (isActiveChat) {
         setMessages((prev) => {
           const existingOptimisticIndex = newMessageObj.isSystemMessage ? -1 : prev.findIndex(m =>
             m.isOwn && m.isPending && m.text === newMessageObj.text && (!!m.media === !!newMessageObj.media)
@@ -231,16 +248,39 @@ export const useChatSocket = (user, {
       
       await dbService.addMessage(cacheKey, newMessageObj);
 
-      if (!isOwnMessage && currentPrivateChatRef.current?.id !== otherUserId && !newMessageObj.isSystemMessage) {
+      // Increment unread only when: not own message, not currently viewing this chat, not a system message
+      if (!isOwnMessage && !isActiveChat && !newMessageObj.isSystemMessage) {
         setUnreadCounts(prev => ({ ...prev, [cacheKey]: (prev[cacheKey] || 0) + 1 }));
       }
     };
 
     const handleReadReceipt = async ({ senderId, receiverId, messageId, lastSeenAt }) => {
       const currentPrivateChat = currentPrivateChatRef.current;
-      if (!currentPrivateChat || String(currentPrivateChat.id) !== String(receiverId)) return;
-
+      const messageCache = messageCacheRef.current;
       const cacheKey = `private_${receiverId}`;
+
+      // Always update the cache so isSeen is correct when user opens the chat later
+      if (messageCache.current[cacheKey]) {
+        const prevMessages = messageCache.current[cacheKey].messages;
+        const updatedMessages = prevMessages.map(msg => {
+          if (!msg.isOwn || msg.isSystemMessage) return msg;
+          if (msg.id === messageId) return { ...msg, isSeen: true, seenAt: lastSeenAt };
+          if (msg.isSeen) return { ...msg, isSeen: false, seenAt: null };
+          return msg;
+        });
+        const changed = updatedMessages.filter((msg, i) => msg !== prevMessages[i]);
+        if (changed.length) {
+          messageCache.current[cacheKey] = {
+            ...messageCache.current[cacheKey],
+            messages: updatedMessages,
+          };
+          changed.forEach(msg => dbService.addMessage(cacheKey, msg));
+        }
+      }
+
+      // Only update the visible message list if user is currently in this chat
+      const isActiveChat = currentPrivateChat && String(currentPrivateChat.id) === String(receiverId);
+      if (!isActiveChat) return;
 
       setMessages(prev => {
         const updated = prev.map(msg => {
@@ -259,7 +299,7 @@ export const useChatSocket = (user, {
       });
     };
 
-    const handleNewRoom = () => { loadRooms(); };
+    const handleNewRoom = () => { loadRooms(); if (loadJoinedRooms) loadJoinedRooms(); };
 
     const handleUserOnline = ({ userId }) => {
       const roomMembers = roomMembersRef.current;
@@ -305,6 +345,17 @@ export const useChatSocket = (user, {
       }
     };
 
+    const handleRoomReadAck = ({ roomId }) => {
+      // Server confirmed the read — ensure badge is cleared (idempotent)
+      setUnreadCounts(prev => {
+        const key = `room_${roomId}`;
+        if (!prev[key]) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    };
+
     socket.on('connect', handleConnect);
     socket.on('connect_error', (error) => console.error('Socket connection error:', error));
     socket.on('disconnect', (reason) => console.log('Socket disconnected:', reason));
@@ -314,6 +365,7 @@ export const useChatSocket = (user, {
     socket.on('userOnline', handleUserOnline);
     socket.on('userOffline', handleUserOffline);
     socket.on('readReceipt', handleReadReceipt);
+    socket.on('roomReadAck', handleRoomReadAck);
 
     if (socket.connected) { handleConnect(); }
 
@@ -327,8 +379,9 @@ export const useChatSocket = (user, {
       socket.off('userOnline', handleUserOnline);
       socket.off('userOffline', handleUserOffline);
       socket.off('readReceipt', handleReadReceipt);
+      socket.off('roomReadAck', handleRoomReadAck);
     };
-  }, [setMessages, setPrivateChats, setRoomMembers, setUnreadCounts, loadRooms, loadPrivateChats]);
+  }, [setMessages, setPrivateChats, setRoomMembers, setUnreadCounts, loadRooms, loadJoinedRooms, loadPrivateChats]);
 
   return socketRef.current;
 };

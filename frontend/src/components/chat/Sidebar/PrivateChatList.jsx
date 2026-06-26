@@ -1,11 +1,11 @@
+import { memo } from 'react';
 import { MessageCircle, Trash2 } from 'lucide-react';
 import Spinner from '../../common/Spinner';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
-import { formatLastSeenShort } from '../../../utils/dateUtils';
 
-const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat, unreadCounts = {} }) => {
+const PrivateChatList = memo(function PrivateChatList({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat, unreadCounts = {} }) {
   const { theme } = useTheme();
   const { getNeumorphicProps } = useNeumorphism();
   const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
@@ -81,6 +81,6 @@ const PrivateChatList = ({ privateChats, currentPrivateChat, handleStartPrivateC
       </div>
     </div>
   );
-};
+});
 
 export default PrivateChatList;

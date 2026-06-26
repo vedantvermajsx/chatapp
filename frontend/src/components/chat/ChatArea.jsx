@@ -35,7 +35,8 @@ const ChatArea = memo(function ChatArea({
   hasMoreMembers,
   loadMoreRoomMembers,
   unreadCounts = {},
-  onChatRead
+  onChatRead,
+  onLeaveRoom
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -276,6 +277,7 @@ const ChatArea = memo(function ChatArea({
           setShowMembersModal={setShowMembersModal}
           setCurrentRoom={setCurrentRoom}
           leaveRoomSocket={leaveRoomSocket}
+          onLeaveRoom={onLeaveRoom}
         />
       </div>
 

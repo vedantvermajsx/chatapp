@@ -11,12 +11,16 @@ import handleRoomUpdated from './events/roomUpdated.event.js';
 import handleRoomDeleted from './events/roomDeleted.event.js';
 import handleWebrtcSignal from './events/webrtc/webrtcSignal.event.js';
 import handleMarkRead from './events/markRead.event.js';
+import handleMarkRoomRead from './events/markRoomRead.event.js';
+import handleClearActiveRoom from './events/clearActiveRoom.event.js';
 
 const onlineUsers = new Map();
 const userRooms = new Map();
+// Tracks which room each user is currently actively viewing: userId -> roomId
+const activeRooms = new Map();
 let io = null;
 
-export { onlineUsers, userRooms };
+export { onlineUsers, userRooms, activeRooms };
 
 export const setupSocket = (server) => {
   connectToBroker();
@@ -55,6 +59,8 @@ export const setupSocket = (server) => {
     socket.on('roomDeleted', handleRoomDeleted(socket, io));
     socket.on('webrtcSignal', handleWebrtcSignal(socket, io));
     socket.on('markRead', handleMarkRead(socket, io));
+    socket.on('markRoomRead', handleMarkRoomRead(socket));
+    socket.on('clearActiveRoom', handleClearActiveRoom(socket));
     socket.on('error', (data) => {
       console.log("error", data);
     })

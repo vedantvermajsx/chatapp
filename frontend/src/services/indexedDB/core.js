@@ -1,5 +1,5 @@
 export const DB_NAME = 'hushlineDB';
-export const DB_VERSION = 3; 
+export const DB_VERSION = 4; 
 export const MAX_MESSAGES_PER_CHAT = 100;
 
 export const STORES = {
@@ -7,7 +7,8 @@ export const STORES = {
   privateChats: 'privateChats',
   messages: 'messages',
   pendingMessages: 'pendingMessages',
-  chatMeta: 'chatMeta',       
+  chatMeta: 'chatMeta',
+  unreadCounts: 'unreadCounts',
 };
 
 let dbInstance = null;
@@ -60,6 +61,10 @@ export const openDB = () => {
 
       if (!db.objectStoreNames.contains(STORES.chatMeta)) {
         db.createObjectStore(STORES.chatMeta, { keyPath: 'chatKey' });
+      }
+
+      if (!db.objectStoreNames.contains(STORES.unreadCounts)) {
+        db.createObjectStore(STORES.unreadCounts, { keyPath: 'chatKey' });
       }
     };
   });

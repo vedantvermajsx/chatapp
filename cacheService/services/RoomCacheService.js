@@ -139,29 +139,40 @@ class RoomCacheService {
     }
   }
 
-  async getAllRooms({ search = '' } = {}) {
+  async getAllRooms({ search = '', skip = 0, limit = 20 } = {}) {
     const matchStage = search
       ? { groupName: { $regex: search, $options: 'i' } }
       : {};
 
-    const rooms = await Room.aggregate([
+    const [result] = await Room.aggregate([
       { $match: matchStage },
       { $sort: { createdAt: -1 } },
       {
-        $project: {
-          _id: 1,
-          groupName: 1,
-          groupDescription: 1,
-          groupAdmin: 1,
-          groupPic: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 1,
+                groupName: 1,
+                groupDescription: 1,
+                groupAdmin: 1,
+                groupPic: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
+              }
+            }
+          ],
+          totalCount: [{ $count: 'count' }]
         }
       }
     ]);
 
-    return rooms;
+    const rooms = result?.data ?? [];
+    const total = result?.totalCount?.[0]?.count ?? 0;
+    return { rooms, total };
   }
 
   async deleteRoomCache(id) {

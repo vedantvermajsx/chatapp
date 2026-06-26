@@ -1,23 +1,28 @@
 import { useState, useCallback, useRef,useEffect } from 'react';
 import {
   loadRoomsHandler,
+  loadJoinedRoomsHandler,
   loadPrivateChatsHandler,
   sendMessageHandler,
   joinRoomHandler,
   startPrivateChatHandler,
   loadMoreMessagesHandler,
   loadRoomMessagesHandler,
-  loadMoreRoomMessagesHandler
+  loadMoreRoomMessagesHandler,
+  prefetchAllMessagesHandler
 } from '../handlers/chat.handlers';
 import roomService from '../services/room.service';
 import userService from '../services/user.service';
 import { toast } from 'sonner';
+import { dbService } from '../services/indexedDB.service';
 
 export const useChatState = (user) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [rooms, setRooms] = useState([]);
+  const [joinedRooms, setJoinedRooms] = useState([]);
+  const [loadingJoinedRooms, setLoadingJoinedRooms] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentRoom, setCurrentRoom] = useState(null);
   const [currentPrivateChat, setCurrentPrivateChat] = useState(null);
@@ -38,6 +43,20 @@ export const useChatState = (user) => {
   // unreadCounts: { 'room_{id}': number, 'private_{userId}': number }
   const [unreadCounts, setUnreadCounts] = useState({});
 
+  // Load persisted unread counts from IndexedDB on mount
+  useEffect(() => {
+    dbService.loadUnreadCounts().then(saved => {
+      if (saved && Object.keys(saved).length > 0) {
+        setUnreadCounts(prev => ({ ...saved, ...prev }));
+      }
+    });
+  }, []);
+
+  // Persist unread counts to IndexedDB whenever they change
+  useEffect(() => {
+    dbService.saveUnreadCounts(unreadCounts);
+  }, [unreadCounts]);
+
   const messageCache = useRef({});
   const loadingMoreMessages = useRef(false);
   const loadingMoreMembersRef = useRef(false);
@@ -57,8 +76,14 @@ export const useChatState = (user) => {
     await loadRoomsHandler(searchQuery, setRooms, setLoadingRooms);
   }, [searchQuery]);
 
+  const loadJoinedRooms = useCallback(async () => {
+    const { joinedRooms } = await loadJoinedRoomsHandler(setJoinedRooms, setLoadingJoinedRooms, setUnreadCounts);
+    return joinedRooms;
+  }, []);
+
   const loadPrivateChats = useCallback(async () => {
-    await loadPrivateChatsHandler(setPrivateChats, setLoadingPrivateChats);
+    const { privateChats } = await loadPrivateChatsHandler(setPrivateChats, setLoadingPrivateChats);
+    return privateChats;
   }, []);
 
   const loadRoomMembers = useCallback(async (search = '') => {
@@ -111,12 +136,12 @@ export const useChatState = (user) => {
     );
   }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile]);
 
-  const joinRoom = useCallback(async (roomId, socket) => {
+  const joinRoom = useCallback(async (roomId, socket, roomObject = null) => {
     const switchId = ++currentSwitchId.current;
 
     await joinRoomHandler(
       roomId,
-      rooms,
+      joinedRooms,
       user,
       setCurrentRoom,
       setCurrentPrivateChat,
@@ -126,10 +151,23 @@ export const useChatState = (user) => {
       setLoadingMessages,
       messageCache,
       CACHE_TTL,
-      currentRoom
+      currentRoom,
+      roomObject
     );
     setRoomMembers([]);
     clearUnread(`room_${roomId}`);
+
+    // Tell the server this room is now read (updates RoomMessageRead)
+    if (socket) {
+      socket.emit('markRoomRead', { roomId });
+    }
+
+    // Add to joinedRooms if not already present
+    setJoinedRooms(prev => {
+      if (prev.some(r => r._id === roomId)) return prev;
+      const room = joinedRooms.find(r => r._id === roomId) || (roomObject && roomObject._id === roomId ? roomObject : null);
+      return room ? [...prev, room] : prev;
+    });
 
     const cacheKey = `room_${roomId}`;
     const cachedData = messageCache.current[cacheKey];
@@ -151,11 +189,13 @@ export const useChatState = (user) => {
       CACHE_TTL
     );
     setShowSidebar(false);
-  }, [rooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread]);
+  }, [joinedRooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread, setJoinedRooms, loadJoinedRooms]);
 
-  const startPrivateChat = useCallback(async (otherUser) => {
+  const startPrivateChat = useCallback(async (otherUser, socket) => {
     const switchId = ++currentSwitchId.current;
     clearUnread(`private_${otherUser.id}`);
+    // Tell server the user is no longer actively viewing any room
+    if (socket) socket.emit('clearActiveRoom');
     await startPrivateChatHandler(
       otherUser,
       user,
@@ -237,6 +277,8 @@ export const useChatState = (user) => {
     inputMessage, setInputMessage,
     selectedFile, setSelectedFile,
     rooms, setRooms,
+    joinedRooms, setJoinedRooms,
+    loadingJoinedRooms,
     searchQuery, setSearchQuery,
     currentRoom, setCurrentRoom,
     currentPrivateChat, setCurrentPrivateChat,
@@ -257,6 +299,7 @@ export const useChatState = (user) => {
     unreadCounts, setUnreadCounts,
     messageCache,
     loadRooms,
+    loadJoinedRooms,
     loadPrivateChats,
     loadRoomMembers,
     loadMoreRoomMembers,

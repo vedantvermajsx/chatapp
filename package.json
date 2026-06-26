@@ -2,6 +2,7 @@
   "name": "hushline",
   "version": "1.0.0",
   "description": "Real-time chat application",
+  "type": "module",
   "scripts": {
     "install:frontend": "npm i && cd frontend && npm i && npm run build",
     "install:backend": "cd backend && npm i",

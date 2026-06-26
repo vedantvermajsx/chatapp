@@ -1,4 +1,5 @@
 import Room from '../../models/room.model.js';
+import UserRoom from '../../models/userRoom.model.js';
 import emitNewRoom from '../../emitters/newRoom.emitter.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
 
@@ -23,6 +24,13 @@ export async function createRoom(req, res) {
     });
 
     await roomCacheClient.addRoomToCache(room._id.toString(), room);
+
+    // Creator automatically joins — keep UserRoom index in sync
+    await UserRoom.findOneAndUpdate(
+      { userId: groupAdmin },
+      { $addToSet: { roomIds: room._id.toString() } },
+      { upsert: true }
+    );
 
     emitNewRoom(room);
 

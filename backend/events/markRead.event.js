@@ -1,6 +1,7 @@
 import ConversationRead from "../models/conversationRead.model.js";
 import { messageCacheClient } from "../database/messageCacheClient.js";
 import { getIO } from "../socket.js";
+import unreadCacheClient from "../database/unreadCacheClient.js";
 
 const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId }) => {
   if (!senderId || !receiverId || !messageId) return;
@@ -35,6 +36,9 @@ const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId 
     { messageId, timestamp:messageTimestamp, lastSeenAt: now },
     { upsert: true, new: true }
   );
+
+  // Clear unread badge in cache — receiver is userId, sender is senderId
+  unreadCacheClient.reset(receiverId, `private_${senderId}`).catch(() => {});
 
   getIO().to(senderId).emit("readReceipt", {
     senderId,

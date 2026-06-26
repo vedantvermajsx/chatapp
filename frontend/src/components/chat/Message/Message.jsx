@@ -46,7 +46,7 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
         className={`max-w-[280px] md:max-w-sm lg:max-w-md px-4 py-3 md:px-6 md:py-4 rounded-2xl transition-all duration-300 ${isOwn ? 'rounded-br-none' : 'rounded-bl-none'} relative`}
       >
 
-        {!isPrivateChat && (<p className="text-[10px] md:text-xs mb-1 md:mb-2 font-semibold" style={{ color: usernameColor }}>
+        {!isPrivateChat && !msg.isOwn && (<p className="text-[10px] md:text-xs mb-1 md:mb-2 font-semibold" style={{ color: usernameColor }}>
           {msg?.username?.length > 15 ? msg?.username.substring(0, 15) : msg?.username}
         </p>)}
 

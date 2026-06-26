@@ -1,5 +1,5 @@
 class ServerHealthManager {
-  constructor(servers, cooldownMs = 30000) {
+  constructor(servers, cooldownMs = 3000) {
     this.servers = servers;
     this.cooldownMs = cooldownMs;
     this.serverStatus = new Map();

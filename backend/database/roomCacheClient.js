@@ -117,13 +117,19 @@ class RoomCacheClient {
     }
   }
 
-  async getAllRooms(search = '') {
+  async getAllRooms(search = '', { skip = 0, limit = 20 } = {}) {
     try {
-      const response = await this.client.get('/rooms', { params: { search } });
-      return response.data;
+      const response = await this.client.get('/rooms', { params: { search, skip, limit } });
+      // Normalize: cacheService now returns { rooms, total, hasMore }
+      const data = response.data;
+      if (data && typeof data === 'object' && Array.isArray(data.rooms)) {
+        return data;
+      }
+      // Legacy fallback if cacheService returns plain array
+      return { rooms: Array.isArray(data) ? data : [], total: 0, hasMore: false };
     } catch (err) {
       console.error('[RoomCacheClient] Error in getAllRooms:', err.message);
-      return [];
+      return { rooms: [], total: 0, hasMore: false };
     }
   }
 

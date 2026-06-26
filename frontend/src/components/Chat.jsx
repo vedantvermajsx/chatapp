@@ -8,6 +8,7 @@ import { useChatState } from '../hooks/useChatState';
 import { useChatSocket } from '../hooks/useChatSocket';
 import { CallProvider } from '../contexts/CallContext';
 import CallOverlay from './chat/Call/CallOverlay';
+import { prefetchAllMessagesHandler } from '../handlers/chat.handlers';
 
 function Chat() {
   const { user, logout } = useAuth();
@@ -20,6 +21,8 @@ function Chat() {
     inputMessage, setInputMessage,
     selectedFile, setSelectedFile,
     rooms,
+    joinedRooms, setJoinedRooms,
+    loadingJoinedRooms,
     searchQuery, setSearchQuery,
     currentRoom, setCurrentRoom,
     currentPrivateChat, setCurrentPrivateChat,
@@ -39,6 +42,7 @@ function Chat() {
     showSidebar, setShowSidebar,
     messageCache,
     loadRooms,
+    loadJoinedRooms,
     loadPrivateChats,
     loadRoomMembers,
     loadMoreRoomMembers,
@@ -66,6 +70,7 @@ function Chat() {
     setPrivateChats,
     setMessages,
     loadRooms,
+    loadJoinedRooms,
     loadPrivateChats,
     messageCache,
     roomMembers,
@@ -79,9 +84,22 @@ function Chat() {
       navigate('/login');
       return;
     }
-    loadRooms();
-    loadPrivateChats();
-  }, [user, navigate, searchQuery, loadRooms, loadPrivateChats]);
+    // Load sidebar data in parallel, then background-prefetch all messages
+    Promise.all([loadJoinedRooms(), loadPrivateChats()]).then(
+      ([joinedRooms, privateChats]) => {
+        // Fire-and-forget: prefetch new messages for every chat after app opens
+        prefetchAllMessagesHandler(
+          joinedRooms ?? [],
+          privateChats ?? [],
+          messageCache
+        );
+      }
+    );
+  }, [user, navigate]);
+
+  const handleLeaveRoom = useCallback((roomId) => {
+    setJoinedRooms(prev => prev.filter(r => r._id !== roomId));
+  }, [setJoinedRooms]);
 
   const lastMarkedReadRef = useRef({});
 
@@ -94,6 +112,18 @@ function Chat() {
           senderId: lastMessage.senderId,
           receiverId: lastMessage.receiverId,
           messageId: lastMessage.id,
+        });
+      }
+    }
+    // For room chats, emit markRoomRead so server keeps RoomMessageRead in sync
+    if (chatKey.startsWith('room_')) {
+      const roomId = chatKey.replace('room_', '');
+      if (lastMarkedReadRef.current[chatKey] !== lastMessage?.id) {
+        lastMarkedReadRef.current[chatKey] = lastMessage?.id ?? null;
+        socket.emit('markRoomRead', {
+          roomId,
+          messageId: lastMessage?.id ?? null,
+          timestamp: lastMessage?.timestamp ?? new Date().toISOString()
         });
       }
     }
@@ -125,11 +155,17 @@ function Chat() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         rooms={rooms}
+        joinedRooms={joinedRooms}
+        setJoinedRooms={setJoinedRooms}
+        loadingJoinedRooms={loadingJoinedRooms}
         currentRoom={currentRoom}
         currentPrivateChat={currentPrivateChat}
         setCurrentPrivateChat={setCurrentPrivateChat}
-        joinRoom={(roomId) => joinRoom(roomId, socket)}
-        startPrivateChat={startPrivateChat}
+        joinRoom={(roomId, roomObject) => joinRoom(roomId, socket, roomObject)}
+        onRoomCreated={(room) => joinRoom(room._id, socket, room)}
+        setCurrentRoom={setCurrentRoom}
+        loadJoinedRooms={loadJoinedRooms}
+        startPrivateChat={(user) => startPrivateChat(user, socket)}
         loadingJoinRoom={loadingJoinRoom}
         newRoomName={newRoomName}
         setNewRoomName={setNewRoomName}
@@ -144,6 +180,7 @@ function Chat() {
         loadingPrivateChats={loadingPrivateChats}
         showSidebar={showSidebar}
         onCloseSidebar={() => setShowSidebar(false)}
+        unreadCounts={unreadCounts}
       />
 
       <CallProvider socket={socket}>
@@ -177,6 +214,7 @@ function Chat() {
           loadMoreRoomMembers={loadMoreRoomMembers}
           unreadCounts={unreadCounts}
           onChatRead={handleChatRead}
+          onLeaveRoom={handleLeaveRoom}
         />
       </CallProvider>
     </div>

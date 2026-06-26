@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import roomService from '../../../services/room.service';
 import { isMobile } from 'react-device-detect';
 import RoomList from './RoomList';
+import GlobalRoomList from './GlobalRoomList';
 import PrivateChatList from './PrivateChatList';
 import CreateRoomForm from '../Modals/CreateRoomForm';
 import UserSettingsModal from '../Modals/UserSettingsModal';
@@ -18,12 +19,17 @@ import SidebarSearch from './SidebarSearch';
 import SidebarFooter from './SidebarFooter';
 import ThemePicker from './ThemePicker';
 
+const TABS = ['My Chats', 'Global'];
+
 function RoomSidebar({
   user,
   logout,
   searchQuery,
   setSearchQuery,
   rooms,
+  joinedRooms = [],
+  setJoinedRooms,
+  loadingJoinedRooms,
   currentRoom,
   currentPrivateChat,
   setCurrentPrivateChat,
@@ -36,6 +42,9 @@ function RoomSidebar({
   showCreateRoom,
   setShowCreateRoom,
   loadRooms,
+  loadJoinedRooms,
+  onRoomCreated,
+  setCurrentRoom,
   privateChats,
   loadingRooms,
   loadingPrivateChats,
@@ -48,7 +57,12 @@ function RoomSidebar({
   const { theme, setTheme } = useTheme();
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [activeTab, setActiveTab] = useState('My Chats');
   const deletePrivateChatMutation = useDeletePrivateChat();
+  const { getNeumorphicProps } = useNeumorphism();
+
+  const isLight = theme.isLight;
+  const borderColor = isLight ? '#cbd5e0' : '#4a5568';
 
   const handleDeletePrivateChat = async (otherUserId, e) => {
     e.stopPropagation();
@@ -56,14 +70,11 @@ function RoomSidebar({
       try {
         await deletePrivateChatMutation.mutateAsync(otherUserId);
         toast.success('Chat deleted');
-
         if (setPrivateChats) {
           setPrivateChats(prev => prev.filter(c => c.otherUser.id !== otherUserId));
         }
-
         await dbService.deletePrivateChat(otherUserId);
         await dbService.deleteMessages(`private_${otherUserId}`);
-
         if (currentPrivateChat?.id === otherUserId) {
           setCurrentPrivateChat(null);
         }
@@ -74,20 +85,109 @@ function RoomSidebar({
   };
 
   const createRoom = useCallback(async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     try {
-      await roomService.createRoom(newRoomName, newRoomDesc);
+      const data = await roomService.createRoom(newRoomName, newRoomDesc);
+      const newRoom = data.room;
       toast.success('Room created successfully!');
       setNewRoomName('');
       setNewRoomDesc('');
       setShowCreateRoom(false);
+      // Add to joinedRooms immediately (creator is auto-member on backend)
+      if (newRoom && setJoinedRooms) {
+        setJoinedRooms(prev => {
+          const exists = prev.some(r => r._id === newRoom._id);
+          return exists ? prev : [newRoom, ...prev];
+        });
+      }
+      // Navigate creator into the new room (emits socket joinRoom + loads messages)
+      if (newRoom && onRoomCreated) {
+        onRoomCreated(newRoom);
+      } else if (newRoom && setCurrentRoom) {
+        setCurrentPrivateChat && setCurrentPrivateChat(null);
+        setCurrentRoom(newRoom);
+      }
+      setActiveTab('My Chats');
       loadRooms();
+      if (loadJoinedRooms) loadJoinedRooms();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create room');
     }
-  }, [newRoomName, newRoomDesc, loadRooms, setNewRoomName, setNewRoomDesc, setShowCreateRoom]);
+  }, [newRoomName, newRoomDesc, loadRooms, loadJoinedRooms, onRoomCreated, setNewRoomName, setNewRoomDesc, setShowCreateRoom, setJoinedRooms, setCurrentRoom, setCurrentPrivateChat]);
 
-  const { getNeumorphicProps } = useNeumorphism();
+  const handleJoinRoom = useCallback((roomId, roomObject) => {
+    joinRoom(roomId, roomObject);
+    onCloseSidebar && onCloseSidebar();
+  }, [joinRoom, onCloseSidebar]);
+
+  const handleStartPrivateChat = useCallback((otherUser) => {
+    startPrivateChat(otherUser);
+    onCloseSidebar && onCloseSidebar();
+  }, [startPrivateChat, onCloseSidebar]);
+
+  // Total unread count for the "My Chats" tab badge
+  const myChatsUnread = Object.entries(unreadCounts).reduce((sum, [, v]) => sum + v, 0);
+
+  const renderTabBar = () => (
+    <div className="flex mx-3 md:mx-5 mb-1 rounded-2xl overflow-hidden border" style={{ borderColor }}>
+      {TABS.map(tab => {
+        const isActive = activeTab === tab;
+        const badge = tab === 'My Chats' && myChatsUnread > 0 ? myChatsUnread : 0;
+        return (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className="flex-1 py-2 text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5"
+            style={{
+              backgroundColor: isActive ? (theme.primary || '#6366f1') : 'transparent',
+              color: isActive ? '#fff' : theme.otherMessageText,
+              opacity: isActive ? 1 : 0.6,
+            }}
+          >
+            {tab}
+            {badge > 0 && (
+              <span className="min-w-[1rem] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
+                {badge > 99 ? '99+' : badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderMyChats = () => (
+    <div className="space-y-3 md:space-y-4">
+      {/* Joined Groups */}
+      <RoomList
+        rooms={joinedRooms}
+        currentRoom={currentRoom}
+        handleJoinRoom={handleJoinRoom}
+        loadingRooms={loadingJoinedRooms}
+        unreadCounts={unreadCounts}
+        label="My Groups"
+        emptyText="Join a group from the Global tab"
+      />
+
+      {/* Private Chats */}
+      <PrivateChatList
+        privateChats={privateChats}
+        currentPrivateChat={currentPrivateChat}
+        handleStartPrivateChat={handleStartPrivateChat}
+        loadingPrivateChats={loadingPrivateChats}
+        handleDeletePrivateChat={handleDeletePrivateChat}
+        unreadCounts={unreadCounts}
+      />
+    </div>
+  );
+
+  const renderGlobal = () => (
+    <GlobalRoomList
+      currentRoom={currentRoom}
+      handleJoinRoom={handleJoinRoom}
+      searchQuery={searchQuery}
+    />
+  );
 
   const renderSidebarContent = (showMobileClose) => (
     <div className="flex flex-col h-full relative overflow-y-hidden" style={{ backgroundColor: theme.background }}>
@@ -95,26 +195,14 @@ function RoomSidebar({
 
       <SidebarSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
-      <div className="flex-1 overflow-y-auto p-3 md:p-5 space-y-3 md:space-y-4">
-        <RoomList
-          rooms={rooms}
-          currentRoom={currentRoom}
-          handleJoinRoom={handleJoinRoom}
-          loadingRooms={loadingRooms}
-          unreadCounts={unreadCounts}
-        />
+      {renderTabBar()}
 
-        <PrivateChatList
-          privateChats={privateChats}
-          currentPrivateChat={currentPrivateChat}
-          handleStartPrivateChat={handleStartPrivateChat}
-          loadingPrivateChats={loadingPrivateChats}
-          handleDeletePrivateChat={handleDeletePrivateChat}
-          unreadCounts={unreadCounts}
-        />
+      <div className="flex-1 overflow-y-auto p-3 md:p-5">
+        {activeTab === 'My Chats' ? renderMyChats() : renderGlobal()}
       </div>
 
-      <div className="p-4 md:p-6 border-t" style={{ borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
+      {/* Create Room + Footer – shown in both tabs */}
+      <div className="p-4 md:p-6 border-t" style={{ borderColor }}>
         {user.role !== 'guest' && (
           <button
             onClick={() => setShowCreateRoom(!showCreateRoom)}
@@ -160,16 +248,6 @@ function RoomSidebar({
     </div>
   );
 
-  const handleJoinRoom = (roomId) => {
-    joinRoom(roomId);
-    onCloseSidebar && onCloseSidebar();
-  };
-
-  const handleStartPrivateChat = (otherUser) => {
-    startPrivateChat(otherUser);
-    onCloseSidebar && onCloseSidebar();
-  };
-
   if (isMobile) {
     return (
       <>
@@ -185,7 +263,14 @@ function RoomSidebar({
     );
   }
 
-  return <div className="w-80 flex-shrink-0 border-r hidden md:block" style={{ backgroundColor: theme.background, borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>{renderSidebarContent(false)}</div>;
+  return (
+    <div
+      className="w-80 flex-shrink-0 border-r hidden md:block"
+      style={{ backgroundColor: theme.background, borderColor }}
+    >
+      {renderSidebarContent(false)}
+    </div>
+  );
 }
 
 export default RoomSidebar;

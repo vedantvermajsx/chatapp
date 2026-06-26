@@ -17,7 +17,8 @@ const ChatHeader = memo(function ChatHeader({
   loadRoomMembers,
   setShowMembersModal,
   setCurrentRoom,
-  leaveRoomSocket
+  leaveRoomSocket,
+  onLeaveRoom
 }) {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const { theme } = useTheme();
@@ -32,6 +33,7 @@ const ChatHeader = memo(function ChatHeader({
         if (leaveRoomSocket) {
           leaveRoomSocket(currentRoom._id);
         }
+        if (onLeaveRoom) onLeaveRoom(currentRoom._id);
         setCurrentRoom(null);
       } catch (err) {
         console.error('Failed to leave room:', err);

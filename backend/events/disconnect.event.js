@@ -1,4 +1,4 @@
-import { onlineUsers, userRooms } from '../socket.js';
+import { onlineUsers, userRooms, activeRooms } from '../socket.js';
 import userCacheClient from '../database/userCacheClient.js';
 import { publish } from '../utils/messageBroker.js';
 
@@ -27,6 +27,7 @@ export default function handleDisconnect(socket, io) {
       const current = onlineUsers.get(disconnectedUserId);
       if (current && current.socketId === socket.id) {
         onlineUsers.delete(disconnectedUserId);
+        activeRooms.delete(String(disconnectedUserId));
         await userCacheClient.updateUserById(disconnectedUserId, {
           isOnline: false,
           lastSeen: new Date()

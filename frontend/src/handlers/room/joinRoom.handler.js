@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 
 export const joinRoomHandler = async (
   roomId,
-  rooms,
+  joinedRooms,
   user,
   setCurrentRoom,
   setCurrentPrivateChat,
@@ -13,14 +13,17 @@ export const joinRoomHandler = async (
   setLoadingMessages,
   messageCache,
   CACHE_TTL,
-  currentRoom
+  currentRoom,
+  roomObject = null
 ) => {
   if (currentRoom && currentRoom._id === roomId) return;
 
   setLoadingJoinRoom(true);
   try {
-    const room = rooms.find(r => r._id === roomId);
-    setCurrentRoom(room);
+    // 1. Optimistically set room from what we already know
+    let room = roomObject || joinedRooms.find(r => r._id === roomId) || null;
+    if (room) setCurrentRoom(room);
+
     setCurrentPrivateChat(null);
 
     const cacheKey = `room_${roomId}`;
@@ -38,9 +41,20 @@ export const joinRoomHandler = async (
       systemType: 'member-joined',
       userId: user.id,
       username: user.username,
+    };
+
+    const res = await roomService.joinRoom(roomId, data);
+
+    // 2. If we didn't have the room object (e.g. joining from Global tab),
+    //    use the room returned by the server so header/input work immediately
+    if (!room) {
+      const serverRoom = res?.room || res?.data?.room || null;
+      if (serverRoom) {
+        setCurrentRoom(serverRoom);
+        room = serverRoom;
+      }
     }
 
-    await roomService.joinRoom(roomId, data);
     socket.emit('joinRoom', data);
   } catch (error) {
     toast.error(error.response?.data?.message || 'Failed to join room');

@@ -12,6 +12,32 @@ class RoomService {
     return response.data;
   }
 
+  async getAllRoomsPaginated(searchQuery = '', page = 0, limit = 20) {
+    const response = await api.get(`${this.basePath}`, {
+      params: { search: searchQuery, skip: page * limit, limit },
+    });
+   
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return { rooms: data, hasMore: data.length === limit };
+    }
+    return data;
+  }
+
+  async getJoinedRooms() {
+    const response = await api.get(`${this.basePath}/joined`);
+    return response?.data;
+  }
+
+  async getUnreadCounts() {
+    try {
+      const response = await api.get(`${this.basePath}/unread`);
+      return response.data; // { 'room_{id}': number, 'private_{userId}': number }
+    } catch {
+      return {};
+    }
+  }
+
   async createRoom(groupName, groupDescription) {
     const response = await api.post(`${this.basePath}/create`, { groupName, groupDescription });
     return response.data;

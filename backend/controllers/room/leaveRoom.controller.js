@@ -1,4 +1,6 @@
 import Room from '../../models/room.model.js';
+import UserRoom from '../../models/userRoom.model.js';
+import RoomMessageRead from '../../models/roomMessageRead.model.js';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
@@ -26,6 +28,15 @@ export async function leaveRoom(req, res) {
 
       if (result.matchedCount > 0) {
         await roomCacheClient.refreshRoomCache(roomId);
+
+        // Keep UserRoom index in sync
+        await UserRoom.findOneAndUpdate(
+          { userId },
+          { $pull: { roomIds: roomId } }
+        );
+
+        // Remove read receipt — no longer a member
+        await RoomMessageRead.deleteOne({ userId, roomId });
       }
     }
 

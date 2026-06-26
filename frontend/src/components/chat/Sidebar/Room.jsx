@@ -2,14 +2,13 @@ import { memo } from 'react';
 import Avatar from '../../common/Avatar';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
-const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unreadCounts = {} }) {
+const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unread = 0 }) {
     const { theme, getNeumorphicProps } = useNeumorphism();
     const isActive = currentRoom?._id === room._id;
-    const unread = unreadCounts[`room_${room._id}`] || 0;
 
     return (
         <div
-            onClick={() => handleJoinRoom(room._id)}
+            onClick={() => handleJoinRoom(room._id, room)}
             className={`p-3 md:p-5 rounded-2xl cursor-pointer transition-all`}
             {...getNeumorphicProps(2, 4, 3, 6, isActive, true)}
         >
@@ -45,7 +44,7 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unreadCount
                 </div>
             </div>
         </div>
-
     );
 });
+
 export default Room;

@@ -6,6 +6,7 @@ import cacheRoutes from './routes/cache.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import roomRoutes from './routes/room.routes.js';
 import userRoutes from './routes/user.routes.js';
+import unreadRoutes from './routes/unread.routes.js';
 import cache from './services/CacheService.js';
 import { connectDB } from './database/db.js';
 
@@ -42,6 +43,7 @@ app.use('/bloom', bloomRoutes);
 app.use('/messages', messageRoutes);
 app.use('/rooms', roomRoutes);
 app.use('/users', userRoutes);
+app.use('/unread', unreadRoutes);
 
 
 app.get('/stats', (req, res) => {
