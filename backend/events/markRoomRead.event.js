@@ -2,21 +2,14 @@ import RoomMessageRead from '../models/roomMessageRead.model.js';
 import Message from '../models/message.model.js';
 import { activeRooms } from '../socket.js';
 import unreadCacheClient from '../database/unreadCacheClient.js';
+import lastReadCacheClient from '../database/lastReadCacheClient.js';
+import { publish } from '../utils/messageBroker.js';
 
-/**
- * Socket event: markRoomRead
- * Payload: { roomId, messageId?, timestamp? }
- *
- * Called by the frontend when:
- *   1. User opens a room
- *   2. A new message arrives and the room is currently active
- */
 const handleMarkRoomRead = (socket) => async ({ roomId, messageId, timestamp }) => {
   if (!roomId) return;
 
   const userId = socket.user._id || socket.user.id;
 
-  // Track which room this user is actively viewing
   activeRooms.set(String(userId), String(roomId));
 
   try {
@@ -31,15 +24,21 @@ const handleMarkRoomRead = (socket) => async ({ roomId, messageId, timestamp }) 
       lastReadAt = new Date();
     }
 
-    // Update persistent read receipt
     await RoomMessageRead.findOneAndUpdate(
       { userId, roomId },
       { $set: { lastReadMessageId: messageId ?? null, lastReadAt } },
       { upsert: true, new: true }
     );
 
-    // Clear the unread badge in cache immediately — O(1)
     await unreadCacheClient.reset(userId, `room_${roomId}`);
+    lastReadCacheClient.setRoom(userId, roomId, { messageId: messageId ?? null, lastReadAt }).catch(() => {});
+
+    publish('notification.lastread.room', {
+      userId,
+      roomId,
+      messageId: messageId ?? null,
+      lastReadAt: lastReadAt.toISOString(),
+    });
 
     socket.emit('roomReadAck', { roomId });
   } catch (err) {

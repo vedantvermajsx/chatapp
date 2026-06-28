@@ -22,11 +22,12 @@ const PrivateChatList = memo(function PrivateChatList({ privateChats, currentPri
           </div>
         ) : (
           privateChats.map((chat) => {
-            const unread = unreadCounts[`private_${chat.otherUser.id}`] || 0;
+            const chatUserId = chat.otherUser.id || chat.otherUser._id;
+            const unread = unreadCounts[`private_${chatUserId}`] || 0;
             return (
               <div
-                key={chat.otherUser.id}
-                onClick={() => handleStartPrivateChat(chat.otherUser)}
+                key={chat.otherUser.id || chat.otherUser._id}
+                onClick={() => handleStartPrivateChat({ ...chat.otherUser, id: chat.otherUser.id || chat.otherUser._id })}
                 className="p-3 md:p-5 rounded-2xl cursor-pointer transition-all"
                 {...getNeumorphicProps(2, 4, 3, 6, currentPrivateChat?.id === chat.otherUser.id, true)}
               >
@@ -67,7 +68,7 @@ const PrivateChatList = memo(function PrivateChatList({ privateChats, currentPri
                     </p>
                   </div>
                   <button
-                    onClick={(e) => handleDeletePrivateChat(chat.otherUser.id, e)}
+                    onClick={(e) => handleDeletePrivateChat(chat.otherUser.id || chat.otherUser._id, e)}
                     className="p-1 rounded-full opacity-50 hover:opacity-100 transition-opacity self-center flex-shrink-0"
                     title="Delete Chat"
                   >

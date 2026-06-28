@@ -1,48 +1,45 @@
 import { signToken } from '../../utils/tokenGenerator.js';
 import userCacheClient from '../../database/userCacheClient.js';
-import transformCloudinaryUrl from '../../utils/transformCloudinaryUrl.js';
-import {bloomFilter} from '../../utils/bloomFilterService.js';
-
-const tempAvatar = new Map([
-  [0, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/v1782369805/male_g68rxt.avif'],
-  [1, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/v1782369805/female_qc0qfx.avif'],
-  [2, 'https://res.cloudinary.com/dfxi4ihfs/image/upload/v1782369805/others_xgufdt.avif']
-]);
-
-export function getDefaultAvatar(gender) {
-  let avatarUrl = tempAvatar.get(Number(gender));
-  if (!avatarUrl) {
-    avatarUrl = tempAvatar.get(0);
-  }
-  return transformCloudinaryUrl(avatarUrl);
-}
+import { bloomFilter } from '../../utils/bloomFilterService.js';
 
 export async function handleAuthSuccess(res, userDocument, role) {
   const userData = {
-    id: userDocument._id.toString(),
+    _id: userDocument._id.toString(),
     username: userDocument.username,
+    email: userDocument.email,
     avatar: userDocument.avatar,
     gender: userDocument.gender,
-    role: role
+    age: userDocument.age,
+    bio: userDocument.bio,
+    password: userDocument.password,
+    role,
+    isOnline: true,
+    lastSeen: userDocument.lastSeen ?? new Date(),
   };
 
-  await userCacheClient.addUserToCache(userData.id, Promise.resolve(userData));
-  
-  await bloomFilter.add(userData.username);
-  console.log("bloomed");
+  const cacheProfile = {
+    _id: userData._id,
+    username: userData.username,
+    avatar: userData.avatar,
+    gender: userData.gender,
+    role,
+  };
 
-  const token = signToken({ id: userDocument._id, role: role });
+  await userCacheClient.seedUser(cacheProfile);
+  await bloomFilter.add(cacheProfile.username);
+
+  const token = signToken({ _id: userDocument._id, role });
   const isProduction = process.env.NODE_ENV === 'production';
-  
-  res.cookie('token', token, { 
-    httpOnly: true, 
-    sameSite: isProduction ? 'none' : 'strict', 
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    sameSite: isProduction ? 'none' : 'strict',
     secure: isProduction,
-    maxAge: 24 * 60 * 60 * 1000 
+    maxAge: 24 * 60 * 60 * 1000,
   });
-  
+
   res.status(201).json({
     token,
-    user: userData
+    user: cacheProfile,
   });
 }

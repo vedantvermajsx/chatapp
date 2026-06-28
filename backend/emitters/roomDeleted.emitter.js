@@ -1,10 +1,5 @@
-import { getIO } from '../socket.js';
-import { publish } from '../utils/messageBroker.js';
+import { enqueueEmit } from '../utils/emitQueue.js';
 
 export default function emitRoomDeleted(data) {
-  const io = getIO();
-  if (io) {
-    io.emit('roomDeleted', data);
-  }
-  publish('roomDeleted', data);
+  enqueueEmit('roomDeleted', data);
 }

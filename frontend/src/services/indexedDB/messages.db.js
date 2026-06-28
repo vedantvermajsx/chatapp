@@ -82,7 +82,11 @@ export const dbMessages = {
       };
 
       const toSave = messages.slice(-MAX_MESSAGES_PER_CHAT);
-      toSave.forEach(msg => msgStore.put({ ...msg, chatKey }));
+      toSave.forEach(msg => {
+        const id = msg.id || msg._id;
+        if (!id) return;
+        msgStore.put({ ...msg, id, chatKey });
+      });
 
       const latestTimestamp = toSave[toSave.length - 1]?.timestamp ?? null;
       metaStore.put({ chatKey, latestTimestamp, hasMore, count: toSave.length });
@@ -99,7 +103,11 @@ export const dbMessages = {
       const msgStore = tx.objectStore(STORES.messages);
       const metaStore = tx.objectStore(STORES.chatMeta);
 
-      newMessages.forEach(msg => msgStore.put({ ...msg, chatKey }));
+      newMessages.forEach(msg => {
+        const id = msg.id || msg._id;
+        if (!id) return;
+        msgStore.put({ ...msg, id, chatKey });
+      });
 
       const metaReq = metaStore.get(chatKey);
       metaReq.onsuccess = () => {

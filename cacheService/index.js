@@ -7,6 +7,8 @@ import messageRoutes from './routes/message.routes.js';
 import roomRoutes from './routes/room.routes.js';
 import userRoutes from './routes/user.routes.js';
 import unreadRoutes from './routes/unread.routes.js';
+import lastReadRoutes from './routes/lastRead.routes.js';
+import messageCountRoutes from './routes/messageCount.routes.js';
 import cache from './services/CacheService.js';
 import { connectDB } from './database/db.js';
 
@@ -44,6 +46,8 @@ app.use('/messages', messageRoutes);
 app.use('/rooms', roomRoutes);
 app.use('/users', userRoutes);
 app.use('/unread', unreadRoutes);
+app.use('/last-read', lastReadRoutes);
+app.use('/message-count', messageCountRoutes);
 
 
 app.get('/stats', (req, res) => {

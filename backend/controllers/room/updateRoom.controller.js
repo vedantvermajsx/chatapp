@@ -14,7 +14,7 @@ export async function updateRoom(req, res) {
 
     const groupAdmin = await roomCacheClient.getRoomAdmin(roomId);
     
-    if (groupAdmin !== req.user.id && req.user.role !== 'admin') {
+    if (groupAdmin !== req.user._id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Only admin can update room' });
     }
     

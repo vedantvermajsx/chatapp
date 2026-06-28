@@ -1,15 +1,21 @@
+import mongoose from 'mongoose';
 import xss from 'xss';
 import userCacheClient from '../../database/userCacheClient.js';
 import emitNewPrivateMessage from '../../emitters/newPrivateMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
-import { v4 as uuidv4 } from 'uuid';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
     const { receiverId, content, media, isSystemMessage, systemType } = req.body;
+
     if (!receiverId) {
       return res.status(400).json({ message: 'receiverId required' });
+    }
+
+    const sender = req.user;
+    if (String(sender._id) === String(receiverId)) {
+      return res.status(400).json({ message: 'Cannot send message to yourself' });
     }
 
     const receiver = await userCacheClient.getUserById(receiverId);
@@ -17,16 +23,17 @@ export async function sendPrivateMessage(req, res) {
       return res.status(404).json({ message: 'Receiver not found' });
     }
 
-    const sender = req.user;
-    const uuid = uuidv4();
+    const _id = new mongoose.Types.ObjectId().toString();
     const sanitizedContent = xss(content || '');
     const timestamp = new Date();
+    const senderIdStr = String(sender._id);
+    const receiverIdStr = String(receiverId);
 
     const messageData = {
-      uuid,
+      _id,
       content: sanitizedContent,
-      senderId: sender.id,
-      receiverId,
+      senderId: senderIdStr,
+      receiverId: receiverIdStr,
       roomId: null,
       media: media || null,
       timestamp,
@@ -36,12 +43,12 @@ export async function sendPrivateMessage(req, res) {
     };
 
     const payload = {
-      id: uuid,
-      senderId: sender.id,
+      _id,
+      senderId: senderIdStr,
       senderUsername: sender.username,
       username: sender.username,
+      receiverId: receiverIdStr,
       content: sanitizedContent,
-      receiverId,
       timestamp,
       gender: sender.gender,
       avatar: sender.avatar,
@@ -53,15 +60,17 @@ export async function sendPrivateMessage(req, res) {
     };
 
     enqueueMessage(messageData);
-    emitNewPrivateMessage(sender.id, receiverId, payload);
 
-    await messageCacheClient.appendPrivateMessage(sender.id, receiverId, messageData);
+    emitNewPrivateMessage(senderIdStr, receiverIdStr, payload);
 
-    res.json({
-      _id: uuid,
-      ...messageData,
-    });
+    messageCacheClient
+      .appendPrivateMessage(senderIdStr, receiverIdStr, messageData)
+      .catch(err =>
+        console.error('[sendPrivateMessage] cache append error:', err.message)
+      );
+
+    return res.json(messageData);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 }

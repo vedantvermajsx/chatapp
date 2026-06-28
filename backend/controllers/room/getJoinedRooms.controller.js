@@ -4,15 +4,11 @@ import mongoose from 'mongoose';
 
 export async function getJoinedRooms(req, res) {
   try {
-    const userId = req.user.id;
-
-    console.log("joined room retrival",userId);
+    const userId = req.user._id;
 
     let userRoom = await UserRoom.findOne({ userId }).lean();
 
     const roomIds = userRoom?.roomIds ?? null;
-
-    console.log("room id is",roomIds);
 
     if (!roomIds || roomIds.length === 0) {
       return res.json({data:[], hasMore:false});

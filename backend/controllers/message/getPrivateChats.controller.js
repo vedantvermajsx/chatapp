@@ -1,10 +1,23 @@
 import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
+import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
+
+function deletedUserFallback(otherUserId) {
+  return {
+    _id: otherUserId,
+    username: 'Deleted User',
+    gender: null,
+    role: 'user',
+    avatar: getDefaultAvatar(0),
+    isOnline: false,
+    lastSeen: 0,
+  };
+}
 
 export const getPrivateChats = async (req, res) => {
   try {
     const { user } = req;
-    const userId = user.id;
+    const userId = user._id;
 
     const chats = await messageCacheClient.getPrivateChats(userId);
 
@@ -20,15 +33,7 @@ export const getPrivateChats = async (req, res) => {
           ? lastMessage.receiverId
           : lastMessage.senderId;
 
-        const otherUser = userDetailsMap.get(otherUserId) || {
-          id: otherUserId,
-          username: 'Deleted User',
-          gender: null,
-          role: 'user',
-          avatar: null,
-          isOnline: false,
-          lastSeen: null
-        };
+        const otherUser = userDetailsMap.get(otherUserId) || deletedUserFallback(otherUserId);
 
         return {
           otherUser: {

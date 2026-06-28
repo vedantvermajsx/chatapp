@@ -39,7 +39,7 @@ export const joinRoomHandler = async (
       media: null,
       isSystemMessage: true,
       systemType: 'member-joined',
-      userId: user.id,
+      userId: user._id || user.id,
       username: user.username,
     };
 

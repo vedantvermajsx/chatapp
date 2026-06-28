@@ -11,7 +11,14 @@ export const loadPrivateChatsHandler = async (setPrivateChats, setLoadingPrivate
       privateChats = cachedChats;
     }
 
-    const res = await messageService.getPrivateChats();
+    const raw = await messageService.getPrivateChats();
+    const res = raw.map(chat => ({
+      ...chat,
+      otherUser: {
+        ...chat.otherUser,
+        id: chat.otherUser.id || chat.otherUser._id,
+      }
+    }));
     privateChats = res;
     setPrivateChats(res);
     await dbService.savePrivateChats(res);

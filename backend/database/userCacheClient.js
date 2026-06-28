@@ -7,57 +7,91 @@ class UserCacheClient {
   constructor() {
     this.client = axios.create({
       baseURL: process.env.CACHE_SERVICE_ROOT_URL,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 3000,
     });
-    console.log('User cache client:', process.env.CACHE_SERVICE_ROOT_URL);
   }
 
-  async getUserById(id) {
+  async seedUser(userDoc) {
     try {
-      const res = await this.client.get(`/users/${id}`);
+      await this.client.post('/users/seed', userDoc);
+    } catch (err) {
+      console.warn('[UserCacheClient] seedUser error:', err.message);
+    }
+  }
+
+  async checkDuplicate(username, email) {
+    try {
+      const res = await this.client.post('/users/check-duplicate', { username, email });
       return res.data;
     } catch (err) {
+      console.error('[UserCacheClient] checkDuplicate error:', err.message);
+      return { taken: false };
+    }
+  }
+
+  async getUserById(userId) {
+    try {
+      const res = await this.client.get(`/users/${userId}`);
+      return res.data;
+    } catch (err) {
+      if (err.response?.status === 404) return null;
+      console.error('[UserCacheClient] getUserById error:', err.message);
       return null;
     }
   }
 
-  async getUsersByIds(ids) {
-    const userMap = new Map();
+  async getUserByUsername(username) {
+    try {
+      const res = await this.client.get(`/users/by-username/${encodeURIComponent(username)}`);
+      return res.data;
+    } catch (err) {
+      if (err.response?.status === 404) return null;
+      console.error('[UserCacheClient] getUserByUsername error:', err.message);
+      return null;
+    }
+  }
+
+  async addUserToCache(userId, dataPromise) {
+    try {
+      const data = await dataPromise;
+      await this.client.put(`/users/${userId}`, data);
+    } catch (err) {
+      console.warn('[UserCacheClient] addUserToCache error:', err.message);
+    }
+  }
+
+  async getUsersByIds(userIds) {
+    const map = new Map();
     await Promise.all(
-      ids.map(async (id) => {
+      userIds.map(async (id) => {
         const user = await this.getUserById(id);
-        userMap.set(id, user);
+        if (user) map.set(String(id), user);
       })
     );
-    return userMap;
+    return map;
   }
 
-
-  async addUserToCache(id, data) {
+  async updateUserById(userId, patch) {
     try {
-      const resolvedData = await data;
-      await this.client.post('/users', { id, data: resolvedData });
+      await this.client.put(`/users/${userId}`, patch);
     } catch (err) {
-      console.error(`[UserCache] addUserToCache(${id}):`, err.message);
+      console.warn('[UserCacheClient] updateUserById error:', err.message);
     }
   }
 
-  async updateUserById(id, data) {
+  async deleteUserById(userId) {
     try {
-      const res = await this.client.patch(`/users/${id}`, data);
-      return res.data;
+      await this.client.delete(`/users/${userId}`);
     } catch (err) {
-      console.error(`[UserCache] updateUserById(${id}):`, err.message);
-      return null;
+      console.warn('[UserCacheClient] deleteUserById error:', err.message);
     }
   }
 
-  async deleteUserById(id) {
-    try {
-      await this.client.delete(`/users/${id}`);
-    } catch (err) {
-      console.error(`[UserCache] deleteUserById(${id}):`, err.message);
-    }
+  invalidate(userId) {
+    this.client.delete(`/users/${userId}/cache`).catch((err) => {
+      console.error('[UserCacheClient] invalidate error:', err.message);
+    });
   }
 }
 

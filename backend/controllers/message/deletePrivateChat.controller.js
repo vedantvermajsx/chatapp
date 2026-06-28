@@ -5,7 +5,7 @@ export const deletePrivateChat = async (req, res) => {
   try {
     const { user } = req;
     const { otherUserId } = req.params;
-    const userId = user.id;
+    const userId = user._id;
 
     if (!otherUserId) {
       return res.status(400).json({ message: 'otherUserId is required' });
@@ -21,7 +21,6 @@ export const deletePrivateChat = async (req, res) => {
       { $addToSet: { deletedFor: userId } }
     );
 
-    // Invalidate the cache for this private chat so the next fetch respects the deletedFor filter
     await messageCacheClient.invalidatePrivateMessages(userId, otherUserId);
     
     res.status(200).json({ message: 'Chat removed successfully' });

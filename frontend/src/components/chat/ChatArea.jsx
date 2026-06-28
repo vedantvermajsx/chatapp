@@ -36,7 +36,9 @@ const ChatArea = memo(function ChatArea({
   loadMoreRoomMembers,
   unreadCounts = {},
   onChatRead,
-  onLeaveRoom
+  onLeaveRoom,
+  socket,
+  typingUsers = {}
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -127,6 +129,30 @@ const ChatArea = memo(function ChatArea({
   }, []);
 
   const chatKey = currentRoom?._id || currentPrivateChat?.id || null;
+
+  const typingIndicator = (() => {
+    if (currentPrivateChat) {
+      const typingName = typingUsers[`private_${currentPrivateChat.id}`];
+      if (!typingName) return { active: false };
+      return {
+        active: true,
+        avatar: currentPrivateChat.avatar,
+        name: currentPrivateChat.username,
+        label: `${currentPrivateChat.username} is typing`,
+      };
+    }
+    if (currentRoom) {
+      const count = typingUsers[`room_${currentRoom._id}`];
+      if (!count) return { active: false };
+      return {
+        active: true,
+        avatar: currentRoom.groupPic,
+        name: currentRoom.groupName,
+        label: count === 1 ? 'Someone is typing' : `${count} people are typing`,
+      };
+    }
+    return { active: false };
+  })();
 
   const handleLastMessageVisible = useCallback((lastMessage) => {
     if (!onChatRead || chatKey == null) return;
@@ -258,6 +284,12 @@ const ChatArea = memo(function ChatArea({
     return () => window.removeEventListener('openImageZoom', handleOpenZoom);
   }, []);
 
+  useEffect(() => {
+    if (typingIndicator.active && isUserAtBottom.current) {
+      scrollToBottom();
+    }
+  }, [typingIndicator.active, scrollToBottom]);
+
   return (
     <div
       className="flex-1 flex flex-col min-w-0 relative overflow-hidden"
@@ -295,6 +327,7 @@ const ChatArea = memo(function ChatArea({
           isPrivateChat={!!currentPrivateChat}
           topPadding={headerHeight}
           onLastMessageVisible={handleLastMessageVisible}
+          typingIndicator={typingIndicator}
         />
 
         {showNewMsgBanner && (
@@ -328,6 +361,9 @@ const ChatArea = memo(function ChatArea({
           sendMessage={handleSendMessage}
           disabled={!currentRoom && !currentPrivateChat}
           onEmojiPickerToggle={setIsEmojiPickerOpen}
+          socket={socket}
+          currentRoom={currentRoom}
+          currentPrivateChat={currentPrivateChat}
         />
       </div>
 
@@ -337,7 +373,7 @@ const ChatArea = memo(function ChatArea({
         members={roomMembers}
         admin={currentRoom?.groupAdmin}
         onStartPrivateChat={onStartPrivateChat}
-        currentUserId={user.id}
+        currentUserId={user._id || user.id}
         loading={loadingRoomMembers}
         hasMoreMembers={hasMoreMembers}
         loadMoreRoomMembers={loadMoreRoomMembers}

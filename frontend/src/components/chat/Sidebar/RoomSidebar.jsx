@@ -197,7 +197,7 @@ function RoomSidebar({
 
       {renderTabBar()}
 
-      <div className="flex-1 overflow-y-auto p-3 md:p-5">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-5">
         {activeTab === 'My Chats' ? renderMyChats() : renderGlobal()}
       </div>
 

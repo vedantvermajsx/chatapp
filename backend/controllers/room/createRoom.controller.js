@@ -1,7 +1,6 @@
-import Room from '../../models/room.model.js';
-import UserRoom from '../../models/userRoom.model.js';
-import emitNewRoom from '../../emitters/newRoom.emitter.js';
+import mongoose from 'mongoose';
 import roomCacheClient from '../../database/roomCacheClient.js';
+import { enqueueRoomCreation } from '../../utils/queueClient.js';
 
 export async function createRoom(req, res) {
   try {
@@ -15,27 +14,42 @@ export async function createRoom(req, res) {
       return res.status(409).json({ message: 'Room name already taken' });
     }
 
-    const groupAdmin = req.user.id;
-    const room = await Room.create({
+    const groupAdmin = req.user._id;
+    const roomId = new mongoose.Types.ObjectId().toString();
+    const now = new Date();
+
+    const roomData = {
+      _id: roomId,
       groupAdmin,
       groupName,
       groupDescription,
-      groupMembers: [groupAdmin]
-    });
+      groupPic:
+        'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1781261557/UI__15-1024-195514528_vf6uwo.avif',
+      groupMembers: [groupAdmin],
+      createdAt: now,
+      updatedAt: now,
+    };
 
-    await roomCacheClient.addRoomToCache(room._id.toString(), room);
+    enqueueRoomCreation({ room: roomData, creatorId: groupAdmin });
 
-    // Creator automatically joins — keep UserRoom index in sync
-    await UserRoom.findOneAndUpdate(
-      { userId: groupAdmin },
-      { $addToSet: { roomIds: room._id.toString() } },
-      { upsert: true }
-    );
+    await roomCacheClient.addRoomToCache(roomId, Promise.resolve(roomData));
+    roomCacheClient.addRoomMember(roomId, groupAdmin).catch(() => {});
 
-    emitNewRoom(room);
+    const io = req.app.get('io');
+    const { onlineUsers } = await import('../../socket.js');
+    const creatorEntry = onlineUsers.get(String(groupAdmin));
 
-    res.status(201).json({ message: 'Room created successfully', room });
+    if (io && creatorEntry?.socketId) {
+      const creatorSocket = io.sockets.sockets.get(creatorEntry.socketId);
+      if (creatorSocket) {
+        creatorSocket.join(roomId);
+      }
+    }
+
+    console.log('room created', roomData.groupName);
+    res.status(201).json({ message: 'Room created successfully', room: roomData });
   } catch (err) {
+    console.error('[createRoom] unexpected error:', err.message);
     res.status(500).json({ message: err.message });
   }
 }

@@ -1,16 +1,13 @@
-import Room from '../../models/room.model.js';
-import UserRoom from '../../models/userRoom.model.js';
-import RoomMessageRead from '../../models/roomMessageRead.model.js';
+import mongoose from 'mongoose';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
-import { enqueueMessage } from '../../utils/queueClient.js';
+import { enqueueMessage, enqueueRoomMemberLeft } from '../../utils/queueClient.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
-import { v4 as uuidv4 } from 'uuid';
 
 export async function leaveRoom(req, res) {
   try {
     const { roomId } = req.body;
-    const userId = req.user.id;
+    const userId = req.user._id;
     const username = req.user.username;
 
     const validCheck = await roomCacheClient.isValidRoomId(roomId);
@@ -21,32 +18,16 @@ export async function leaveRoom(req, res) {
     const hasMember = await roomCacheClient.hasMember(roomId, userId);
 
     if (hasMember) {
-      const result = await Room.updateOne(
-        { _id: roomId },
-        { $pull: { groupMembers: userId } }
-      );
-
-      if (result.matchedCount > 0) {
-        await roomCacheClient.refreshRoomCache(roomId);
-
-        // Keep UserRoom index in sync
-        await UserRoom.findOneAndUpdate(
-          { userId },
-          { $pull: { roomIds: roomId } }
-        );
-
-        // Remove read receipt — no longer a member
-        await RoomMessageRead.deleteOne({ userId, roomId });
-      }
+      roomCacheClient.removeRoomMember(roomId, userId).catch(() => {});
+      enqueueRoomMemberLeft(roomId, userId);
     }
 
-    // Build system message the same way sendRoomMessage does
-    const uuid = uuidv4();
+    const _id = new mongoose.Types.ObjectId();
     const content = `${username} left the group`;
     const timestamp = new Date();
 
     const messageData = {
-      uuid,
+      _id,
       content,
       senderId: userId,
       isSystemMessage: true,
@@ -58,7 +39,7 @@ export async function leaveRoom(req, res) {
     };
 
     const payload = {
-      id: uuid,
+      id: _id.toString(),
       roomId,
       userId,
       username,
@@ -72,12 +53,14 @@ export async function leaveRoom(req, res) {
     };
 
     enqueueMessage(messageData);
-    emitNewMessage(roomId, payload);
+
     await messageCacheClient.appendRoomMessage(roomId, messageData);
 
-    res.json({ message: 'Left room successfully' });
+    emitNewMessage(roomId, payload);
+
+    return res.json({ message: 'Left room successfully' });
   } catch (err) {
-    console.error('leaveRoom error:', err);
-    res.status(500).json({ message: err.message });
+    console.error('[leaveRoom] error:', err);
+    return res.status(500).json({ message: err.message });
   }
 }

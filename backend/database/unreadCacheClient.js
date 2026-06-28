@@ -11,7 +11,7 @@ class UnreadCacheClient {
     });
   }
 
-  /** Get all unread counts for a user. Returns { cold, counts } */
+  
   async getAll(userId) {
     try {
       const res = await this.client.get(`/unread/${userId}`);
@@ -23,7 +23,7 @@ class UnreadCacheClient {
     }
   }
 
-  /** Increment unread for a single user + chatKey */
+  
   async increment(userId, chatKey) {
     try {
       await this.client.post(`/unread/${userId}/increment`, { chatKey });
@@ -32,13 +32,7 @@ class UnreadCacheClient {
     }
   }
 
-  /**
-   * Bulk-increment for a room message.
-   * memberIds: all groupMembers
-   * senderId:  excluded from increment
-   * activeViewers: Set/Array of userIds currently viewing this room (also excluded)
-   * chatKey: "room_{roomId}"
-   */
+  
   async incrementForRoom(memberIds, senderId, activeViewerIds, chatKey) {
     try {
       const skip = new Set([String(senderId), ...activeViewerIds.map(String)]);
@@ -54,7 +48,7 @@ class UnreadCacheClient {
     }
   }
 
-  /** Increment unread for private message receiver */
+  
   async incrementPrivate(receiverId, senderId) {
     try {
       await this.client.post(`/unread/${receiverId}/increment`, {
@@ -65,7 +59,7 @@ class UnreadCacheClient {
     }
   }
 
-  /** Reset unread count for userId + chatKey to 0 */
+  
   async reset(userId, chatKey) {
     try {
       await this.client.post(`/unread/${userId}/reset`, { chatKey });
@@ -74,7 +68,7 @@ class UnreadCacheClient {
     }
   }
 
-  /** Seed cache from a pre-computed counts object (used on cold start) */
+  
   async seed(userId, counts) {
     try {
       await this.client.post(`/unread/${userId}/seed`, { counts });
@@ -83,7 +77,7 @@ class UnreadCacheClient {
     }
   }
 
-  /** Invalidate cache for a user (force re-seed on next read) */
+  
   async invalidate(userId) {
     try {
       await this.client.delete(`/unread/${userId}`);

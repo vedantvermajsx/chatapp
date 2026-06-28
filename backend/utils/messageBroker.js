@@ -20,7 +20,7 @@ let ws = null;
 let isOpen = false;
 const messageHandlers = new Map();
 const subscribedChannels = new Set();
-const pendingOutbox = []; 
+const pendingOutbox = [];
 const RECONNECT_DELAY_MS = 5000;
 
 export function connectToBroker() {
@@ -83,9 +83,7 @@ function flushOutbox() {
 }
 
 export function subscribe(channel) {
-  if (subscribedChannels.has(channel)) {
-    return;
-  }
+  if (subscribedChannels.has(channel)) return;
   subscribedChannels.add(channel);
   sendRaw({ type: 'SUBSCRIBE', channel });
 }
@@ -111,7 +109,6 @@ export function on(channel, handler) {
 }
 
 export function off(channel, handler) {
-  
   if (messageHandlers.has(channel)) {
     messageHandlers.get(channel).delete(handler);
     if (messageHandlers.get(channel).size === 0) {

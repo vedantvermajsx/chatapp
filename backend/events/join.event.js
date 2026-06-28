@@ -6,7 +6,8 @@ import { publish } from '../utils/messageBroker.js';
 
 export default function handleJoin(socket, io) {
   return async (data) => {
-    const { userId, role, username, gender } = data;
+    const { role, username, gender } = data;
+    const userId = String(data.userId);
     console.log('User joining:', username);
 
 

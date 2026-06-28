@@ -1,10 +1,19 @@
 import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import getThumbnail from '../../utils/getThumbnail.js';
+import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
+
+function deletedUserFallback() {
+  return {
+    username: 'Deleted User',
+    gender: null,
+    avatar: getDefaultAvatar(0),
+  };
+}
 
 export const getRoomMessages = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { roomId } = req.params;
     const { limit = 20, before, after } = req.query;
 
@@ -29,7 +38,7 @@ export const getRoomMessages = async (req, res) => {
       const formattedMessages = messages.map((msg) => {
   if (msg.isSystemMessage) {
     return {
-      id: msg.id,
+      id: msg._id,
       isSystemMessage: true,
       systemType: msg.systemType || null,
       text: msg.content || msg.text || '',
@@ -37,11 +46,7 @@ export const getRoomMessages = async (req, res) => {
     };
   }
 
-  const senderDetails = userDetailsMap.get(msg.senderId) || {
-    username: 'Deleted User',
-    gender: null,
-    avatar: null,
-  };
+  const senderDetails = userDetailsMap.get(msg.senderId) || deletedUserFallback();
 
   const media = msg.media?.url
     ? {
@@ -55,7 +60,7 @@ export const getRoomMessages = async (req, res) => {
     : null;
 
   return {
-    id: msg.id,
+    id: msg._id,
     text: msg.content || msg.text || '',
     isOwn: msg.senderId === userId,
     timestamp: msg.timestamp,

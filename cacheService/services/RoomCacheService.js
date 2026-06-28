@@ -28,10 +28,10 @@ class RoomCacheService {
 
   async isValidRoomId(id){
     const room = await this.getRoomById(id);
-    if (room) {
-        return { isValid: true, id };
+    if (room && !room.isDeleted) {
+      return { isValid: true, id };
     }
-    return { isValid: false,id:null};
+    return { isValid: false, id: null };
   }
 
   async hasMember(roomId, userId) {
@@ -177,11 +177,84 @@ class RoomCacheService {
 
   async deleteRoomCache(id) {
     roomCache.delete(`room:${id}`);
-    
+    roomCache.delete(`roomMemberIds:${id}`);
     await this.invalidateRoomMembers(id);
-
     invalidateRoomMessages(id);
+  }
+
+  // ── Flat memberIds cache: roomMemberIds:{roomId} → string[] ──────────────
+  // Cheaper than full room object for membership checks.
+  // Seeded lazily on first access from the room document.
+
+  _memberIdsKey(roomId) {
+    return `roomMemberIds:${roomId}`;
+  }
+
+  async getRoomMemberIds(roomId) {
+    const key = this._memberIdsKey(roomId);
+    const cached = roomCache.get(key);
+    if (cached) return cached;
+
+    // Cold — load from room document (already cached or fetch from Mongo)
+    const room = await this.getRoomById(roomId);
+    if (!room) return null;
+
+    const ids = (room.groupMembers || []).map(String);
+    roomCache.set(key, ids, 3600);
+    return ids;
+  }
+
+  async addRoomMember(roomId, userId) {
+    const key = this._memberIdsKey(roomId);
+    const ids = await this.getRoomMemberIds(roomId);
+    if (!ids) return;
+
+    const userStr = String(userId);
+    if (!ids.includes(userStr)) {
+      ids.push(userStr);
+      roomCache.set(key, ids, 3600);
+
+      const room = roomCache.get(`room:${roomId}`);
+      if (room) {
+        room.groupMembers = ids;
+        roomCache.set(`room:${roomId}`, room, 3600);
+      }
+
+      await this.invalidateRoomMembers(roomId);
+    }
+  }
+
+  async removeRoomMember(roomId, userId) {
+    const key = this._memberIdsKey(roomId);
+    const ids = await this.getRoomMemberIds(roomId);
+    if (!ids) return;
+
+    const filtered = ids.filter(id => id !== String(userId));
+    roomCache.set(key, filtered, 3600);
+
+    const room = roomCache.get(`room:${roomId}`);
+    if (room) {
+      room.groupMembers = filtered;
+      roomCache.set(`room:${roomId}`, room, 3600);
+    }
+
+    await this.invalidateRoomMembers(roomId);
+  }
+
+  async setRoomMemberIds(roomId, memberIds) {
+    roomCache.set(this._memberIdsKey(roomId), memberIds.map(String), 3600);
   }
 }
 
 export default new RoomCacheService();
+// Appended below — these methods extend the class above via prototype patching
+// because the class is defined as a default export singleton
+
+RoomCacheService.prototype.markRoomDeleted = async function(id) {
+  let room = roomCache.get(`room:${id}`);
+  if (!room) {
+    room = await Room.findById(id).lean();
+    if (!room) return;
+  }
+  roomCache.set(`room:${id}`, { ...room, isDeleted: true }, 3600);
+};

@@ -13,10 +13,11 @@ import handleWebrtcSignal from './events/webrtc/webrtcSignal.event.js';
 import handleMarkRead from './events/markRead.event.js';
 import handleMarkRoomRead from './events/markRoomRead.event.js';
 import handleClearActiveRoom from './events/clearActiveRoom.event.js';
+import { handleTyping, handleStopTyping, cleanupTypingOnDisconnect } from './events/typing.event.js';
 
 const onlineUsers = new Map();
 const userRooms = new Map();
-// Tracks which room each user is currently actively viewing: userId -> roomId
+
 const activeRooms = new Map();
 let io = null;
 
@@ -50,10 +51,13 @@ export const setupSocket = (server) => {
   io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
 
+    if (socket.user?._id) {
+      socket.join(String(socket.user._id));
+    }
+
     socket.on('join', handleJoin(socket, io));
     socket.on('joinRoom', handleJoinRoom(socket, io));
     socket.on('leaveRoom', handleLeaveRoom(socket, io));
-    socket.on('disconnect', handleDisconnect(socket, io));
     socket.on('userLeftRoom', handleUserLeftRoom(socket, io));
     socket.on('roomUpdated', handleRoomUpdated(socket, io));
     socket.on('roomDeleted', handleRoomDeleted(socket, io));
@@ -61,6 +65,12 @@ export const setupSocket = (server) => {
     socket.on('markRead', handleMarkRead(socket, io));
     socket.on('markRoomRead', handleMarkRoomRead(socket));
     socket.on('clearActiveRoom', handleClearActiveRoom(socket));
+    socket.on('typing', handleTyping(socket, io));
+    socket.on('stopTyping', handleStopTyping(socket, io));
+    socket.on('disconnect', () => {
+      cleanupTypingOnDisconnect(io, socket);
+      handleDisconnect(socket, io)();
+    });
     socket.on('error', (data) => {
       console.log("error", data);
     })

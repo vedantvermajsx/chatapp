@@ -10,7 +10,7 @@ const ThemePicker = ({ show, onClose }) => {
   if (!show) return null;
 
   return (
-    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 p-4 md:p-6 rounded-2xl z-50 w-80 max-h-[70vh] overflow-y-auto" style={{
+    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 p-4 md:p-6 rounded-2xl z-50 w-80 max-h-[70vh] overflow-y-auto custom-scrollbar" style={{
       backgroundColor: theme.background,
       boxShadow: getShadow(theme.isLight, false, 2, 10)
     }}>

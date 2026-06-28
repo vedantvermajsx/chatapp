@@ -120,16 +120,24 @@ class RoomCacheClient {
   async getAllRooms(search = '', { skip = 0, limit = 20 } = {}) {
     try {
       const response = await this.client.get('/rooms', { params: { search, skip, limit } });
-      // Normalize: cacheService now returns { rooms, total, hasMore }
+
       const data = response.data;
       if (data && typeof data === 'object' && Array.isArray(data.rooms)) {
         return data;
       }
-      // Legacy fallback if cacheService returns plain array
+
       return { rooms: Array.isArray(data) ? data : [], total: 0, hasMore: false };
     } catch (err) {
       console.error('[RoomCacheClient] Error in getAllRooms:', err.message);
       return { rooms: [], total: 0, hasMore: false };
+    }
+  }
+
+  async markRoomDeleted(id) {
+    try {
+      await this.client.post(`/rooms/${id}/mark-deleted`);
+    } catch (err) {
+      console.error(`[RoomCacheClient] Error in markRoomDeleted for room ${id}:`, err.message);
     }
   }
 
@@ -138,6 +146,33 @@ class RoomCacheClient {
       await this.client.delete(`/rooms/${id}`);
     } catch (err) {
       console.error(`[RoomCacheClient] Error in deleteRoomById for room ${id}:`, err.message);
+    }
+  }
+
+  async getRoomMemberIds(roomId) {
+    try {
+      const response = await this.client.get(`/rooms/${roomId}/memberIds`);
+      return response.data.memberIds;
+    } catch (err) {
+      if (err.response?.status === 404) return null;
+      console.error(`[RoomCacheClient] Error in getRoomMemberIds for room ${roomId}:`, err.message);
+      return null;
+    }
+  }
+
+  async addRoomMember(roomId, userId) {
+    try {
+      await this.client.post(`/rooms/${roomId}/members/add`, { userId });
+    } catch (err) {
+      console.error(`[RoomCacheClient] Error in addRoomMember for room ${roomId}:`, err.message);
+    }
+  }
+
+  async removeRoomMember(roomId, userId) {
+    try {
+      await this.client.post(`/rooms/${roomId}/members/remove`, { userId });
+    } catch (err) {
+      console.error(`[RoomCacheClient] Error in removeRoomMember for room ${roomId}:`, err.message);
     }
   }
 }

@@ -4,7 +4,7 @@ import userCacheClient from '../../database/userCacheClient.js';
 export async function deleteUser(req, res) {
   try {
     const { userId } = req.params;
-    if (req.user.id !== userId && req.user.role !== 'admin')
+    if (req.user._id !== userId && req.user.role !== 'admin')
       return res.status(403).json({ message: 'Forbidden' });
 
     const user = await userCacheClient.getUserById(userId);

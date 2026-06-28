@@ -1,41 +1,58 @@
 import bcrypt from 'bcryptjs';
-import User from '../../models/user.model.js';
-import { getDefaultAvatar, handleAuthSuccess} from './auth.helper.js';
-import { isUsernameTaken } from './usernameTaken.js';
+import mongoose from 'mongoose';
+import userCacheClient from '../../database/userCacheClient.js';
+import { handleAuthSuccess } from './auth.helper.js';
+import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
+import { enqueueUserRegistration } from '../../utils/queueClient.js';
+
+const SALT_ROUNDS = 10;
 
 export async function register(req, res) {
   try {
-    const { username, password, gender, age, bio} = req.body;
+    const { username, email, password, gender, age, avatar, bio } = req.body;
 
-    const refactoredUsername=username.trim().toLowerCase()
-
-    if (!refactoredUsername || !password || gender === undefined || !age) {
-      return res.status(400).json({ message: 'Missing required fields' });
+    if (!username || !email || !password || !gender || !age) {
+      return res
+        .status(400)
+        .json({ message: 'username, email, password, gender and age are required' });
     }
 
-    if (refactoredUsername.length < 2 || refactoredUsername.length > 30) {
-      return res.status(400).json({ message: 'Username must be 2–30 characters' });
+    const dupCheck = await userCacheClient.checkDuplicate(username, email);
+    if (dupCheck.taken) {
+      return res.status(409).json({ message: `${dupCheck.field} is already taken` });
     }
 
-    const taken = await isUsernameTaken(refactoredUsername);
-    if(taken){
-      return res.status(400).json({ message: 'Username already taken' });
-    }
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    const userId = new mongoose.Types.ObjectId().toString();
+    const resolvedAvatar = avatar || getDefaultAvatar(gender);
 
-    const avatar = getDefaultAvatar(gender);
-
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      username,
-      password: hashed,
-      gender: gender.toString(),
+    const userData = {
+      _id: userId,
+      username: username.trim().toLowerCase(),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      gender,
       age: Number(age),
+      avatar: resolvedAvatar,
       bio: bio || '',
-      avatar: avatar
-    });
+      role: 'user',
+      isOnline: true,
+      lastSeen: new Date(),
+    };
 
-    await handleAuthSuccess(res, user, 'user');
+    await userCacheClient.addUserToCache(userId, Promise.resolve({
+      _id: userId,
+      username: userData.username,
+      avatar: userData.avatar,
+      gender: userData.gender,
+      role: userData.role,
+    }));
+
+    enqueueUserRegistration(userData);
+
+    await handleAuthSuccess(res, { _id: userId, ...userData }, 'user');
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('[register] unexpected error:', err.message);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }

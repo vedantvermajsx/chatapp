@@ -71,7 +71,7 @@ const ChatHeader = memo(function ChatHeader({
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              {currentRoom.groupAdmin === user.id && (
+              {currentRoom.groupAdmin === user._id || user.id && (
                 <button
                   onClick={() => setShowGroupSettings(true)}
                   className="p-2 sm:p-3 rounded-full transition-all"

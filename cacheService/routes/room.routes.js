@@ -11,6 +11,10 @@ import { getRoomsByUser } from '../controllers/room/getRoomsByUser.controller.js
 import { getMembers } from '../controllers/room/getMembers.controller.js';
 import { invalidateMembers } from '../controllers/room/invalidateMembers.controller.js';
 import { deleteRoom } from '../controllers/room/deleteRoom.controller.js';
+import { getMemberIds } from '../controllers/room/getMemberIds.controller.js';
+import { addRoomMember } from '../controllers/room/addRoomMember.controller.js';
+import { removeRoomMember } from '../controllers/room/removeRoomMember.controller.js';
+import { markRoomDeleted } from '../controllers/room/markRoomDeleted.controller.js';
 
 const router = express.Router();
 
@@ -26,5 +30,9 @@ router.get('/user/:userId', getRoomsByUser);
 router.get('/:id/members', getMembers);
 router.post('/:id/invalidate-members', invalidateMembers);
 router.delete('/:id', deleteRoom);
+router.get('/:id/memberIds', getMemberIds);
+router.post('/:id/members/add', addRoomMember);
+router.post('/:id/members/remove', removeRoomMember);
+router.post('/:id/mark-deleted', markRoomDeleted);
 
 export default router;

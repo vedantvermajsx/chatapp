@@ -19,7 +19,10 @@ const ChatInput = memo(forwardRef(({
   onFileSelect,
   selectedFile,
   onRemoveFile,
-  onEmojiPickerToggle
+  onEmojiPickerToggle,
+  socket,
+  currentRoom,
+  currentPrivateChat
 
 }, ref) => {
   const inputRef = useRef(null);
@@ -31,6 +34,57 @@ const ChatInput = memo(forwardRef(({
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
   const MAX_CHARS = 1000;
+  const TYPING_STOP_DELAY = 2000;
+  // Backend clears typing state after 5s of silence (see typing.event.js TYPING_TIMEOUT_MS).
+  // Re-send 'typing' comfortably before that while the user keeps typing, so long
+  // typing bursts don't get auto-cleared server-side and then never recover.
+  const TYPING_HEARTBEAT_INTERVAL = 3000;
+
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef(null);
+  const typingTargetRef = useRef(null);
+  const lastTypingEmitRef = useRef(0);
+
+  const getTypingPayload = () => {
+    if (currentRoom) return { type: 'room', roomId: currentRoom._id };
+    if (currentPrivateChat) return { type: 'private', receiverId: currentPrivateChat.id };
+    return null;
+  };
+
+  const stopTyping = () => {
+    clearTimeout(typingTimeoutRef.current);
+    if (isTypingRef.current && socket && typingTargetRef.current) {
+      socket.emit('stopTyping', typingTargetRef.current);
+    }
+    isTypingRef.current = false;
+    lastTypingEmitRef.current = 0;
+  };
+
+  const handleTypingActivity = () => {
+    if (!socket) return;
+    const payload = getTypingPayload();
+    if (!payload) return;
+
+    typingTargetRef.current = payload;
+
+    const now = Date.now();
+    const needsHeartbeat = now - lastTypingEmitRef.current >= TYPING_HEARTBEAT_INTERVAL;
+
+    if (!isTypingRef.current || needsHeartbeat) {
+      isTypingRef.current = true;
+      lastTypingEmitRef.current = now;
+      socket.emit('typing', payload);
+    }
+
+    clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(stopTyping, TYPING_STOP_DELAY);
+  };
+
+  // Stop typing whenever the active chat changes or the component unmounts
+  useEffect(() => {
+    return () => stopTyping();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentRoom?._id, currentPrivateChat?.id]);
 
   useEffect(() => {
     let interval;
@@ -251,7 +305,7 @@ const ChatInput = memo(forwardRef(({
         </div>
       )}
 
-      <form onSubmit={sendMessage} className="flex items-center justify-center">
+      <form onSubmit={(e) => { stopTyping(); sendMessage(e); }} className="flex items-center justify-center">
         {user && (
           <div className="mr-3 flex-shrink-0 hidden sm:block">
             <Avatar url={user.avatar} name={user.username} gender={user.gender} size={12} />
@@ -345,11 +399,17 @@ const ChatInput = memo(forwardRef(({
                 } else {
                   setInputMessage(text);
                 }
+                if (text.trim()) {
+                  handleTypingActivity();
+                } else {
+                  stopTyping();
+                }
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   if ((inputMessage || selectedFile) && !disabled) {
+                    stopTyping();
                     sendMessage(e);
                   }
                 }

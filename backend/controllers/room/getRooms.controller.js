@@ -1,12 +1,5 @@
 import roomCacheClient from '../../database/roomCacheClient.js';
 
-/**
- * GET /rooms
- * Query params:
- *   search  - filter by name (default '')
- *   skip    - offset for pagination (default 0)
- *   limit   - page size (default 20, max 50)
- */
 export async function getRooms(req, res) {
   try {
     const { search = '' } = req.query;

@@ -2,6 +2,7 @@ import { memo, useEffect, useRef } from 'react';
 import Message from './Message';
 import SystemMessage from './SystemMessage';
 import Spinner from '../../common/Spinner';
+import TypingIndicator from './TypingIndicator';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 const MessageList = ({
@@ -14,12 +15,11 @@ const MessageList = ({
   isPrivateChat,
   topPadding = 64,
   onLastMessageVisible,
+  typingIndicator,
 }) => {
   const { theme } = useTheme();
   const observerRef = useRef(null);
   const lastMsgElRef = useRef(null);
-
-  console.log(messages);
 
   const lastNonOwnIndex = (() => {
     if (!messages) return -1;
@@ -52,10 +52,12 @@ const MessageList = ({
     <div
       ref={messagesContainerRef}
       onScroll={handleScroll}
-      className="h-full overflow-y-auto"
+      className="h-full overflow-y-auto custom-scrollbar"
       style={{
         backgroundColor: theme.background,
         padding: `${topPadding + 16}px 16px 16px`,
+        '--scrollbar-thumb': theme.isLight ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.22)',
+        '--scrollbar-thumb-hover': theme.isLight ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)',
       }}
     >
       {hasMoreMessages && (
@@ -86,6 +88,14 @@ const MessageList = ({
               }
             </div>
           ))}
+
+          {typingIndicator?.active && (
+            <TypingIndicator
+              avatar={typingIndicator.avatar}
+              name={typingIndicator.name}
+              label={typingIndicator.label}
+            />
+          )}
         </div>
       )}
 

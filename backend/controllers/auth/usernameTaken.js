@@ -5,8 +5,6 @@ import {bloomFilter} from '../../utils/bloomFilterService.js';
 export async function isUsernameTaken(username) {
   const normalized = username.toLowerCase();
 
-  
-
   if (!(await bloomFilter.mightContain(normalized))) {
     return false;
   }

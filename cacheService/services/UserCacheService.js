@@ -1,88 +1,125 @@
+import { userCache } from './CacheService.js';
 import User from '../models/user.model.js';
 import Guest from '../models/guest.model.js';
-import { userCache } from './CacheService.js';
 
-const USER_TTL_SECONDS = 3600;
+const isGuestId = (id) => String(id).startsWith('guest_');
 
-const NOT_FOUND_USER = {
-  id: '6a2bae6f507740c0347410ff',
-  username: 'Deleted User',
-  gender: '2',
-  role: 'NOT_FOUND',
-  avatar:'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1782368437/c7fb3065-1fe7-4b99-ab82-715b4e5d6dd3_eb5znr.avif',
-  isOnline: false,
-  lastSeen: 0,
-  notFound: true
-};
+const USER_TTL  = 3600;
+const INDEX_TTL = 86400;
 
-function formatUser(user) {
-  return {
-    id: user._id.toString(),
-    username: user.username ?? NOT_FOUND_USER.username,
-    gender: user.gender ?? NOT_FOUND_USER.gender,
-    role: user.role ?? NOT_FOUND_USER.role,
-    avatar: user.avatar ?? NOT_FOUND_USER.avatar,
-    isOnline: user.isOnline?? NOT_FOUND_USER.isOnline,
-    lastSeen: user.lastSeen?? NOT_FOUND_USER.lastSeen
-  };
-}
+function userKey(userId)   { return `user:${userId}`; }
+function usernameKey(name) { return `user:username:${name.toLowerCase()}`; }
+function emailKey(email)   { return `user:email:${email.toLowerCase()}`; }
 
-class UserCacheService {
-  _cacheKey(id) {
-    return `user:${id}`;
-  }
+const UserCacheService = {
 
-  _isGuest(id) {
-    return String(id).startsWith('guest_');
-  }
+  _seed(user) {
+    const id = String(user._id);
+    userCache.set(userKey(id), user, USER_TTL);
+    if (user.username) userCache.set(usernameKey(user.username), id, INDEX_TTL);
+    if (user.email)    userCache.set(emailKey(user.email),       id, INDEX_TTL);
+    return user;
+  },
 
-  _model(id) {
-    return this._isGuest(id) ? Guest : User;
-  }
+  seedUser(userDoc) {
+    this._seed(userDoc);
+    console.log(`[UserCacheService] seeded user ${userDoc._id} into cache`);
+  },
 
-  async getUserById(id) {
-    const cached = userCache.get(this._cacheKey(id));
+  setUser(id, data) {
+    const merged = { ...data, _id: id };
+    this._seed(merged);
+    console.log(`[UserCacheService] set user ${id} in cache`);
+  },
+
+  updateUser(id, patch) {
+    const existing = userCache.get(userKey(id)) || {};
+    const updated = { ...existing, ...patch, _id: id };
+    this._seed(updated);
+    console.log(`[UserCacheService] updated user ${id} in cache`);
+    return updated;
+  },
+
+  deleteUser(id) {
+    const u = userCache.get(userKey(id));
+    if (u) {
+      if (u.username) userCache.delete(usernameKey(u.username));
+      if (u.email)    userCache.delete(emailKey(u.email));
+    }
+    userCache.delete(userKey(id));
+    console.log(`[UserCacheService] deleted user ${id} from cache`);
+  },
+
+  async getUserById(userId) {
+    const cached = userCache.get(userKey(userId));
     if (cached) return cached;
 
-    let user = await this._model(id).findById(id)
-      .select('_id username gender role avatar isOnline lastSeen');
+    const user = isGuestId(userId)
+      ? await Guest.findById(userId).lean()
+      : await User.findById(userId).lean();
 
-   
-    if (!user) {
-      user = {
-        _id: id,
-        username: NOT_FOUND_USER.username,
-        gender: NOT_FOUND_USER.gender,
-        role: NOT_FOUND_USER.role,
-        avatar: NOT_FOUND_USER.avatar,
-        isOnline: NOT_FOUND_USER.isOnline,
-        lastSeen: NOT_FOUND_USER.lastSeen
-      };
+    if (user) this._seed(user);
+    return user || null;
+  },
+
+  async getUserByUsername(username) {
+    const cachedId = userCache.get(usernameKey(username));
+    if (cachedId) {
+      const u = userCache.get(userKey(cachedId));
+      if (u) return u;
     }
 
+    const user = await User.findOne({ username }).lean()
+      || await Guest.findOne({ username }).lean();
 
-    const formatted = formatUser(user);
-    userCache.set(this._cacheKey(id), formatted, USER_TTL_SECONDS);
+    if (user) this._seed(user);
+    return user || null;
+  },
 
-    return formatted;
-  }
+  async getUserByEmail(email) {
+    const cachedId = userCache.get(emailKey(email));
+    if (cachedId) {
+      const u = userCache.get(userKey(cachedId));
+      if (u) return u;
+    }
+    const user = await User.findOne({ email }).lean();
+    if (user) this._seed(user);
+    return user || null;
+  },
 
-  async setUser(id, data) {
-    userCache.set(this._cacheKey(id), data, USER_TTL_SECONDS);
-  }
+  async checkDuplicate(username, email) {
+    if (userCache.get(usernameKey(username))) return { taken: true, field: 'username' };
+    if (email && userCache.get(emailKey(email))) return { taken: true, field: 'email' };
 
-  async updateUser(id, data) {
-    const existing = await this.getUserById(id);
-    if (existing?.notFound) return null;
-    
-    const updated = { ...existing, ...data };
-    userCache.set(this._cacheKey(id), updated, USER_TTL_SECONDS);
-    return updated;
-  }
+    const query = email
+      ? { $or: [{ email }, { username }] }
+      : { username };
 
-  async deleteUser(id) {
-    userCache.delete(this._cacheKey(id));
-  }
-}
+    const existing = await User.findOne(query).select('_id email username').lean();
+    if (existing) {
+      const field = existing.email === email ? 'email' : 'username';
+      const idxKey = field === 'email' ? emailKey(email) : usernameKey(username);
+      userCache.set(idxKey, String(existing._id), INDEX_TTL);
+      return { taken: true, field };
+    }
 
-export default new UserCacheService();
+    const existingGuest = await Guest.findOne({ username }).select('_id username').lean();
+    if (existingGuest) {
+      userCache.set(usernameKey(username), String(existingGuest._id), INDEX_TTL);
+      return { taken: true, field: 'username' };
+    }
+
+    return { taken: false };
+  },
+
+  invalidate(userId) {
+    const u = userCache.get(userKey(userId));
+    if (u) {
+      if (u.username) userCache.delete(usernameKey(u.username));
+      if (u.email)    userCache.delete(emailKey(u.email));
+    }
+    userCache.delete(userKey(userId));
+  },
+};
+
+export default UserCacheService;

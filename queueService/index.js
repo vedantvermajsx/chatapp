@@ -1,12 +1,12 @@
-// Queue Service
-
 import dotenv from 'dotenv';
 import BatchQueue from './BatchQueue.js';
-import { processMessageBatch } from './processors/messageProcessor.js';
+import { processMessageBatch } from './processors/message/messageProcessor.js';
+import { registerUserRegistrationHandler } from './processors/user/userRegistrationProcessor.js';
+import { registerGuestRegistrationHandler } from './processors/guest/guestRegistrationProcessor.js';
+import { registerRoomHandlers } from './processors/room/roomProcessor.js';
+import { registerNotificationHandlers } from './processors/notification/notificationProcessor.js';
 import { connectToBroker, subscribe, on } from './broker.js';
 import { connectDB } from './database/db.js';
-import Message from './models/message.model.js';
-import { invalidateMessageCache } from './cacheClient.js';
 import { createAdminServer } from './adminServer.js';
 
 dotenv.config();
@@ -14,7 +14,7 @@ dotenv.config();
 const messageQueue = new BatchQueue({
   batchSize: 50,
   flushInterval: 500,
-  processBatch: processMessageBatch
+  processBatch: processMessageBatch,
 });
 
 async function start() {
@@ -26,24 +26,23 @@ async function start() {
     messageQueue.add(messageData);
   });
 
-  subscribe('room.deleted');
-  on('room.deleted', async ({ roomId }) => {
-    try {
-      const { deletedCount } = await Message.deleteMany({ roomId });
-      console.log(`[QueueService] deleted ${deletedCount} message(s) for removed room ${roomId}`);
-    } catch (err) {
-      console.error(`[QueueService] failed to delete messages for room ${roomId}:`, err.message);
-    } finally {
-      await invalidateMessageCache({ roomId });
-    }
-  });
+  registerUserRegistrationHandler(subscribe, on);
+  registerGuestRegistrationHandler(subscribe, on);
+  registerRoomHandlers(subscribe, on);
+  registerNotificationHandlers(subscribe, on);
 
   createAdminServer({
     port: process.env.PORT || 6000,
-    getStats: () => messageQueue.getStats()
+    getStats: () => messageQueue.getStats(),
   });
 
-  console.log('[QueueService] ready — subscribed to: message.created, room.deleted');
+  console.log(
+    '[QueueService] ready — subscribed to: ' +
+    'message.created, room.deleted, ' +
+    'user.registered, guest.registered, ' +
+    'room.created, room.member.joined, room.member.left, ' +
+    'notification.unread.*, notification.lastread.*'
+  );
 }
 
 start().catch((err) => {

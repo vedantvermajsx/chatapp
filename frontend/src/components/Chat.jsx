@@ -62,7 +62,7 @@ function Chat() {
     setSelectedFile(null);
   };
 
-  const socket = useChatSocket(user, {
+  const { socket, typingUsers } = useChatSocket(user, {
     currentRoom,
     currentPrivateChat,
     setCurrentPrivateChat,
@@ -112,6 +112,7 @@ function Chat() {
           senderId: lastMessage.senderId,
           receiverId: lastMessage.receiverId,
           messageId: lastMessage.id,
+          timestamp: lastMessage.timestamp,
         });
       }
     }
@@ -215,6 +216,8 @@ function Chat() {
           unreadCounts={unreadCounts}
           onChatRead={handleChatRead}
           onLeaveRoom={handleLeaveRoom}
+          socket={socket}
+          typingUsers={typingUsers}
         />
       </CallProvider>
     </div>

@@ -1,6 +1,5 @@
 import { WebSocketServer } from 'ws';
 import dotenv from 'dotenv';
-import { randomUUID } from 'crypto';
 import subscribeToChannel from './events/subscribeToChannel.js';
 import unsubscribeFromChannel from './events/unsubscribeFromChannel.js';
 import publishToChannel from './events/publishToChannel.js';
@@ -17,9 +16,8 @@ const subscribers = new Map();
 console.log(`Message Broker Service started on port ${PORT}`);
 
 wss.on('connection', (ws) => {
-  ws.clientId = randomUUID();
   ws.isAlive = true;
-  console.log(`Client connected to message broker [${ws.clientId}]`);
+  console.log(`Client connected to message broker`);
 
   ws.on('pong', () => {
     ws.isAlive = true;

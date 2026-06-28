@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 router.get('/:userId', getUnread);
-router.post('/members/increment', incrementUnreadForMembers); // no :userId — bulk op
+router.post('/members/increment', incrementUnreadForMembers);
 router.post('/:userId/increment', incrementUnread);
 router.post('/:userId/reset', resetUnread);
 router.post('/:userId/seed', seedUnread);

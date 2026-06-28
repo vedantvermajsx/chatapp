@@ -80,7 +80,7 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto custom-scrollbar">
           <form id="group-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col items-center gap-4">
               <div className="relative">

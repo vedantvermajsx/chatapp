@@ -6,15 +6,6 @@ export function registerBrokerBridge(io, onlineUsers) {
   if (registered) return;
   registered = true;
 
-  on('newMessage', ({ roomId, payload }) => {
-    io.to(roomId).emit('newMessage', payload);
-  });
-
-  on('newPrivateMessage', ({ senderId, receiverId, payload }) => {
-    io.to(receiverId).emit('newPrivateMessage', payload);
-    io.to(senderId).emit('newPrivateMessage', payload);
-  });
-
   on('newRoom', (room) => {
     io.emit('newRoom', room);
   });

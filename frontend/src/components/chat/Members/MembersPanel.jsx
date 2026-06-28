@@ -96,7 +96,7 @@ const MembersPanel = memo(function MembersPanel({
         </div>
 
         <div
-          className="flex-1 overflow-y-auto p-5"
+          className="flex-1 overflow-y-auto custom-scrollbar p-5"
           style={{ backgroundColor: theme.background }}
           ref={scrollRef}
           onScroll={handleScroll}

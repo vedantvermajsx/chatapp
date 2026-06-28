@@ -1,49 +1,51 @@
-import ConversationRead from "../models/conversationRead.model.js";
-import { messageCacheClient } from "../database/messageCacheClient.js";
-import { getIO } from "../socket.js";
-import unreadCacheClient from "../database/unreadCacheClient.js";
+import ConversationRead from '../models/conversationRead.model.js';
+import { getIO } from '../socket.js';
+import unreadCacheClient from '../database/unreadCacheClient.js';
+import lastReadCacheClient from '../database/lastReadCacheClient.js';
+import { publish } from '../utils/messageBroker.js';
 
-const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId }) => {
+const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId, timestamp }) => {
   if (!senderId || !receiverId || !messageId) return;
 
-  const userId = socket.user._id || socket.user.id;
+  const userId = String(socket.user._id || socket.user.id);
 
   if (receiverId !== userId) {
-    socket.emit("error", { message: "Forbidden" });
+    socket.emit('error', { message: 'Forbidden' });
     return;
   }
 
-  // Fixed: was called with object destructuring { senderId, receiverId, messageId }
-  // but getPrivateMessage expects 3 positional args (senderId, receiverId, messageId)
-  const message = await messageCacheClient.getPrivateMessage(senderId, receiverId, messageId);
-  if (!message) return;
-
-  const messageTimestamp = new Date(message.timestamp);
+  const messageTimestamp = timestamp ? new Date(timestamp) : new Date();
+  const now = new Date();
 
   const existing = await ConversationRead.findOne({ senderId, receiverId })
-    .select("messageId lastSeenAt")
+    .select('messageId timestamp')
     .lean();
 
-  if (existing) {
-    if (existing.messageId === messageId) return;
-    if (existing.lastSeenAt && messageTimestamp <= new Date(existing.timestamp)) return;
-  }
+  if (existing?.messageId === messageId) return;
 
-  const now = new Date();
+  if (existing?.timestamp && messageTimestamp <= existing.timestamp) return;
 
   await ConversationRead.findOneAndUpdate(
     { senderId, receiverId },
-    { messageId, timestamp:messageTimestamp, lastSeenAt: now },
+    { messageId, timestamp: messageTimestamp, lastSeenAt: now },
     { upsert: true, new: true }
   );
 
-  // Clear unread badge in cache — receiver is userId, sender is senderId
   unreadCacheClient.reset(receiverId, `private_${senderId}`).catch(() => {});
+  lastReadCacheClient.setPrivate(receiverId, senderId, { messageId, lastSeenAt: now }).catch(() => {});
 
-  getIO().to(senderId).emit("readReceipt", {
-    senderId,
-    receiverId,
+  publish('notification.lastread.private', {
+    userId: receiverId,
+    peerId: senderId,
     messageId,
+    lastSeenAt: now.toISOString(),
+  });
+
+  getIO().to(String(senderId)).emit('readReceipt', {
+    senderId,       
+    receiverId,    
+    messageId,
+    timestamp: messageTimestamp,
     lastSeenAt: now,
   });
 };
