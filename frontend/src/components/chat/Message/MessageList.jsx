@@ -94,6 +94,7 @@ const MessageList = ({
               avatar={typingIndicator.avatar}
               name={typingIndicator.name}
               label={typingIndicator.label}
+              charCount={typingIndicator.charCount}
             />
           )}
         </div>

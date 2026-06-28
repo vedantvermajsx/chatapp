@@ -1,13 +1,12 @@
-import { Send, Paperclip, Smile } from 'lucide-react';
+import { Send, Paperclip, Sticker } from 'lucide-react';
 import { useRef, useState, useEffect, forwardRef, useImperativeHandle, memo } from 'react';
 import { toast } from 'sonner';
-import data from '@emoji-mart/data';
-import Picker from '@emoji-mart/react';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 import ChatMediaPreview from './ChatMediaPreview';
 import ChatVoiceRecorder from './ChatVoiceRecorder';
+import StickerPicker from './StickerPicker';
 import { SUPPORTED_FORMATS} from '../../../utils/constants.js';
 
 const ChatInput = memo(forwardRef(({
@@ -19,7 +18,7 @@ const ChatInput = memo(forwardRef(({
   onFileSelect,
   selectedFile,
   onRemoveFile,
-  onEmojiPickerToggle,
+  onStickerSend,
   socket,
   currentRoom,
   currentPrivateChat
@@ -27,7 +26,7 @@ const ChatInput = memo(forwardRef(({
 }, ref) => {
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -45,9 +44,9 @@ const ChatInput = memo(forwardRef(({
   const typingTargetRef = useRef(null);
   const lastTypingEmitRef = useRef(0);
 
-  const getTypingPayload = () => {
+  const getTypingPayload = (charCount) => {
     if (currentRoom) return { type: 'room', roomId: currentRoom._id };
-    if (currentPrivateChat) return { type: 'private', receiverId: currentPrivateChat.id };
+    if (currentPrivateChat) return { type: 'private', receiverId: currentPrivateChat.id, charCount };
     return null;
   };
 
@@ -60,9 +59,9 @@ const ChatInput = memo(forwardRef(({
     lastTypingEmitRef.current = 0;
   };
 
-  const handleTypingActivity = () => {
+  const handleTypingActivity = (charCount) => {
     if (!socket) return;
-    const payload = getTypingPayload();
+    const payload = getTypingPayload(charCount);
     if (!payload) return;
 
     typingTargetRef.current = payload;
@@ -73,6 +72,9 @@ const ChatInput = memo(forwardRef(({
     if (!isTypingRef.current || needsHeartbeat) {
       isTypingRef.current = true;
       lastTypingEmitRef.current = now;
+      socket.emit('typing', payload);
+    } else if (currentPrivateChat) {
+      // Char count changes more often than the heartbeat; keep it fresh for private chats.
       socket.emit('typing', payload);
     }
 
@@ -214,43 +216,27 @@ const ChatInput = memo(forwardRef(({
     e.stopPropagation();
   };
 
-  const emojiPickerRef = useRef(null);
+  const stickerPickerRef = useRef(null);
 
-  const handleToggleEmojiPicker = () => {
-    const newState = !showEmojiPicker;
-    setShowEmojiPicker(newState);
-    if (onEmojiPickerToggle) {
-      onEmojiPickerToggle(newState);
-    }
+  const handleToggleStickerPicker = () => {
+    setShowStickerPicker(prev => !prev);
   };
 
-  const handleEmojiSelect = (emoji) => {
-    if (inputRef.current) {
-      const current = inputRef.current.innerText;
-      const combined = current + emoji.native;
-      const trimmed = combined.slice(0, MAX_CHARS);
-      inputRef.current.innerText = trimmed;
-      setInputMessage(trimmed);
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(inputRef.current);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
+  const handleStickerSelect = (sticker) => {
+    setShowStickerPicker(false);
+    if (onStickerSend) {
+      onStickerSend(sticker);
     }
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(event.target) &&
-        !event.target.closest('button[title="Open emoji picker"]')
+        stickerPickerRef.current &&
+        !stickerPickerRef.current.contains(event.target) &&
+        !event.target.closest('button[title="Open sticker picker"]')
       ) {
-        setShowEmojiPicker(false);
-        if (onEmojiPickerToggle) {
-          onEmojiPickerToggle(false);
-        }
+        setShowStickerPicker(false);
       }
     };
 
@@ -258,7 +244,7 @@ const ChatInput = memo(forwardRef(({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [onEmojiPickerToggle]);
+  }, []);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -295,14 +281,11 @@ const ChatInput = memo(forwardRef(({
         theme={theme}
       />
 
-      {showEmojiPicker && (
-        <div ref={emojiPickerRef} className="absolute bottom-full left-4 mb-2 z-50">
-          <Picker
-            data={data}
-            onEmojiSelect={handleEmojiSelect}
-            theme={theme.isLight ? 'light' : 'dark'}
-          />
-        </div>
+      {showStickerPicker && (
+        <StickerPicker
+          pickerRef={stickerPickerRef}
+          onStickerSelect={handleStickerSelect}
+        />
       )}
 
       <form onSubmit={(e) => { stopTyping(); sendMessage(e); }} className="flex items-center justify-center">
@@ -342,16 +325,16 @@ const ChatInput = memo(forwardRef(({
 
           <button
             type="button"
-            onClick={handleToggleEmojiPicker}
+            onClick={handleToggleStickerPicker}
             onMouseDown={(e) => e.preventDefault()}
             onTouchStart={(e) => e.preventDefault()}
             className="hidden sm:flex py-3 sm:py-4 items-center justify-center rounded-full transition-all flex-shrink-0"
             style={{
               boxShadow: 'none'
             }}
-            title="Open emoji picker"
+            title="Open sticker picker"
           >
-            <Smile className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+            <Sticker className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
           </button>
 
           <ChatVoiceRecorder
@@ -400,7 +383,7 @@ const ChatInput = memo(forwardRef(({
                   setInputMessage(text);
                 }
                 if (text.trim()) {
-                  handleTypingActivity();
+                  handleTypingActivity(text.length);
                 } else {
                   stopTyping();
                 }

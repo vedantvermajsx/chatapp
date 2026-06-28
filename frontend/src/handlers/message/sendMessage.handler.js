@@ -192,3 +192,124 @@ export const sendMessageHandler = async (
     }
   })();
 };
+
+
+export const sendStickerHandler = async (
+  sticker,
+  currentRoom,
+  currentPrivateChat,
+  user,
+  setMessages,
+  privateChats,
+  setPrivateChats,
+  messageCache
+) => {
+  if (!sticker?.url) return;
+
+  const tempId = crypto.randomUUID();
+
+  const stickerMedia = {
+    type: 'sticker',
+    url: sticker.url,
+    isPending: true
+  };
+
+  const optimisticMessage = {
+    id: tempId,
+    username: user.username,
+    text: '',
+    isOwn: true,
+    timestamp: new Date().toISOString(),
+    gender: user.gender,
+    avatar: user.avatar || null,
+    media: stickerMedia,
+    isPending: true
+  };
+
+  if (currentRoom) {
+    setMessages((prev) => [...prev, optimisticMessage]);
+    const cacheKey = `room_${currentRoom._id}`;
+    if (messageCache.current[cacheKey]) {
+      messageCache.current[cacheKey] = {
+        ...messageCache.current[cacheKey],
+        messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
+      };
+    }
+  } else if (currentPrivateChat) {
+    setMessages((prev) => [...prev, optimisticMessage]);
+    const cacheKey = `private_${currentPrivateChat.id}`;
+    if (messageCache.current[cacheKey]) {
+      messageCache.current[cacheKey] = {
+        ...messageCache.current[cacheKey],
+        messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
+      };
+    }
+  }
+
+  (async () => {
+    try {
+      const finalMedia = { type: 'sticker', url: sticker.url, isPending: false };
+
+      let response;
+      if (currentRoom) {
+        response = await messageService.sendRoomMessage({
+          roomId: currentRoom._id,
+          text: '',
+          media: finalMedia,
+          uuid: tempId
+        });
+      } else if (currentPrivateChat) {
+        response = await messageService.sendPrivateMessage({
+          receiverId: currentPrivateChat.id.toString(),
+          receiverModel: currentPrivateChat.role === 'guest' ? 'Guest' : 'User',
+          content: '',
+          media: finalMedia,
+          uuid: tempId
+        });
+      }
+
+      if (!response) return;
+
+      const newMessageObj = {
+        id: response._id,
+        username: user.username,
+        text: '',
+        isOwn: true,
+        timestamp: response.timestamp,
+        gender: user.gender,
+        avatar: user.avatar || null,
+        media: finalMedia,
+        isPending: false
+      };
+
+      setMessages((prev) => prev.map((msg) =>
+        (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg
+      ));
+
+      if (currentRoom) {
+        const cacheKey = `room_${currentRoom._id}`;
+        if (messageCache.current[cacheKey]) {
+          messageCache.current[cacheKey] = {
+            ...messageCache.current[cacheKey],
+            messages: messageCache.current[cacheKey].messages.map((msg) =>
+              (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg
+            )
+          };
+        }
+      } else if (currentPrivateChat) {
+        const cacheKey = `private_${currentPrivateChat.id}`;
+        if (messageCache.current[cacheKey]) {
+          messageCache.current[cacheKey] = {
+            ...messageCache.current[cacheKey],
+            messages: messageCache.current[cacheKey].messages.map((msg) =>
+              (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg
+            )
+          };
+        }
+        updatePrivateChatOptimistically(privateChats, setPrivateChats, currentPrivateChat, '🎭');
+      }
+    } catch (error) {
+      console.error('Failed to send sticker:', error);
+    }
+  })();
+};

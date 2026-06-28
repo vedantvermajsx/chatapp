@@ -19,6 +19,7 @@ const ChatArea = memo(function ChatArea({
   onFileSelect,
   onRemoveFile,
   sendMessage,
+  sendSticker,
   leaveRoomSocket,
   showMembersModal,
   setShowMembersModal,
@@ -55,7 +56,6 @@ const ChatArea = memo(function ChatArea({
   const scrollSaveTimers = useRef({});
 
   const [zoomImageUrl, setZoomImageUrl] = useState(null);
-  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [containerHeight, setContainerHeight] = useState(null);
   const [offsetTop, setOffsetTop] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(64);
@@ -132,13 +132,14 @@ const ChatArea = memo(function ChatArea({
 
   const typingIndicator = (() => {
     if (currentPrivateChat) {
-      const typingName = typingUsers[`private_${currentPrivateChat.id}`];
-      if (!typingName) return { active: false };
+      const typingData = typingUsers[`private_${currentPrivateChat.id}`];
+      if (!typingData) return { active: false };
       return {
         active: true,
         avatar: currentPrivateChat.avatar,
         name: currentPrivateChat.username,
         label: `${currentPrivateChat.username} is typing`,
+        charCount: typingData.charCount,
       };
     }
     if (currentRoom) {
@@ -360,7 +361,7 @@ const ChatArea = memo(function ChatArea({
           onRemoveFile={onRemoveFile}
           sendMessage={handleSendMessage}
           disabled={!currentRoom && !currentPrivateChat}
-          onEmojiPickerToggle={setIsEmojiPickerOpen}
+          onStickerSend={sendSticker}
           socket={socket}
           currentRoom={currentRoom}
           currentPrivateChat={currentPrivateChat}

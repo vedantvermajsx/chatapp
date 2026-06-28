@@ -11,6 +11,7 @@ import {
   loadMoreRoomMessagesHandler,
   prefetchAllMessagesHandler
 } from '../handlers/chat.handlers';
+import { sendStickerHandler } from '../handlers/message/sendMessage.handler.js';
 import roomService from '../services/room.service';
 import userService from '../services/user.service';
 import { toast } from 'sonner';
@@ -135,6 +136,19 @@ export const useChatState = (user) => {
       setSelectedFile
     );
   }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile]);
+
+  const sendSticker = useCallback(async (stickerEmoji) => {
+    await sendStickerHandler(
+      stickerEmoji,
+      currentRoom,
+      currentPrivateChat,
+      user,
+      setMessages,
+      privateChats,
+      setPrivateChats,
+      messageCache
+    );
+  }, [currentRoom, currentPrivateChat, user, privateChats]);
 
   const joinRoom = useCallback(async (roomId, socket, roomObject = null) => {
     const switchId = ++currentSwitchId.current;
@@ -304,6 +318,7 @@ export const useChatState = (user) => {
     loadRoomMembers,
     loadMoreRoomMembers,
     sendMessage,
+    sendSticker,
     joinRoom,
     startPrivateChat,
     loadMoreMessages

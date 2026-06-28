@@ -37,7 +37,7 @@ function stopRoomTyping(io, userId, roomId, socket) {
 
 
 export function handleTyping(socket, io) {
-  return ({ type, receiverId, roomId }) => {
+  return ({ type, receiverId, roomId, charCount }) => {
     const userId   = String(socket.user._id || socket.user.id);
     const username = socket.user.username;
 
@@ -52,7 +52,7 @@ export function handleTyping(socket, io) {
       const timer = setTimeout(() => stopPrivateTyping(io, userId, target), TYPING_TIMEOUT_MS);
       privateTyping.get(target).set(userId, timer);
 
-      io.to(target).emit('typingPrivate', { senderId: userId, username });
+      io.to(target).emit('typingPrivate', { senderId: userId, username, charCount });
 
     } else if (type === 'room') {
       if (!roomId) return;

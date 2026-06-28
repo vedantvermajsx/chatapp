@@ -55,7 +55,7 @@ const messageSchema = new mongoose.Schema(
     media: {
       type: {
         type: String,
-        enum: ['image', 'video', 'gif', 'audio'],
+        enum: ['image', 'video', 'gif', 'audio','sticker'],
         default: null
       },
       url: {

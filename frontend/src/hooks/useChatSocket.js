@@ -371,9 +371,9 @@ export const useChatSocket = (user, {
       setUnreadCounts(prev => ({ ...prev, [chatKey]: (prev[chatKey] || 0) + 1 }));
     };
 
-    const handleTypingPrivate = ({ senderId, username }) => {
+    const handleTypingPrivate = ({ senderId, username, charCount }) => {
       if (!senderId) return;
-      setTypingUsers(prev => ({ ...prev, [`private_${senderId}`]: username || 'Someone' }));
+      setTypingUsers(prev => ({ ...prev, [`private_${senderId}`]: { username: username || 'Someone', charCount } }));
     };
 
     const handleStopTypingPrivate = ({ senderId }) => {

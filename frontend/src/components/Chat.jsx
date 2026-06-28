@@ -47,6 +47,7 @@ function Chat() {
     loadRoomMembers,
     loadMoreRoomMembers,
     sendMessage,
+    sendSticker,
     joinRoom,
     startPrivateChat,
     loadMoreMessages,
@@ -198,6 +199,7 @@ function Chat() {
           onFileSelect={handleFileSelect}
           onRemoveFile={handleRemoveFile}
           sendMessage={(e) => sendMessage(e, socket)}
+          sendSticker={sendSticker}
           leaveRoomSocket={(roomId) => socket.emit('leaveRoom', roomId)}
           showMembersModal={showMembersModal}
           setShowMembersModal={setShowMembersModal}

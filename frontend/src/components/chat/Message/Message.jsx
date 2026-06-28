@@ -10,7 +10,6 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
 
-
   const [showMedia, setShowMedia] = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
   const shouldAutoRender = (msg.media?.type === 'image' || msg.media?.type === 'gif');
@@ -29,6 +28,36 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
   const usernameColor = isOwn
     ? (msg.isPending ? `${theme.myUsernameColor}CC` : theme.myUsernameColor)
     : theme.otherUsernameColor;
+
+  // Sticker: render as image with no bubble
+  if (msg?.media?.type === 'sticker') {
+    return (
+      <div className={`flex items-end gap-3 w-full ${isOwn ? 'flex-row-reverse' : 'justify-start'} animate-fade-in-up`}>
+        <div className="flex-shrink-0">
+          <Avatar url={senderAvatar} name={msg.username} size={8} mdSize={8} isOnline={isOnline} lastSeen={lastSeen} />
+        </div>
+        <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+          {!isPrivateChat && !msg.isOwn && (
+            <p className="text-[10px] md:text-xs mb-1 font-semibold" style={{ color: isOwn ? theme.myUsernameColor : theme.otherUsernameColor }}>
+              {msg?.username?.length > 15 ? msg?.username.substring(0, 15) : msg?.username}
+            </p>
+          )}
+          <div className="relative">
+            <img
+              src={msg.media.url}
+              alt="sticker"
+              className="w-28 h-28 md:w-36 md:h-36 object-contain hover:scale-105 transition-transform duration-100"
+              style={{ opacity: msg.isPending ? 0.5 : 1 }}
+              loading="lazy"
+            />
+            {msg.isPending && (
+              <Loader className="absolute bottom-1 right-1 w-3 h-3 animate-spin" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-end gap-3 w-full ${isOwn ? 'flex-row-reverse' : 'justify-start'} animate-fade-in-up`}>
@@ -174,7 +203,6 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
         )}
 
       </div>
-
 
       {isOwn && !msg.isPending && isPrivateChat && msg.isSeen && (
         <p className="text-[10px] " style={{ color: theme.isLight ? '#4b5563' : '#9ca3af', opacity: 0.7 }}>

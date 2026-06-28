@@ -3,7 +3,7 @@ import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
-const TypingIndicator = memo(function TypingIndicator({ avatar, name, label }) {
+const TypingIndicator = memo(function TypingIndicator({ avatar, name, label, charCount }) {
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
 
@@ -32,6 +32,11 @@ const TypingIndicator = memo(function TypingIndicator({ avatar, name, label }) {
           <span style={{ backgroundColor: theme.otherUsernameColor }} />
           <span style={{ backgroundColor: theme.otherUsernameColor }} />
         </span>
+        {typeof charCount === 'number' && (
+          <span className="text-[10px] md:text-xs opacity-70" style={{ color: theme.otherUsernameColor }}>
+            {charCount}
+          </span>
+        )}
       </div>
     </div>
   );
