@@ -152,7 +152,7 @@ export const useChatSocket = (user, {
       await dbService.addMessage(cacheKey, newMessage);
 
       
-      if (isActiveRoom && !msg.isSystemMessage) {
+      if (isActiveRoom) {
         socket.emit('markRoomRead', {
           roomId: msg.roomId,
           messageId: newMessage.id,

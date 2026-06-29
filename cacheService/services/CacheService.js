@@ -72,6 +72,6 @@ class CacheService {
 }
 
 export const userCache = new CacheService(5000);
-export const messageCache = new CacheService(5000);
+export const messageCache = new CacheService(50000);
 export const roomCache = new CacheService(5000);
 export default userCache;

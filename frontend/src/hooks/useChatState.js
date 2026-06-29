@@ -9,7 +9,8 @@ import {
   loadMoreMessagesHandler,
   loadRoomMessagesHandler,
   loadMoreRoomMessagesHandler,
-  prefetchAllMessagesHandler
+  prefetchAllMessagesHandler,
+  loadNewerMessagesHandler
 } from '../handlers/chat.handlers';
 import { sendStickerHandler } from '../handlers/message/sendMessage.handler.js';
 import roomService from '../services/room.service';
@@ -39,8 +40,10 @@ export const useChatState = (user) => {
   const [loadingJoinRoom, setLoadingJoinRoom] = useState(false);
   const [loadingRoomMembers, setLoadingRoomMembers] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [hasMoreNewerMessages, setHasMoreNewerMessages] = useState(false);
   const [hasMoreMembers, setHasMoreMembers] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [loadingNewerMessages, setLoadingNewerMessages] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export const useChatState = (user) => {
 
   const messageCache = useRef({});
   const loadingMoreMessages = useRef(false);
+  const loadingNewerMessagesRef = useRef(false);
   const loadingMoreMembersRef = useRef(false);
   const currentSwitchId = useRef(0); 
   const CACHE_TTL = 30000;
@@ -166,12 +170,6 @@ export const useChatState = (user) => {
       roomObject
     );
     setRoomMembers([]);
-    clearUnread(`room_${roomId}`);
-
-    
-    if (socket) {
-      socket.emit('markRoomRead', { roomId });
-    }
 
     
     setJoinedRooms(prev => {
@@ -196,15 +194,16 @@ export const useChatState = (user) => {
       (msgs) => { if (currentSwitchId.current === switchId) setMessages(msgs); },
       (val) => { if (currentSwitchId.current === switchId) setLoadingMessages(val); },
       (val) => { if (currentSwitchId.current === switchId) setHasMoreMessages(val); },
+      (val) => { if (currentSwitchId.current === switchId) setHasMoreNewerMessages(val); },
       messageCache,
-      CACHE_TTL
+      CACHE_TTL,
+      unreadCounts[`room_${roomId}`] || 0
     );
     setShowSidebar(false);
   }, [joinedRooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread, setJoinedRooms, loadJoinedRooms]);
 
   const startPrivateChat = useCallback(async (otherUser, socket) => {
     const switchId = ++currentSwitchId.current;
-    clearUnread(`private_${otherUser.id}`);
     
     if (socket) socket.emit('clearActiveRoom');
     await startPrivateChatHandler(
@@ -216,8 +215,10 @@ export const useChatState = (user) => {
       (msgs) => { if (currentSwitchId.current === switchId) setMessages(msgs); },
       (val) => { if (currentSwitchId.current === switchId) setLoadingMessages(val); },
       (val) => { if (currentSwitchId.current === switchId) setHasMoreMessages(val); },
+      (val) => { if (currentSwitchId.current === switchId) setHasMoreNewerMessages(val); },
       messageCache,
-      CACHE_TTL
+      CACHE_TTL,
+      unreadCounts[`private_${otherUser.id}`] || 0
     );
     setShowSidebar(false);
   }, [user, CACHE_TTL, clearUnread]);
@@ -244,6 +245,38 @@ export const useChatState = (user) => {
       );
     }
   }, [currentPrivateChat, currentRoom, user, messages]);
+
+  const loadNewerMessages = useCallback(async () => {
+    if (loadingNewerMessagesRef.current || !hasMoreNewerMessages || messages.length === 0) return;
+    loadingNewerMessagesRef.current = true;
+    setLoadingNewerMessages(true);
+    try {
+      if (currentPrivateChat) {
+        await loadNewerMessagesHandler(
+          currentPrivateChat.id,
+          'private',
+          user,
+          messages,
+          setMessages,
+          setHasMoreNewerMessages,
+          messageCache
+        );
+      } else if (currentRoom) {
+        await loadNewerMessagesHandler(
+          currentRoom._id,
+          'room',
+          user,
+          messages,
+          setMessages,
+          setHasMoreNewerMessages,
+          messageCache
+        );
+      }
+    } finally {
+      loadingNewerMessagesRef.current = false;
+      setLoadingNewerMessages(false);
+    }
+  }, [currentPrivateChat, currentRoom, user, messages, hasMoreNewerMessages]);
 
   useEffect(() => {
     if (!currentPrivateChat) {
@@ -305,6 +338,8 @@ export const useChatState = (user) => {
     loadingJoinRoom,
     loadingRoomMembers, setLoadingRoomMembers,
     hasMoreMessages,
+    hasMoreNewerMessages, setHasMoreNewerMessages,
+    loadingNewerMessages,
     hasMoreMembers,
     showSidebar, setShowSidebar,
     unreadCounts, setUnreadCounts,
@@ -318,6 +353,7 @@ export const useChatState = (user) => {
     sendSticker,
     joinRoom,
     startPrivateChat,
-    loadMoreMessages
+    loadMoreMessages,
+    loadNewerMessages
   };
 };

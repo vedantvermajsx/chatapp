@@ -6,6 +6,7 @@ import ChatInput from './ChatInput/ChatInput';
 import { ImageZoomModal } from './Modals/ImageZoomModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dbService } from '../../services/indexedDB.service.js';
+import messageService from '../../services/message.service.js';
 
 const ChatArea = memo(function ChatArea({
   user,
@@ -13,6 +14,7 @@ const ChatArea = memo(function ChatArea({
   currentPrivateChat,
   setCurrentRoom,
   messages,
+  setMessages,
   inputMessage,
   setInputMessage,
   selectedFile,
@@ -31,6 +33,10 @@ const ChatArea = memo(function ChatArea({
   loadingMessages,
   hasMoreMessages,
   loadMoreMessages,
+  hasMoreNewerMessages,
+  setHasMoreNewerMessages,
+  loadingNewerMessages,
+  loadNewerMessages,
   onToggleSidebar,
   loadRoomMembers,
   hasMoreMembers,
@@ -39,7 +45,8 @@ const ChatArea = memo(function ChatArea({
   onChatRead,
   onLeaveRoom,
   socket,
-  typingUsers = {}
+  typingUsers = {},
+  messageCache
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -54,6 +61,11 @@ const ChatArea = memo(function ChatArea({
   const scrollPositions = useRef({});
   const activeChatKeyRef = useRef(null);
   const scrollSaveTimers = useRef({});
+  const loadingOlderRef = useRef(false);
+  const loadingNewerRef = useRef(false);
+  const prevMessagesLength = useRef(0);
+  const initialUnreadCountRef = useRef(0);
+  const totalFetchedNewerRef = useRef(0);
 
   const [zoomImageUrl, setZoomImageUrl] = useState(null);
   const [zoomMedia, setZoomMedia] = useState(null);
@@ -64,6 +76,7 @@ const ChatArea = memo(function ChatArea({
   const [isFading, setIsFading] = useState(false);
   const [newMsgCount, setNewMsgCount] = useState(0);
   const [showNewMsgBanner, setShowNewMsgBanner] = useState(false);
+  const [isFetchingOlder, setIsFetchingOlder] = useState(false);
 
   const { theme } = useTheme();
 
@@ -164,6 +177,9 @@ const ChatArea = memo(function ChatArea({
   }, [onChatRead, chatKey, currentRoom?._id, currentPrivateChat?.id]);
 
   useEffect(() => {
+    initialUnreadCountRef.current = 0;
+    totalFetchedNewerRef.current = 0;
+
     if (prevChatKey.current !== null && prevChatKey.current !== chatKey) {
       const leavingKey = prevChatKey.current;
       if (leavingKey != null && scrollPositions.current[leavingKey] != null) {
@@ -185,9 +201,9 @@ const ChatArea = memo(function ChatArea({
   }, [chatKey]);
 
   if (messages && messages.length > 0 && messagesContainerRef.current) {
-    const currentFirstMsgId = messages[0].id;
+    const currentFirstMsgId = messages[0]._id || messages[0].id;
     if (oldFirstMessageId.current !== null && oldFirstMessageId.current !== currentFirstMsgId) {
-      const isPrepend = messages.some((m, idx) => idx > 0 && m.id === oldFirstMessageId.current);
+      const isPrepend = messages.some((m, idx) => idx > 0 && (m._id || m.id) === oldFirstMessageId.current);
       if (isPrepend) oldScrollHeight.current = messagesContainerRef.current.scrollHeight;
     }
   }
@@ -198,7 +214,7 @@ const ChatArea = memo(function ChatArea({
       if (diff > 0) messagesContainerRef.current.scrollTop += diff;
       oldScrollHeight.current = 0;
     }
-    oldFirstMessageId.current = messages && messages.length > 0 ? messages[0].id : null;
+    oldFirstMessageId.current = messages && messages.length > 0 ? (messages[0]._id || messages[0].id) : null;
   }, [messages]);
 
   const scrollToBottom = useCallback(() => {
@@ -207,13 +223,20 @@ const ChatArea = memo(function ChatArea({
   }, []);
 
   useEffect(() => {
-    if (loadingMessages || messages.length === 0) return;
+    if (loadingMessages || messages.length === 0) {
+      prevMessagesLength.current = messages ? messages.length : 0;
+      return;
+    }
+
+    const messagesAdded = messages.length - prevMessagesLength.current;
+    prevMessagesLength.current = messages.length;
 
     const lastMessage = messages[messages.length - 1];
+    const lastMessageId = lastMessage._id || lastMessage.id;
 
     if (wasAwayFromChat.current) {
       wasAwayFromChat.current = false;
-      prevLastMessageId.current = lastMessage.id;
+      prevLastMessageId.current = lastMessageId;
       const awayKey = currentRoom?._id
         ? `room_${currentRoom._id}`
         : currentPrivateChat?.id
@@ -221,6 +244,9 @@ const ChatArea = memo(function ChatArea({
           : null;
 
       const awayUnread = awayKey ? (unreadCounts[awayKey] || 0) : 0;
+      initialUnreadCountRef.current = awayUnread;
+      totalFetchedNewerRef.current = 0;
+
       const applyRestore = (savedScrollTop) => {
         if (awayKey !== activeChatKeyRef.current) return;
         if (savedScrollTop != null && messagesContainerRef.current) {
@@ -231,9 +257,7 @@ const ChatArea = memo(function ChatArea({
         updateAtBottom();
       };
 
-      if (awayUnread > 0 && awayUnread < 3) {
-        scrollToBottom();
-      } else if (awayUnread >= 3) {
+      if (awayUnread > 0) {
         setNewMsgCount(awayUnread);
         setShowNewMsgBanner(true);
         getScrollPosition(awayKey).then(applyRestore);
@@ -243,39 +267,158 @@ const ChatArea = memo(function ChatArea({
       return;
     }
 
-    if (prevLastMessageId.current === lastMessage.id) return;
+    if (prevLastMessageId.current === lastMessageId) return;
 
     const isNewMsg = prevLastMessageId.current !== null;
-    prevLastMessageId.current = lastMessage.id;
+    prevLastMessageId.current = lastMessageId;
 
     if (!isNewMsg) {
       scrollToBottom();
       return;
     }
 
-    if (isUserAtBottom.current || lastMessage.isOwn) {
+    if (hasMoreNewerMessages || loadingNewerRef.current) {
+      totalFetchedNewerRef.current += messagesAdded;
+      const remainingUnread = Math.max(0, initialUnreadCountRef.current - totalFetchedNewerRef.current);
+      setNewMsgCount(remainingUnread);
+      setShowNewMsgBanner(remainingUnread > 0);
+    }
+
+    const shouldScrollToBottom = lastMessage.isOwn || (!hasMoreNewerMessages && !loadingNewerRef.current && isUserAtBottom.current);
+
+    if (shouldScrollToBottom) {
       scrollToBottom();
       setShowNewMsgBanner(false);
       setNewMsgCount(0);
-    } else {
-      setNewMsgCount(prev => prev + 1);
+    } else if (!lastMessage.isOwn && !loadingNewerRef.current) {
+      if (messagesAdded <= 1) {
+        if (!hasMoreNewerMessages) {
+          setNewMsgCount(prev => prev + 1);
+        }
+      }
       setShowNewMsgBanner(true);
     }
-  }, [messages, loadingMessages, scrollToBottom, updateAtBottom, unreadCounts, currentRoom?._id, currentPrivateChat?.id, getScrollPosition]);
+  }, [messages, loadingMessages, scrollToBottom, updateAtBottom, unreadCounts, currentRoom?._id, currentPrivateChat?.id, getScrollPosition, hasMoreNewerMessages]);
 
-  const handleScroll = useCallback(() => {
-    updateAtBottom();
-    if (!messagesContainerRef.current || !hasMoreMessages || loadingMessages) return;
-    if (messagesContainerRef.current.scrollTop < 150) loadMoreMessages();
-  }, [hasMoreMessages, loadMoreMessages, loadingMessages, updateAtBottom]);
+  const handleLastMessagePaginationVisible = useCallback(async () => {
+    if (
+      loadingNewerRef.current ||
+      loadingNewerMessages ||
+      !hasMoreNewerMessages
+    ) {
+      return;
+    }
+
+    loadingNewerRef.current = true;
+
+    try {
+      await loadNewerMessages();
+    } finally {
+      setTimeout(() => {
+        loadingNewerRef.current = false;
+      }, 100);
+    }
+  }, [loadingNewerMessages, hasMoreNewerMessages, loadNewerMessages]);
+
+  const handleFirstMessageVisible = useCallback(async () => {
+    if (
+      loadingOlderRef.current ||
+      loadingMessages ||
+      !hasMoreMessages
+    ) {
+      return;
+    }
+
+    loadingOlderRef.current = true;
+    setIsFetchingOlder(true);
+
+    try {
+      await loadMoreMessages();
+    } finally {
+      setIsFetchingOlder(false);
+      setTimeout(() => {
+        loadingOlderRef.current = false;
+      }, 300);
+    }
+  }, [loadingMessages, hasMoreMessages, loadMoreMessages]);
+
+
+  const jumpToPresent = useCallback(async () => {
+    if (loadingNewerRef.current || loadingNewerMessages) return;
+    loadingNewerRef.current = true;
+    try {
+      let currentMessages = messages;
+      let hasMore = hasMoreNewerMessages;
+      let iterations = 0;
+      const cacheKey = currentRoom?._id ? `room_${currentRoom._id}` : `private_${currentPrivateChat?.id}`;
+
+      while (hasMore && iterations < 10) {
+        const latestMessage = currentMessages[currentMessages.length - 1];
+        if (!latestMessage) break;
+        const after = latestMessage.timestamp;
+
+        let res;
+        if (currentRoom) {
+          res = await messageService.getRoomMessages(currentRoom._id, 100, null, after);
+        } else if (currentPrivateChat) {
+          res = await messageService.getPrivateMessages(currentPrivateChat.id, 100, null, after);
+        }
+
+        if (!res || !res.messages || res.messages.length === 0) {
+          hasMore = res?.hasMore || false;
+          break;
+        }
+
+        const existingIds = new Set(currentMessages.map(m => String(m.id || m._id)));
+        const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id || m._id)));
+
+        if (reallyNew.length > 0) {
+          currentMessages = [...currentMessages, ...reallyNew];
+          if (cacheKey) {
+            await dbService.mergeNewMessages(cacheKey, reallyNew);
+          }
+        }
+
+        hasMore = res.hasMore || false;
+        iterations++;
+      }
+
+      if (cacheKey) {
+        messageCache.current[cacheKey] = {
+          messages: currentMessages,
+          hasMore: hasMore,
+          timestamp: Date.now(),
+        };
+      }
+
+      setMessages(currentMessages);
+      setHasMoreNewerMessages(hasMore);
+      setShowNewMsgBanner(false);
+      setNewMsgCount(0);
+
+      setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+    } catch (error) {
+      console.error('Failed to jump to present:', error);
+    } finally {
+      loadingNewerRef.current = false;
+    }
+  }, [messages, hasMoreNewerMessages, currentRoom, currentPrivateChat, loadingNewerMessages, scrollToBottom, setMessages, setHasMoreNewerMessages, messageCache]);
+
 
   const handleScrollWithBanner = useCallback(() => {
-    handleScroll();
+    updateAtBottom();
+
     if (isUserAtBottom.current) {
       setShowNewMsgBanner(false);
       setNewMsgCount(0);
+      if (hasMoreNewerMessages && !loadingNewerMessages && !loadingNewerRef.current) {
+        handleLastMessagePaginationVisible();
+      }
     }
-  }, [handleScroll]);
+  }, [updateAtBottom, hasMoreNewerMessages, loadingNewerMessages, handleLastMessagePaginationVisible]);
+
 
   const handleSendMessage = useCallback(async (e) => {
     await sendMessage(e);
@@ -335,15 +478,24 @@ const ChatArea = memo(function ChatArea({
           isPrivateChat={!!currentPrivateChat}
           topPadding={headerHeight}
           onLastMessageVisible={handleLastMessageVisible}
+          onLastMessageVisiblePagination={handleLastMessagePaginationVisible}
+          onFirstMessageVisible={handleFirstMessageVisible}
           typingIndicator={typingIndicator}
+          hasMoreNewerMessages={hasMoreNewerMessages}
+          loadingNewerMessages={loadingNewerMessages}
+          isFetchingOlder={isFetchingOlder}
         />
 
         {showNewMsgBanner && (
           <button
             onClick={() => {
-              scrollToBottom();
-              setShowNewMsgBanner(false);
-              setNewMsgCount(0);
+              if (hasMoreNewerMessages) {
+                jumpToPresent();
+              } else {
+                scrollToBottom();
+                setShowNewMsgBanner(false);
+                setNewMsgCount(0);
+              }
             }}
             className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium shadow-lg transition-all"
             style={{

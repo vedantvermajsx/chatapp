@@ -11,3 +11,4 @@ export * from './room/loadRoomMessages.handler.js';
 export * from './room/loadMoreRoomMessages.handler.js';
 
 export * from './message/sendMessage.handler.js';
+export * from './message/loadNewerMessages.handler.js';

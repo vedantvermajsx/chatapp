@@ -1,6 +1,6 @@
 import Guest from '../../models/guest.model.js';
 
-async function handleGuestRegistered(userData) {
+export async function handleGuestRegistered(userData) {
   const { _id, username } = userData;
 
   try {
@@ -17,10 +17,4 @@ async function handleGuestRegistered(userData) {
     console.error(`[GuestRegistrationProcessor] failed to create guest ${username}:`, err.message);
     throw err;
   }
-}
-
-export function registerGuestRegistrationHandler(subscribe, on) {
-  subscribe('guest.registered');
-  on('guest.registered', handleGuestRegistered);
-  console.log('[GuestRegistrationProcessor] subscribed to guest.registered');
 }

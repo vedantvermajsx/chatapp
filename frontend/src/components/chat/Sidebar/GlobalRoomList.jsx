@@ -36,7 +36,7 @@ const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '' }) => {
     }
   }, []);
 
-  
+
   useEffect(() => {
     setRooms([]);
     setPage(0);
@@ -45,7 +45,7 @@ const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '' }) => {
     fetchPage(0, searchQuery, true).then(() => setInitialLoaded(true));
   }, [searchQuery, fetchPage]);
 
-  
+
   useEffect(() => {
     const el = loaderRef.current;
     if (!el) return;
@@ -90,7 +90,7 @@ const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '' }) => {
           </>
         )}
 
-        {}
+        { }
         <div ref={loaderRef} className="flex justify-center py-2">
           {loading && initialLoaded && <Spinner />}
           {!hasMore && initialLoaded && rooms.length > 0 && (

@@ -1,7 +1,7 @@
 import User from '../../models/user.model.js';
 
-async function handleUserRegistered(userData) {
-  const {username, email } = userData;
+export async function handleUserRegistered(userData) {
+  const { username, email } = userData;
 
   try {
     const existingUser = await User.findOne({ username }).lean();
@@ -12,9 +12,6 @@ async function handleUserRegistered(userData) {
 
     await User.create(userData);
     console.log(`[UserRegistrationProcessor] created user (${username})`);
-
-
-
   } catch (err) {
     if (err.code === 11000) {
       console.warn(
@@ -25,10 +22,4 @@ async function handleUserRegistered(userData) {
     console.error(`[UserRegistrationProcessor] failed to create user ${username}:`, err.message);
     throw err;
   }
-}
-
-export function registerUserRegistrationHandler(subscribe, on) {
-  subscribe('user.registered');
-  on('user.registered', handleUserRegistered);
-  console.log('[UserRegistrationProcessor] subscribed to user.registered');
 }

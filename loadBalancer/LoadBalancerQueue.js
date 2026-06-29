@@ -1,6 +1,7 @@
 class LoadBalancerQueue {
-  constructor(healthManager, maxRetries = 3) {
+  constructor(healthManager, proxies, maxRetries = 3) {
     this.healthManager = healthManager;
+    this.proxies = proxies;
     this.maxRetries = maxRetries;
     this.pendingRequests = [];
     this.isProcessing = false;
@@ -8,48 +9,66 @@ class LoadBalancerQueue {
 
   enqueue(req, res, retries = 0) {
     this.pendingRequests.push({ req, res, retries });
-    this.process();
+    if (!this.isProcessing) this._processNext();
   }
 
-  process() {
-    if (this.isProcessing || this.pendingRequests.length === 0) {
-      return;
-    }
-    this.isProcessing = true;
-    this.processNext();
-  }
-
-  processNext() {
+  _processNext() {
     if (this.pendingRequests.length === 0) {
       this.isProcessing = false;
       return;
     }
-    this.isProcessing = false;
+
+    this.isProcessing = true;
+    const { req, res, retries } = this.pendingRequests.shift();
+
+    this.healthManager.getNextHealthyServer().then((target) => {
+      if (!target) {
+        if (!res.headersSent) {
+          res.status(502).json({ error: 'No healthy backend servers available' });
+        }
+        this._processNext();
+        return;
+      }
+
+      const proxy = this.proxies.get(target);
+
+      const onFinish = () => this._processNext();
+      res.once('finish', onFinish);
+      res.once('close', onFinish);   
+
+      proxy.web(req, res, {}, (err) => {
+        res.removeListener('finish', onFinish);
+        res.removeListener('close', onFinish);
+
+        console.error(`[Queue] Proxy error (${target}):`, err.message);
+        this.healthManager.markUnhealthy(target);
+
+        if (retries < this.maxRetries) {
+          console.log(`[Queue] Retrying request (attempt ${retries + 1}/${this.maxRetries})`);
+          this.pendingRequests.unshift({ req, res, retries: retries + 1 });
+        } else {
+          if (!res.headersSent) {
+            res.status(502).json({ error: 'All retries exhausted' });
+          }
+        }
+        this._processNext();
+      });
+    });
   }
 
-  async getNextProxy(createProxyFn) {
-    const target = await this.healthManager.getNextHealthyServer();
-    if (!target) {
-      return null;
-    }
-    return createProxyFn(target);
+  process() {
+    if (!this.isProcessing) this._processNext();
   }
 
   handleProxyError(req, res, failedTarget) {
-    for (let i = 0; i < this.pendingRequests.length; i++) {
-      if (this.pendingRequests[i].req === req) {
-        const requestData = this.pendingRequests.splice(i, 1)[0];
-        if (requestData.retries < this.maxRetries) {
-          this.pendingRequests.push({
-            req: requestData.req,
-            res: requestData.res,
-            retries: requestData.retries + 1
-          });
-          this.process();
-        } else {
-          res.status(502).json({ error: "All retries exhausted" });
-        }
-        break;
+    const existing = this.pendingRequests.findIndex((r) => r.req === req);
+    if (existing !== -1) {
+      const [item] = this.pendingRequests.splice(existing, 1);
+      if (item.retries < this.maxRetries) {
+        this.pendingRequests.unshift({ req, res, retries: item.retries + 1 });
+        if (!this.isProcessing) this._processNext();
+      } else {
+        if (!res.headersSent) res.status(502).json({ error: 'All retries exhausted' });
       }
     }
   }

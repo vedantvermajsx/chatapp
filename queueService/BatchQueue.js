@@ -3,7 +3,8 @@ class BatchQueue {
     this.queue = [];
     this.isProcessing = false;
     this.batchSize = options.batchSize || 10;
-    this.flushInterval = options.flushInterval || 1000; 
+    this.maxSize = options.maxSize || Infinity;
+    this.flushInterval = options.flushInterval || 1000;
     this.flushTimer = null;
     this.consecutiveFailures = 0;
     this.maxBackoffMs = options.maxBackoffMs || 30000;
@@ -13,6 +14,10 @@ class BatchQueue {
   }
 
   add(jobData) {
+    if (this.queue.length >= this.maxSize) {
+      console.warn(`[BatchQueue] queue full (maxSize=${this.maxSize}), dropping oldest item`);
+      this.queue.shift();
+    }
     this.queue.push(jobData);
     if (!this.flushTimer) {
       this.flushTimer = setTimeout(() => this.processQueue(), this.flushInterval);
@@ -28,8 +33,9 @@ class BatchQueue {
       isProcessing: this.isProcessing,
       consecutiveFailures: this.consecutiveFailures,
       batchSize: this.batchSize,
+      maxSize: this.maxSize,
       flushInterval: this.flushInterval,
-      maxBackoffMs: this.maxBackoffMs
+      maxBackoffMs: this.maxBackoffMs,
     };
   }
 

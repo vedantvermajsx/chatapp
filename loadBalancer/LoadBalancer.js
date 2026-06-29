@@ -25,28 +25,6 @@ class LoadBalancer {
       healthCheckCooldownMs
     );
 
-    this.queue = new LoadBalancerQueue(
-      this.healthManager,
-      maxRetries
-    );
-
-    this.port = port;
-    this.healthCheckIntervalMs = healthCheckIntervalMs;
-    this.rateLimitWindowMs = rateLimitWindowMs;
-    this.rateLimitMaxRequests = rateLimitMaxRequests;
-
-    this.server = null;
-
-    this.app = express();
-
-    
-    
-    
-    
-    
-    
-    
-    
     this.proxies = new Map();
     for (const server of servers) {
       const proxy = httpProxy.createProxyServer({
@@ -84,6 +62,20 @@ class LoadBalancer {
 
       this.proxies.set(server, proxy);
     }
+
+    this.queue = new LoadBalancerQueue(
+      this.healthManager,
+      this.proxies,
+      maxRetries
+    );
+
+    this.port = port;
+    this.healthCheckIntervalMs = healthCheckIntervalMs;
+    this.rateLimitWindowMs = rateLimitWindowMs;
+    this.rateLimitMaxRequests = rateLimitMaxRequests;
+
+    this.server = null;
+    this.app = express();
 
     this.app.use(
       cors({
@@ -138,27 +130,18 @@ class LoadBalancer {
     });
 
     this.app.use(async (req, res) => {
-      
-      
-      
-      
       const isSocketIO = req.path.startsWith('/socket.io');
-      let target;
 
       if (isSocketIO) {
-        target = this.getStickyServer(this.getClientIp(req));
-      } else {
-        target = await this.healthManager.getNextHealthyServer();
+        const target = this.getStickyServer(this.getClientIp(req));
+        if (!target) {
+          return res.status(502).json({ error: 'No healthy backend servers available' });
+        }
+        const proxy = this.proxies.get(target);
+        return proxy.web(req, res);
       }
 
-      if (!target) {
-        return res.status(502).json({
-          error: 'No healthy backend servers available'
-        });
-      }
-
-      const proxy = this.proxies.get(target);
-      proxy.web(req, res);
+      this.queue.enqueue(req, res);
     });
   }
 

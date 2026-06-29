@@ -38,6 +38,8 @@ function Chat() {
     loadingJoinRoom,
     loadingRoomMembers, setLoadingRoomMembers,
     hasMoreMessages,
+    hasMoreNewerMessages, setHasMoreNewerMessages,
+    loadingNewerMessages,
     hasMoreMembers,
     showSidebar, setShowSidebar,
     messageCache,
@@ -51,6 +53,7 @@ function Chat() {
     joinRoom,
     startPrivateChat,
     loadMoreMessages,
+    loadNewerMessages,
     unreadCounts,
     setUnreadCounts
   } = chatState;
@@ -156,9 +159,10 @@ function Chat() {
         ? `private_${currentPrivateChat.id}`
         : null;
     if (!chatKey) return;
-    const lastNonOwnMessage = [...messages].reverse().find(m => !m.isOwn && !m.isSystemMessage) ?? null;
+    if (hasMoreNewerMessages) return;
+    const lastNonOwnMessage = [...messages].reverse().find(m => !m.isOwn) ?? null;
     handleChatRead(chatKey, lastNonOwnMessage);
-  }, [currentRoom?._id, currentPrivateChat?.id, handleChatRead, messages]);
+  }, [currentRoom?._id, currentPrivateChat?.id, handleChatRead, messages, hasMoreNewerMessages]);
 
   return (
     <div className="flex w-full h-dvh overflow-hidden overflow-y-hidden relative" style={{ backgroundColor: theme.background }}>
@@ -204,6 +208,7 @@ function Chat() {
           currentPrivateChat={currentPrivateChat}
           setCurrentRoom={setCurrentRoom}
           messages={messages}
+          setMessages={setMessages}
           inputMessage={inputMessage}
           setInputMessage={setInputMessage}
           selectedFile={selectedFile}
@@ -221,7 +226,11 @@ function Chat() {
           onStartPrivateChat={startPrivateChat}
           loadingMessages={loadingMessages}
           hasMoreMessages={hasMoreMessages}
+          hasMoreNewerMessages={hasMoreNewerMessages}
+          setHasMoreNewerMessages={setHasMoreNewerMessages}
+          loadingNewerMessages={loadingNewerMessages}
           loadMoreMessages={loadMoreMessages}
+          loadNewerMessages={loadNewerMessages}
           onToggleSidebar={() => setShowSidebar(s => !s)}
           loadRoomMembers={loadRoomMembers}
           hasMoreMembers={hasMoreMembers}
@@ -231,6 +240,7 @@ function Chat() {
           onLeaveRoom={handleLeaveRoom}
           socket={socket}
           typingUsers={typingUsers}
+          messageCache={messageCache}
         />
       </CallProvider>
     </div>

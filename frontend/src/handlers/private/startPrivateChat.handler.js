@@ -11,8 +11,10 @@ export const startPrivateChatHandler = async (
   setMessages,
   setLoadingMessages,
   setHasMoreMessages,
+  setHasMoreNewerMessages,
   messageCache,
-  CACHE_TTL
+  CACHE_TTL,
+  unreadCount = 0
 ) => {
   setCurrentPrivateChat(otherUser);
   setCurrentRoom(null);
@@ -25,7 +27,7 @@ export const startPrivateChatHandler = async (
     setMessages(inMemory.messages);
     setHasMoreMessages(inMemory.hasMore);
     setLoadingMessages(false);
-    _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, messageCache);
+    _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount);
     return;
   }
 
@@ -39,7 +41,7 @@ export const startPrivateChatHandler = async (
       hasMore: idbData.hasMore,
       timestamp: Date.now(),
     };
-    _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, messageCache);
+    _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount);
     return;
   }
 
@@ -68,37 +70,29 @@ export const startPrivateChatHandler = async (
   }
 };
 
-async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, setMessages, setHasMoreMessages, messageCache) {
+async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount) {
   try {
     let latestTimestamp = currentCache.messages?.[currentCache.messages.length - 1]?.timestamp;
     if (!latestTimestamp) return;
 
     let mergedMessages = currentCache.messages;
     let lastRead = null;
-    let keepGoing = true;
-    let safety = 0; 
+    const fetchLimit = unreadCount > 0 ? Math.min(unreadCount, 20) : 20;
 
-    while (keepGoing && safety < 50) {
-      safety += 1;
+    const res = await messageService.getPrivateMessages(otherUserId, fetchLimit, null, latestTimestamp);
+    lastRead = res.lastRead ?? lastRead;
 
-      const res = await messageService.getPrivateMessages(otherUserId, 50, null, latestTimestamp);
-      lastRead = res.lastRead ?? lastRead;
-      if (!res.messages?.length) {
-        keepGoing = res.hasMore ?? false;
-        if (!keepGoing) break;
-        continue;
-      }
+    if (!res.messages?.length) {
+      if (setHasMoreNewerMessages) setHasMoreNewerMessages(res.hasMore || false);
+      return;
+    }
 
-      const existingIds = new Set(mergedMessages.map(m => String(m.id)));
-      const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
+    const existingIds = new Set(mergedMessages.map(m => String(m.id)));
+    const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
 
-      if (reallyNew.length) {
-        mergedMessages = [...mergedMessages, ...reallyNew];
-        latestTimestamp = reallyNew[reallyNew.length - 1].timestamp;
-        await dbService.mergeNewMessages(cacheKey, reallyNew);
-      }
-
-      keepGoing = res.hasMore;
+    if (reallyNew.length) {
+      mergedMessages = [...mergedMessages, ...reallyNew];
+      await dbService.mergeNewMessages(cacheKey, reallyNew);
     }
 
     if (lastRead) {
@@ -111,6 +105,7 @@ async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, set
       timestamp: Date.now(),
     };
     setMessages(mergedMessages);
+    if (setHasMoreNewerMessages) setHasMoreNewerMessages(res.hasMore || false);
   } catch {
   }
 }

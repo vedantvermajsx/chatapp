@@ -167,10 +167,18 @@ function RoomSidebar({
     </div>
   );
 
+  const filteredJoinedRooms = searchQuery
+    ? joinedRooms.filter(r => r.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : joinedRooms;
+
+  const filteredPrivateChats = searchQuery
+    ? privateChats.filter(c => c.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : privateChats;
+
   const renderMyChats = () => (
     <div className="space-y-4">
       <RoomList
-        rooms={joinedRooms}
+        rooms={filteredJoinedRooms}
         currentRoom={currentRoom}
         handleJoinRoom={handleJoinRoom}
         loadingRooms={loadingJoinedRooms}
@@ -179,7 +187,7 @@ function RoomSidebar({
         emptyText="Join a group from Explore"
       />
       <PrivateChatList
-        privateChats={privateChats}
+        privateChats={filteredPrivateChats}
         currentPrivateChat={currentPrivateChat}
         handleStartPrivateChat={handleStartPrivateChat}
         loadingPrivateChats={loadingPrivateChats}
@@ -211,19 +219,26 @@ function RoomSidebar({
         <div className="px-3 md:px-4 py-3 flex-shrink-0" style={{ borderTop: `1px solid ${border}` }}>
           <button
             onClick={() => setShowCreateForm(f => !f)}
-            className="w-full py-2.5 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-2xl flex items-center gap-3 px-4"
             {...getNeumorphicProps(1, 3, 2, 5)}
-            style={{ ...getNeumorphicProps(1, 3, 2, 5).style, color: theme.otherMessageText }}
+            style={{ ...getNeumorphicProps(1, 3, 2, 5).style }}
           >
-            <Plus className="w-3.5 h-3.5" style={{ color: theme.otherUsernameColor }} />
-            New Room
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${accent}18` }}
+            >
+              <Plus className="w-3.5 h-3.5" style={{ color: accent }} />
+            </div>
+            <span className="text-xs font-semibold" style={{ color: theme.otherMessageText }}>
+              New Room
+            </span>
             {showCreateForm
-              ? <ChevronUp className="w-3 h-3 ml-auto opacity-40" />
-              : <ChevronDown className="w-3 h-3 ml-auto opacity-40" />
+              ? <ChevronUp className="w-3.5 h-3.5 ml-auto" style={{ color: theme.otherUsernameColor }} />
+              : <ChevronDown className="w-3.5 h-3.5 ml-auto" style={{ color: theme.otherUsernameColor }} />
             }
           </button>
           {showCreateForm && (
-            <div className="mt-2">
+            <div className="mt-3">
               <CreateRoomForm
                 newRoomName={newRoomName}
                 setNewRoomName={setNewRoomName}
