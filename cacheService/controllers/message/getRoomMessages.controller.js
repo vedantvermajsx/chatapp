@@ -2,10 +2,11 @@ import { getRoomMessages as getRoomMessagesService } from '../../services/Messag
 
 function mapRoomMessage(msg) {
   const formatted = {
-    id: msg._id || msg.id,
+    _id: msg._id || msg.id,
     text: msg.content,
     timestamp: msg.timestamp,
     senderId: msg.senderId,
+    taggedUser: msg.taggedUser || null,
   };
   if (msg.media){
     formatted.media = msg.media;

@@ -2,7 +2,7 @@ import { getPrivateMessages as getPrivateMessagesService } from '../../services/
 
 function mapPrivateMessage(msg) {
   return {
-    id: msg._id || msg.id,
+    _id: msg._id || msg.id,
     senderId: msg.senderId,
     receiverId: msg.receiverId,
     text: msg.content,
@@ -10,6 +10,7 @@ function mapPrivateMessage(msg) {
     systemType:msg.systemType,
     timestamp: msg.timestamp,
     media: msg.media || null,
+    taggedUser: msg.taggedUser || null,
   };
 }
 

@@ -67,7 +67,9 @@ export async function joinRoom(req, res) {
       role: req.user.role,
     });
 
-    return res.status(200).json({ message: 'Joined room successfully' });
+    const roomData = await roomCacheClient.addRoomMember(roomId, userId);
+
+    return res.status(200).json({ message: 'Joined room successfully', room: roomData });
   } catch (err) {
     console.error('[joinRoom] error:', err);
     return res.status(500).json({ message: err.message });

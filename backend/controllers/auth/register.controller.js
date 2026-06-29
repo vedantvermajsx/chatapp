@@ -4,22 +4,38 @@ import userCacheClient from '../../database/userCacheClient.js';
 import { handleAuthSuccess } from './auth.helper.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
 import { enqueueUserRegistration } from '../../utils/queueClient.js';
+import User from '../../models/user.model.js';
+import { isUsernameTaken } from './usernameTaken.js';
+import { bloomFilter } from '../../utils/bloomFilterService.js';
 
 const SALT_ROUNDS = 10;
 
 export async function register(req, res) {
   try {
-    const { username, email, password, gender, age, avatar, bio } = req.body;
+    const { username, email, password, gender, dob, avatar, bio } = req.body;
 
-    if (!username || !email || !password || !gender || !age) {
-      return res
-        .status(400)
-        .json({ message: 'username, email, password, gender and age are required' });
+    if(gender==undefined || gender<0 || gender>2){
+      return res.status(400).json({message:"Invalid gender !"});
     }
 
-    const dupCheck = await userCacheClient.checkDuplicate(username, email);
-    if (dupCheck.taken) {
-      return res.status(409).json({ message: `${dupCheck.field} is already taken` });
+    if (!username || !email || !password || gender === undefined || !dob) {
+      return res
+        .status(400)
+        .json({ message: 'username, email, password, gender and dob are required' });
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    if (await bloomFilter.emailMightContain(trimmedEmail)) {
+      const emailExists = await User.exists({ email: trimmedEmail });
+      if (emailExists) {
+        return res.status(409).json({ message: `email is already taken` });
+      }
+    }
+
+    const usernameTaken = await isUsernameTaken(username.trim());
+    if (usernameTaken) {
+      return res.status(409).json({ message: `username is already taken` });
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -32,7 +48,7 @@ export async function register(req, res) {
       email: email.trim().toLowerCase(),
       password: hashedPassword,
       gender,
-      age: Number(age),
+      dob: new Date(dob),
       avatar: resolvedAvatar,
       bio: bio || '',
       role: 'user',

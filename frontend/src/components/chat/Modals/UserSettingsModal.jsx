@@ -35,13 +35,13 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
 
     setUsernameStatus('checking');
 
-    // Assign a unique ID to this check
+    
     const requestId = ++requestRef.current;
 
     const timeout = setTimeout(async () => {
       try {
         const res = await authService.checkUsername(trimmed);
-        // Ignore response if a newer request has been fired
+        
         if (requestId !== requestRef.current) return;
         setUsernameStatus(res.isTaken ? 'taken' : 'available');
       } catch (err) {

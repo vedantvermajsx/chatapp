@@ -32,16 +32,9 @@ export const getPrivateMessages = async (req, res) => {
           after: after || undefined,
         }
       ),
-      // Cache-first, Mongo-fallback via the cache service — this is "have
-      // they (otherUserId) read any of *my* (userId's) messages, and up to
-      // which one?" Always fetched, even if this page comes back empty,
-      // since the frontend needs {messageId, seenAt} regardless of paging.
       lastReadCacheClient.get(otherUserId, `private_${userId}`),
     ]);
 
-    // Only ever the single message they've actually read up to — the
-    // frontend is responsible for matching this messageId against its own
-    // message list and marking just that one bubble as seen.
     const lastRead = {
       messageId: theirReadReceipt?.messageId ?? null,
       seenAt: theirReadReceipt?.lastSeenAt ?? null,
@@ -60,7 +53,7 @@ export const getPrivateMessages = async (req, res) => {
       const senderDetails = userDetailsMap.get(msg.senderId) || deletedUserFallback(msg);
 
       return {
-        id: msg._id || msg.id  ,
+        _id: msg._id || msg.id,
         senderId: msg.senderId,
         receiverId: msg.receiverId,
         username: senderDetails.username,

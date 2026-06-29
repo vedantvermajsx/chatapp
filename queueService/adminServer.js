@@ -1,9 +1,21 @@
 import express from 'express';
 import http from 'http';
 import { WebSocketServer } from 'ws';
+import rateLimit from 'express-rate-limit';
 
 export function createAdminServer({ port, getStats }) {
   const app = express();
+
+  const adminLimiter = rateLimit({
+    windowMs: parseInt(process.env.ADMIN_RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000, // 1 min
+    max: parseInt(process.env.ADMIN_RATE_LIMIT_MAX, 10) || 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (_req, res) => {
+      res.status(429).json({ message: 'Too many requests to admin server.' });
+    },
+  });
+  app.use(adminLimiter);
 
   const server = http.createServer(app);
 

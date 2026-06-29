@@ -30,6 +30,11 @@ const messageSchema = new mongoose.Schema(
       default: ''
     },
 
+    taggedUser: {
+      type: String,
+      default: null
+    },
+
     isSystemMessage: {
       type: Boolean,
       default: false,

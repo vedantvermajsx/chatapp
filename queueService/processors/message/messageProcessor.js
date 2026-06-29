@@ -1,8 +1,6 @@
 import Message from '../../models/message.model.js';
-import { connectDB } from '../../database/db.js';
 
 export const processMessageBatch = async (batch) => {
-  await connectDB();
 
   let insertedCount = 0;
 

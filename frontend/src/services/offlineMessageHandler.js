@@ -12,14 +12,9 @@ export const sendPendingMessages = async () => {
     
     for (const pendingMsg of pendingMessages) {
       try {
-        let finalMedia = pendingMsg.media;
-        
-        if (pendingMsg.file && pendingMsg.file.buffer) {
-          const file = new File(
-            [new Blob([pendingMsg.file.buffer])],
-            pendingMsg.file.name,
-            { type: pendingMsg.file.type }
-          );
+        let finalMedia = null;
+        if (pendingMsg.mediaType) {
+          const file = await dbService.getFile(pendingMsg.mediaId);
           const uploadResult = await messageService.uploadFile(file, 'data', true); 
           finalMedia = {
             type: uploadResult.type,

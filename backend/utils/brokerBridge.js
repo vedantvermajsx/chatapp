@@ -11,12 +11,12 @@ export function registerBrokerBridge(io, onlineUsers) {
   });
 
   on('newMessage', ({ roomId, payload }) => {
-    // Re-broadcast across instances. Previously nothing subscribed to this
-    // channel at all, so a receiver connected to a *different* backend
-    // instance than the sender (behind the load balancer) never received
-    // the message — this is the root cause of "message sometimes never
-    // arrives" for the receiver. The sender's own instance already emitted
-    // locally (excluding the sender's socket) before publishing here.
+    
+    
+    
+    
+    
+    
     io.to(roomId).emit('newMessage', payload);
   });
 

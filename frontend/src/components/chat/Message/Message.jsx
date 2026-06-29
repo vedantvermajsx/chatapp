@@ -4,18 +4,16 @@ import Avatar from '../../common/Avatar';
 import AudioPlayer from './AudioPlayer';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
-import { formatSeenAt } from '../../../utils/dateUtils';
+import { formatSeenAt, formatMessageTime } from '../../../utils/dateUtils';
 import ProgressLoader from './ProgressLoader';
 
-const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false, progress = 0 }) {
+const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false, progress = 0, isTagged = false }) {
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
 
   const [showMedia, setShowMedia] = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
   const shouldAutoRender = (msg.media?.type === 'image' || msg.media?.type === 'gif');
-
-  console.log(msg);
 
   const isGif = msg.media?.url?.toLowerCase().endsWith('.gif');
 
@@ -31,6 +29,7 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
   const usernameColor = isOwn
     ? (msg.isPending ? `${theme.myUsernameColor}CC` : theme.myUsernameColor)
     : theme.otherUsernameColor;
+
 
   if (msg?.media?.type === 'sticker') {
     return (
@@ -61,10 +60,13 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
         </div>
 
         {isOwn && !msg.isPending && isPrivateChat && msg.isSeen && (
-          <p className="text-[10px]" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af', opacity: 0.9 }}>
+          <p className="text-[10px] mt-1" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af', opacity: 0.9 }}>
             {formatSeenAt(msg.seenAt)}
           </p>
         )}
+        <p className="text-[10px] mt-0.5 opacity-70 font-medium" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }}>
+          {formatMessageTime(msg.timestamp)}
+        </p>
       </div>
     );
   }
@@ -80,12 +82,12 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
         style={{
           backgroundColor: bubbleBg,
           color: textColor,
-          boxShadow: getShadow(theme.isLight, false, 2, 5)
+          border: isTagged ? `2px solid ${'yellow'}` : 'none'
         }}
-        className={`max-w-[280px] md:max-w-sm lg:max-w-md px-3 py-3 rounded-2xl transition-all duration-300 ${isOwn ? 'rounded-br-none' : 'rounded-bl-none'} relative`}
+        className={`max-w-[280px] md:max-w-sm lg:max-w-md px-3.5 py-2 md:px-4 md:py-2.5 rounded-[22px] transition-all duration-300 ${isOwn ? 'rounded-br-[4px]' : 'rounded-bl-[4px]'} relative flex flex-col`}
       >
 
-        {!isPrivateChat && !msg.isOwn && (<p className="text-[10px] md:text-xs mb-1 md:mb-2 font-semibold" style={{ color: usernameColor }}>
+        {!isPrivateChat && !msg.isOwn && (<p className="text-[11px] md:text-xs mb-1 font-bold tracking-wide" style={{ color: usernameColor }}>
           {msg?.username?.length > 15 ? msg?.username.substring(0, 15) : msg?.username}
         </p>)}
 
@@ -205,12 +207,20 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
 
 
 
-        {msg?.text && <p className="text-xs md:text-sm break-words whitespace-normal ml-2" style={{ color: textColor }}>{msg?.text}</p>}
-
-
-        {msg.isPending && (
-          <Loader className="z-10 w-3 h-3 md:w-3 md:h-3 absolute right-1 bottom-1 animate-spin flex-shrink-0" style={{ color: textColor }} />
+        {msg?.text && (
+          <p className="text-[14px] md:text-[15px] leading-snug break-words whitespace-pre-wrap mt-0.5" style={{ color: textColor }}>
+            {renderTextWithMentions(msg.text, textColor, bubbleBg)}
+          </p>
         )}
+
+        <div className="flex items-center justify-end gap-1 mt-1 opacity-60">
+          <span className="text-[9px] font-medium tracking-wide" style={{ color: textColor }}>
+            {formatMessageTime(msg.timestamp)}
+          </span>
+          {msg.isPending && (
+            <Loader className="w-3 h-3 animate-spin flex-shrink-0" style={{ color: textColor }} />
+          )}
+        </div>
 
       </div>
 
@@ -225,5 +235,27 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
     </div >
   );
 });
+
+const renderTextWithMentions = (text, defaultColor, invertedColor) => {
+  if (!text) return null;
+  const parts = text.split(/(@[a-zA-Z0-9_.-]+)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('@')) {
+      return (
+        <span
+          key={i}
+          className="font-bold px-1 rounded mx-0.5"
+          style={{
+            backgroundColor: defaultColor,
+            color: invertedColor
+          }}
+        >
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+};
 
 export default Message;

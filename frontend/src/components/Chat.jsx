@@ -85,10 +85,10 @@ function Chat() {
       navigate('/login');
       return;
     }
-    // Load sidebar data in parallel, then background-prefetch all messages
+    
     Promise.all([loadJoinedRooms(), loadPrivateChats()]).then(
       ([joinedRooms, privateChats]) => {
-        // Fire-and-forget: prefetch new messages for every chat after app opens
+        
         prefetchAllMessagesHandler(
           joinedRooms ?? [],
           privateChats ?? [],
@@ -102,11 +102,11 @@ function Chat() {
     setJoinedRooms(prev => prev.filter(r => r._id !== roomId));
   }, [setJoinedRooms]);
 
-  // Keyed by chatKey -> creation timestamp (ms) of the last message we told
-  // the server was read. We deliberately compare *creation* time, not
-  // seenAt/lastSeenAt, so a message that arrives "late" but was actually
-  // created earlier than what we already marked read never re-triggers or
-  // regresses the read state.
+  
+  
+  
+  
+  
   const lastMarkedReadRef = useRef({});
 
   const handleChatRead = useCallback((chatKey, lastMessage) => {
@@ -129,7 +129,7 @@ function Chat() {
       });
     }
 
-    // For room chats, emit markRoomRead so server keeps RoomMessageRead in sync
+    
     if (chatKey.startsWith('room_')) {
       const roomId = chatKey.replace('room_', '');
       lastMarkedReadRef.current[chatKey] = newMsgTime;

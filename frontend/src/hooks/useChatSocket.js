@@ -30,7 +30,7 @@ export const useChatSocket = (user, {
   const loadJoinedRoomsRef = useRef(loadJoinedRooms);
   const loadPrivateChatsRef = useRef(loadPrivateChats);
 
-  // typingUsers keys: `private_<userId>` -> username string, `room_<roomId>` -> count
+  
   const [typingUsers, setTypingUsers] = useState({});
 
   useEffect(() => { userRef.current = user; }, [user]);
@@ -85,7 +85,7 @@ export const useChatSocket = (user, {
       const messageCache = messageCacheRef.current;
 
       const isOwnMessage = msg.userId === (currentUser?._id || currentUser?.id);
-      // Is the user currently viewing this room?
+      
       const isActiveRoom = String(currentRoomRef.current?._id) === String(msg.roomId);
 
       const newMessage = {
@@ -100,6 +100,7 @@ export const useChatSocket = (user, {
         lastSeen: msg?.lastSeen,
         media: msg?.media || null,
         isPending: false,
+        taggedUser: msg?.taggedUser || null,
         ...(msg?.isSystemMessage && {
           isSystemMessage: true,
           systemType: msg.systemType || null,
@@ -150,7 +151,7 @@ export const useChatSocket = (user, {
 
       await dbService.addMessage(cacheKey, newMessage);
 
-      // If this is the active room, tell server the messages are read
+      
       if (isActiveRoom && !msg.isSystemMessage) {
         socket.emit('markRoomRead', {
           roomId: msg.roomId,
@@ -159,7 +160,7 @@ export const useChatSocket = (user, {
         });
       }
 
-      // Increment unread badge if user is NOT viewing this room and it's not their own message
+      
       if (!isOwnMessage && !isActiveRoom && !msg.isSystemMessage) {
         setUnreadCounts(prev => ({ ...prev, [cacheKey]: (prev[cacheKey] || 0) + 1 }));
       }
@@ -204,6 +205,7 @@ export const useChatSocket = (user, {
         lastSeen: msg.lastSeen,
         media: msg.media || null,
         isPending: false,
+        taggedUser: msg?.taggedUser || null,
         ...(msg?.isSystemMessage && {
           isSystemMessage: true,
           systemType: msg.systemType || null,
@@ -239,7 +241,7 @@ export const useChatSocket = (user, {
         };
       }
 
-      // Only push into visible list if user is currently viewing this conversation
+      
       const isActiveChat = currentPrivateChatRef.current?.id === otherUserId;
 
       if (isActiveChat) {
@@ -352,7 +354,7 @@ export const useChatSocket = (user, {
     };
 
     const handleRoomReadAck = ({ roomId }) => {
-      // Server confirmed the read — ensure badge is cleared (idempotent)
+      
       setUnreadCounts(prev => {
         const key = `room_${roomId}`;
         if (!prev[key]) return prev;

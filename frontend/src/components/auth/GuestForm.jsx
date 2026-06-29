@@ -10,7 +10,7 @@ function GuestForm({ setCurrForm }) {
 
     const [guestUsername, setGuestUsername] = useState('');
     const [guestGender, setGuestGender] = useState(0);
-    const [guestAge, setGuestAge] = useState(18);
+    const [guestDob, setGuestDob] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [usernameStatus, setUsernameStatus] = useState(null);
@@ -49,13 +49,13 @@ function GuestForm({ setCurrForm }) {
             setError('Username must be 2–30 characters');
             return;
         }
-        if (guestAge < 18 || guestAge > 120) {
-            setError('Please enter a valid age');
+        if (!guestDob) {
+            setError('Please enter your date of birth');
             return;
         }
         setIsLoading(true);
         try {
-            const result = await guestLogin(guestUsername.trim(), guestGender, guestAge);
+            const result = await guestLogin(guestUsername.trim(), guestGender, guestDob);
             if (result.success) {
                 navigate('/chat');
             } else {
@@ -121,17 +121,15 @@ function GuestForm({ setCurrForm }) {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2" htmlFor="guest-age">Age</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2" htmlFor="guest-dob">Date of Birth</label>
                     <div className="relative">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                         <input
-                            id="guest-age"
-                            name="age"
-                            type="number"
-                            min="1"
-                            max="120"
-                            value={guestAge}
-                            onChange={(e) => setGuestAge(parseInt(e.target.value))}
+                            id="guest-dob"
+                            name="dob"
+                            type="date"
+                            value={guestDob}
+                            onChange={(e) => setGuestDob(e.target.value)}
                             disabled={isLoading}
                             required
                             className="w-full pl-12 pr-4 py-3 bg-[#e6e6e6] border-none rounded-2xl focus:outline-none shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff] focus:shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 disabled:opacity-50"

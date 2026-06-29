@@ -1,5 +1,5 @@
 import { Send, Paperclip, Sticker } from 'lucide-react';
-import { useRef, useState, useEffect, forwardRef, useImperativeHandle, memo } from 'react';
+import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
 import { toast } from 'sonner';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -7,7 +7,9 @@ import { useNeumorphism } from '../../../hooks/useNeumorphism';
 import ChatMediaPreview from './ChatMediaPreview';
 import ChatVoiceRecorder from './ChatVoiceRecorder';
 import StickerPicker from './StickerPicker';
+import MentionDropdown from './MentionDropdown';
 import { SUPPORTED_FORMATS } from '../../../utils/constants.js';
+import roomService from '../../../services/room.service.js';
 
 const ChatInput = memo(forwardRef(({
   user,
@@ -21,15 +23,21 @@ const ChatInput = memo(forwardRef(({
   onStickerSend,
   socket,
   currentRoom,
-  currentPrivateChat
+  currentPrivateChat,
+  roomMembers = []
 
 }, ref) => {
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const mentionListRef = useRef(null);
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [mentionQuery, setMentionQuery] = useState(null); 
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [mentionSuggestions, setMentionSuggestions] = useState([]);
+  const [isMentionLoading, setIsMentionLoading] = useState(false);
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
   const MAX_CHARS = 1000;
@@ -40,8 +48,104 @@ const ChatInput = memo(forwardRef(({
   const typingTimeoutRef = useRef(null);
   const typingTargetRef = useRef(null);
   const lastTypingEmitRef = useRef(0);
+  const mentionDebounceRef = useRef(null);
+  const mentionAbortRef = useRef(null);
 
-  // Derived state
+
+
+  const getMentionQuery = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    if (!range.collapsed) return null;
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return null;
+    const text = node.textContent.slice(0, range.startOffset);
+    const match = text.match(/@(\S*)$/);
+    return match ? match[1] : null;
+  };
+
+  const insertMention = (username) => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const text = node.textContent;
+    const offset = range.startOffset;
+    const before = text.slice(0, offset);
+    const after = text.slice(offset);
+    const replaced = before.replace(/@(\S*)$/, `@${username} `);
+    node.textContent = replaced + after;
+    const newOffset = replaced.length;
+    const newRange = document.createRange();
+    newRange.setStart(node, newOffset);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+    setInputMessage(inputRef.current?.innerText || '');
+    setMentionQuery(null);
+    setMentionSuggestions([]);
+  };
+
+  const fetchMentionSuggestions = useCallback((roomId, query) => {
+    clearTimeout(mentionDebounceRef.current);
+    if (mentionAbortRef.current) mentionAbortRef.current.abort();
+
+    if (query === null) {
+      setMentionSuggestions([]);
+      setIsMentionLoading(false);
+      return;
+    }
+
+    setIsMentionLoading(true);
+    mentionDebounceRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      mentionAbortRef.current = controller;
+      try {
+        let results = await roomService.searchRoomMembers(roomId, query, 6, controller.signal);
+        const currentUserId = user?._id || user?.id;
+        if (currentUserId) {
+          results = results.filter(m => m._id !== currentUserId && m.id !== currentUserId);
+        }
+        setMentionSuggestions(results);
+        setMentionIndex(0);
+      } catch (err) {
+        if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+          setMentionSuggestions([]);
+        }
+      } finally {
+        setIsMentionLoading(false);
+      }
+    }, 200);
+  }, []);
+
+  useEffect(() => {
+    if (!currentRoom?._id) return;
+    fetchMentionSuggestions(currentRoom._id, mentionQuery);
+  }, [mentionQuery, currentRoom?._id, fetchMentionSuggestions]);
+
+  useEffect(() => {
+    setMentionQuery(null);
+    setMentionSuggestions([]);
+    clearTimeout(mentionDebounceRef.current);
+    if (mentionAbortRef.current) mentionAbortRef.current.abort();
+  }, [currentRoom?._id]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (
+        mentionListRef.current &&
+        !mentionListRef.current.contains(e.target) &&
+        !inputRef.current?.contains(e.target)
+      ) {
+        setMentionQuery(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const isTyping = inputMessage.trim() !== '';
   const hasContent = isTyping || !!selectedFile;
 
@@ -288,6 +392,18 @@ const ChatInput = memo(forwardRef(({
         />
       )}
 
+
+      <MentionDropdown
+        mentionQuery={mentionQuery}
+        isMentionLoading={isMentionLoading}
+        mentionSuggestions={mentionSuggestions}
+        theme={theme}
+        mentionIndex={mentionIndex}
+        setMentionIndex={setMentionIndex}
+        insertMention={insertMention}
+        mentionListRef={mentionListRef}
+      />
+
       <form onSubmit={(e) => { stopTyping(); sendMessage(e); }} className="flex items-center justify-center">
         {user && (
           <div className="mr-3 flex-shrink-0 hidden sm:block">
@@ -309,7 +425,7 @@ const ChatInput = memo(forwardRef(({
             disabled={disabled}
           />
 
-          {/* Paperclip — always visible */}
+
           <label
             htmlFor="file-upload"
             className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all flex-shrink-0 cursor-pointer"
@@ -364,8 +480,36 @@ const ChatInput = memo(forwardRef(({
                 } else {
                   stopTyping();
                 }
+                if (currentRoom) {
+                  const q = getMentionQuery();
+                  setMentionQuery(q);
+                } else {
+                  setMentionQuery(null);
+                }
               }}
               onKeyDown={(e) => {
+                if (mentionQuery !== null && mentionSuggestions.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setMentionIndex(i => (i + 1) % mentionSuggestions.length);
+                    return;
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setMentionIndex(i => (i - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+                    return;
+                  }
+                  if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    insertMention(mentionSuggestions[mentionIndex].username);
+                    return;
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setMentionQuery(null);
+                    return;
+                  }
+                }
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   if ((inputMessage || selectedFile) && !disabled) {
@@ -416,7 +560,7 @@ const ChatInput = memo(forwardRef(({
             )}
           </div>
 
-          {/* Sticker — right side, hidden when typing */}
+
           {!isTyping && (
             <button
               type="button"
@@ -431,7 +575,7 @@ const ChatInput = memo(forwardRef(({
             </button>
           )}
 
-          {/* Mic — right side, hidden when typing */}
+
           {!isTyping && (
             <ChatVoiceRecorder
               theme={theme}
@@ -441,7 +585,7 @@ const ChatInput = memo(forwardRef(({
             />
           )}
 
-          {/* Send — only shown when there's content */}
+
           {hasContent && (
             <button
               type="submit"

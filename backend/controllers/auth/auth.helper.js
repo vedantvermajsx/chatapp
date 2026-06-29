@@ -27,6 +27,9 @@ export async function handleAuthSuccess(res, userDocument, role) {
 
   await userCacheClient.seedUser(cacheProfile);
   await bloomFilter.add(cacheProfile.username);
+  if (userData.email) {
+    await bloomFilter.addEmail(userData.email);
+  }
 
   const token = signToken({ _id: userDocument._id, role });
   const isProduction = process.env.NODE_ENV === 'production';

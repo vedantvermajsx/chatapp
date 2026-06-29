@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import dotenv from 'dotenv';
+import { signWsMessage } from './utils/hmacClient.js';
 
 dotenv.config();
 
@@ -19,7 +20,7 @@ export function connectToBroker() {
     isOpen = true;
     console.log('[QueueService] connected to message broker');
     subscribedChannels.forEach((channel) =>
-      ws.send(JSON.stringify({ type: 'SUBSCRIBE', channel }))
+      ws.send(JSON.stringify(signWsMessage({ type: 'SUBSCRIBE', channel })))
     );
   });
 
@@ -51,7 +52,7 @@ export function connectToBroker() {
 export function subscribe(channel) {
   subscribedChannels.add(channel);
   if (ws && isOpen) {
-    ws.send(JSON.stringify({ type: 'SUBSCRIBE', channel }));
+    ws.send(JSON.stringify(signWsMessage({ type: 'SUBSCRIBE', channel })));
   }
 }
 

@@ -2,7 +2,7 @@ const BITS = 8 * 1024 * 1024;
 
 class BloomfilterService {
   constructor() {
-    this.buckets = new Uint8Array(Math.ceil(BITS / 8));
+    this.counters = new Uint16Array(BITS);
   }
 
   _hash(str, seed) {
@@ -25,13 +25,23 @@ class BloomfilterService {
 
   add(value) {
     for (const idx of this._indices(value)) {
-      this.buckets[Math.floor(idx / 8)] |= 1 << (idx % 8);
+      if (this.counters[idx] < 65535) {
+        this.counters[idx]++;
+      }
+    }
+  }
+
+  remove(value) {
+    for (const idx of this._indices(value)) {
+      if (this.counters[idx] > 0) {
+        this.counters[idx]--;
+      }
     }
   }
 
   mightContain(value) {
     for (const idx of this._indices(value)) {
-      if (!(this.buckets[Math.floor(idx / 8)] & (1 << (idx % 8)))) {
+      if (this.counters[idx] === 0) {
         return false;
       }
     }
@@ -43,4 +53,5 @@ class BloomfilterService {
   }
 }
 
+export const emailBloom = new BloomfilterService();
 export default new BloomfilterService();

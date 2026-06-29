@@ -1,6 +1,5 @@
 import LastReadCacheService from '../../services/LastReadCacheService.js';
 
-/** GET /last-read/:userId/:chatKey  — cache-first, Mongo fallback */
 export const getLastRead = async (req, res) => {
   try {
     const { userId, chatKey } = req.params;
@@ -12,7 +11,6 @@ export const getLastRead = async (req, res) => {
   }
 };
 
-/** POST /last-read/:userId/room  — body: { roomId, messageId, lastReadAt } */
 export const setRoomLastRead = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -25,7 +23,6 @@ export const setRoomLastRead = async (req, res) => {
   }
 };
 
-/** POST /last-read/:userId/private  — body: { peerId, messageId, timestamp, lastSeenAt } */
 export const setPrivateLastRead = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -42,7 +39,6 @@ export const setPrivateLastRead = async (req, res) => {
   }
 };
 
-/** DELETE /last-read/:userId/:chatKey */
 export const invalidateLastRead = (req, res) => {
   try {
     const { userId, chatKey } = req.params;

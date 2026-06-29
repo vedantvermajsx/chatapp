@@ -13,12 +13,8 @@ const guestScheme = new mongoose.Schema({
         type:Number,
         required:true
     },
-    age:{
-        type:Number,
-        required:true
-    },
-    password:{
-        type:String,
+    dob:{
+        type:Date,
         required:true
     },
     avatar:{

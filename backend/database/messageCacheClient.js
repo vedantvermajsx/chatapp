@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { attachHmacInterceptor } from '../utils/hmacClient.js';
 
 dotenv.config();
 
@@ -8,8 +9,9 @@ class MessageCacheClient {
     this.baseUrl = process.env.CACHE_SERVICE_ROOT_URL;
     this.client = axios.create({
       baseURL: this.baseUrl,
-      headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_SERVICE_SECRET },
+      headers: { 'Content-Type': 'application/json' },
     });
+    attachHmacInterceptor(this.client);
     console.log('Message cache service:', this.baseUrl);
   }
 
@@ -71,4 +73,3 @@ class MessageCacheClient {
 }
 
 export const messageCacheClient = new MessageCacheClient();
-export default MessageCacheClient;

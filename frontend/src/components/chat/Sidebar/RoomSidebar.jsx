@@ -186,10 +186,10 @@ function RoomSidebar({
 
       {renderTabBar()}
 
-      {/* Divider under tabs */}
+      {}
       <div className="mx-4 md:mx-5 flex-shrink-0" style={{ borderBottom: `1px solid ${border}` }} />
 
-      {/* Scrollable list */}
+      {}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-4 py-3">
         {activeTab === 'Chats' ? renderMyChats() : (
           <GlobalRoomList
@@ -200,7 +200,7 @@ function RoomSidebar({
         )}
       </div>
 
-      {/* Create Room — only in Chats tab, only non-guest */}
+      {}
       {activeTab === 'Chats' && user.role !== 'guest' && (
         <div className="px-3 md:px-4 py-3 flex-shrink-0" style={{ borderTop: `1px solid ${border}` }}>
           <button

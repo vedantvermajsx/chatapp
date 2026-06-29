@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import dotenv from 'dotenv';
+import { signWsMessage } from './hmacClient.js';
 
 dotenv.config();
 
@@ -66,7 +67,7 @@ export function connectToBroker() {
 
 function sendRaw(obj) {
   if (ws && isOpen) {
-    ws.send(JSON.stringify(obj));
+    ws.send(JSON.stringify(signWsMessage(obj)));
     return true;
   }
   return false;

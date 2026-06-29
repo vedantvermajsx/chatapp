@@ -11,7 +11,7 @@ export async function getProfile(req, res) {
     }
 
     const profile = {
-      id: String(user._id),
+      _id: String(user._id),
       username: user.username,
       avatar: user.avatar,
       gender: user.gender,

@@ -171,12 +171,12 @@ export const useChatState = (user) => {
     setRoomMembers([]);
     clearUnread(`room_${roomId}`);
 
-    // Tell the server this room is now read (updates RoomMessageRead)
+    
     if (socket) {
       socket.emit('markRoomRead', { roomId });
     }
 
-    // Add to joinedRooms if not already present
+    
     setJoinedRooms(prev => {
       if (prev.some(r => r._id === roomId)) return prev;
       const room = joinedRooms.find(r => r._id === roomId) || (roomObject && roomObject._id === roomId ? roomObject : null);
@@ -208,7 +208,7 @@ export const useChatState = (user) => {
   const startPrivateChat = useCallback(async (otherUser, socket) => {
     const switchId = ++currentSwitchId.current;
     clearUnread(`private_${otherUser.id}`);
-    // Tell server the user is no longer actively viewing any room
+    
     if (socket) socket.emit('clearActiveRoom');
     await startPrivateChatHandler(
       otherUser,

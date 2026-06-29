@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Room from '../models/room.model.js';
 import User from '../models/user.model.js';
 import Guest from '../models/guest.model.js';
+import UserRoom from '../models/userRoom.model.js';
 import { roomCache } from './CacheService.js';
 import { invalidateRoomMessages } from './MessageCacheService.js';
 
@@ -74,25 +75,27 @@ class RoomCacheService {
     const room = await this.getRoomById(roomId);
     if (!room) return null;
 
-    const memberIds = room.groupMembers || [];
+    const memberIds = (room.groupMembers || []).map(String);
     if (memberIds.length === 0) {
       const empty = { members: [], total: 0, hasMore: false };
       roomCache.set(cacheKey, empty, MEMBERS_PAGE_TTL_SECONDS);
       return empty;
     }
 
-    const userObjectIds = memberIds
-      .filter((id) => mongoose.Types.ObjectId.isValid(id))
-      .map((id) => new mongoose.Types.ObjectId(id));
+    // User _ids are stored as strings; Guest _ids are also strings (guest_xxx).
+    // Split into regular users (non-guest) and guests by prefix.
+    const regularIds = memberIds.filter(id => !id.startsWith('guest_'));
+    const guestIds   = memberIds.filter(id =>  id.startsWith('guest_'));
 
     const guestCollectionName = Guest.collection.name;
 
     const pipeline = [
-      { $match: { _id: { $in: userObjectIds } } },
+      
+      { $match: { _id: { $in: regularIds } } },
       {
         $unionWith: {
           coll: guestCollectionName,
-          pipeline: [{ $match: { _id: { $in: memberIds } } }]
+          pipeline: [{ $match: { _id: { $in: guestIds } } }]
         }
       },
       ...(search ? [{ $match: { username: { $regex: search, $options: 'i' } } }] : []),
@@ -104,7 +107,7 @@ class RoomCacheService {
             { $limit: limit },
             {
               $project: {
-                id: '$_id',
+                _id: 1,
                 username: 1,
                 gender: 1,
                 isOnline: 1,
@@ -182,9 +185,9 @@ class RoomCacheService {
     invalidateRoomMessages(id);
   }
 
-  // ── Flat memberIds cache: roomMemberIds:{roomId} → string[] ──────────────
-  // Cheaper than full room object for membership checks.
-  // Seeded lazily on first access from the room document.
+  
+  
+  
 
   _memberIdsKey(roomId) {
     return `roomMemberIds:${roomId}`;
@@ -195,7 +198,7 @@ class RoomCacheService {
     const cached = roomCache.get(key);
     if (cached) return cached;
 
-    // Cold — load from room document (already cached or fetch from Mongo)
+    
     const room = await this.getRoomById(roomId);
     if (!room) return null;
 
@@ -244,11 +247,99 @@ class RoomCacheService {
   async setRoomMemberIds(roomId, memberIds) {
     roomCache.set(this._memberIdsKey(roomId), memberIds.map(String), 3600);
   }
+
+  
+  
+  
+
+  _userRoomsKey(userId) {
+    return `userRooms:${userId}`;
+  }
+
+  _formatRoom(room) {
+    return {
+      _id: room._id?.toString?.() ?? room._id,
+      groupName: room.groupName,
+      groupDescription: room.groupDescription,
+      groupAdmin: room.groupAdmin,
+      groupPic: room.groupPic,
+      createdAt: room.createdAt,
+      updatedAt: room.updatedAt,
+      memberCount: Array.isArray(room.groupMembers) ? room.groupMembers.length : (room.memberCount ?? 0),
+    };
+  }
+
+  async getUserJoinedRooms(userId) {
+    const key = this._userRoomsKey(userId);
+    const cached = roomCache.get(key);
+    if (cached) return cached;
+
+    
+    const userRoom = await UserRoom.findOne({ userId }).lean();
+    const roomIds = userRoom?.roomIds ?? [];
+    if (roomIds.length === 0) {
+      roomCache.set(key, [], 3600);
+      return [];
+    }
+
+    const objectIds = roomIds
+      .filter(id => mongoose.Types.ObjectId.isValid(id))
+      .map(id => new mongoose.Types.ObjectId(id));
+
+    const rooms = await Room.aggregate([
+      { $match: { _id: { $in: objectIds } } },
+      { $sort: { updatedAt: -1 } },
+      {
+        $project: {
+          _id: 1, groupName: 1, groupDescription: 1,
+          groupAdmin: 1, groupPic: 1, createdAt: 1, updatedAt: 1,
+          memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
+        }
+      }
+    ]);
+
+    roomCache.set(key, rooms, 3600);
+    return rooms;
+  }
+
+  async addUserRoom(userId, roomId, roomData) {
+    const key = this._userRoomsKey(userId);
+    let rooms = roomCache.get(key);
+
+    
+    const formatted = this._formatRoom(roomData);
+
+    if (!rooms) {
+      
+      roomCache.set(key, [formatted], 3600);
+      return formatted;
+    }
+
+    
+    const exists = rooms.some(r => r._id?.toString() === formatted._id?.toString());
+    if (!exists) {
+      rooms = [formatted, ...rooms];
+      roomCache.set(key, rooms, 3600);
+    }
+    return formatted;
+  }
+
+  async removeUserRoom(userId, roomId) {
+    const key = this._userRoomsKey(userId);
+    const rooms = roomCache.get(key);
+    if (!rooms) return;
+    const filtered = rooms.filter(r => r._id?.toString() !== String(roomId));
+    roomCache.set(key, filtered, 3600);
+  }
+
+  invalidateUserRooms(userId) {
+    roomCache.delete(this._userRoomsKey(userId));
+  }
 }
 
 export default new RoomCacheService();
-// Appended below — these methods extend the class above via prototype patching
-// because the class is defined as a default export singleton
+
+
 
 RoomCacheService.prototype.markRoomDeleted = async function(id) {
   let room = roomCache.get(`room:${id}`);

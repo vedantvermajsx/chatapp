@@ -1,21 +1,9 @@
-/**
- * User controllers for cacheService
- *
- * POST /users/seed            ← called by queueService after it writes User to Mongo
- * POST /users/check-duplicate ← backend pre-publish duplicate guard (reads only)
- * GET  /users/:id             ← cache-first read with Mongo cold-miss fallback
- * GET  /users/by-username/:name
- * DELETE /users/:id/cache     ← invalidate on profile update
- *
- * What is NOT here: no User.create(), no Mongo writes.
- * All writes happen in queueService/processors/userRegistrationProcessor.js.
- */
 
 import UserCacheService from '../../services/UserCacheService.js';
 
-// ── POST /users/seed ──────────────────────────────────────────────────────────
-// Body: full user document that queueService just persisted to Mongo.
-// Seeds the cache so the next GET is a cache hit — no Mongo read needed.
+
+
+
 
 export async function seedUser(req, res) {
   try {
@@ -31,10 +19,10 @@ export async function seedUser(req, res) {
   }
 }
 
-// ── POST /users/check-duplicate ───────────────────────────────────────────────
-// Body: { username, email }
-// Returns: { taken: false } | { taken: true, field: 'email'|'username' }
-// Pure reads — cache first, Mongo cold-miss fallback. No writes.
+
+
+
+
 
 export async function checkDuplicate(req, res) {
   try {
@@ -50,7 +38,7 @@ export async function checkDuplicate(req, res) {
   }
 }
 
-// ── GET /users/:id ────────────────────────────────────────────────────────────
+
 
 export async function getUserById(req, res) {
   try {
@@ -63,7 +51,7 @@ export async function getUserById(req, res) {
   }
 }
 
-// ── GET /users/by-username/:name ──────────────────────────────────────────────
+
 
 export async function getUserByUsername(req, res) {
   try {
@@ -76,7 +64,7 @@ export async function getUserByUsername(req, res) {
   }
 }
 
-// ── DELETE /users/:id/cache ───────────────────────────────────────────────────
+
 
 export async function invalidateUserCache(req, res) {
   try {

@@ -6,6 +6,7 @@ import { enqueueMessage } from '../../utils/queueClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { onlineUsers } from '../../socket.js';
 import { _addQualities } from '../../utils/addQualities.js';
+import userCacheClient from '../../database/userCacheClient.js';
 
 export async function sendRoomMessage(req, res) {
   try {
@@ -29,6 +30,18 @@ export async function sendRoomMessage(req, res) {
     const senderEntry = onlineUsers.get(senderIdStr);
     const senderSocketId = senderEntry?.socketId || null;
 
+    let taggedUser = null;
+    if (content) {
+      const match = content.match(/@([a-zA-Z0-9_.-]+)/);
+      if (match) {
+        const username = match[1].toLowerCase();
+        const user = await userCacheClient.getUserByUsername(username);
+        if (user && String(user._id) !== senderIdStr) {
+          taggedUser = user._id;
+        }
+      }
+    }
+
     const messageData = {
       _id,
       content,
@@ -39,6 +52,7 @@ export async function sendRoomMessage(req, res) {
       receiverId: null,
       media: media || null,
       timestamp,
+      taggedUser,
     };
 
     const payload = {
@@ -55,6 +69,7 @@ export async function sendRoomMessage(req, res) {
       isOnline: sender.isOnline,
       lastSeen: sender.lastSeen,
       media: media?_addQualities(media):null,
+      taggedUser,
     };
 
     enqueueMessage(messageData);

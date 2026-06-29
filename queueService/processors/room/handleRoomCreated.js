@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Room from '../../models/room.model.js';
 import UserRoom from '../../models/userRoom.model.js';
+import { handleMemberJoined } from './handleMemberJoined.js';
 
 export async function handleRoomCreated({ room, creatorId }) {
   try {

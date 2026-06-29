@@ -16,15 +16,15 @@ const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId,
   const messageTimestamp = timestamp ? new Date(timestamp) : new Date();
   const now = new Date();
 
-  // Cache-first (Mongo fallback on cold cache) — lastReadCacheClient/the
-  // cache service is the single owner of this read-state, so we never
-  // touch the ConversationRead model directly here.
+  
+  
+  
   const existing = await lastReadCacheClient.get(receiverId, `private_${senderId}`);
 
   if (existing?.messageId === messageId) return;
 
-  // Gate on the message's *creation* time, not when it was marked seen —
-  // an older message arriving late should never regress or re-trigger this.
+  
+  
   if (existing?.timestamp && messageTimestamp <= new Date(existing.timestamp)) return;
 
   await lastReadCacheClient.setPrivate(receiverId, senderId, {

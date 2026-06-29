@@ -7,7 +7,7 @@ const API_KEY = 'whfWi9b9GT96eeKyfpWvfQv4opK52rA5GZ6FQT5nxYezH0RLuTUtbHjwIZ3BZAb
 const STICKER_BASE = `https://api.klipy.com/api/v1/${API_KEY}/stickers`;
 const GIF_BASE     = `https://api.klipy.com/api/v1/${API_KEY}/gifs`;
 
-// xs webp for grid thumbnails
+
 const getMediaUrl = (file) => {
   if (!file) return null;
   return file.xs?.webp?.url || file.xs?.gif?.url || null;
@@ -22,13 +22,13 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
 
-  const [activeTab, setActiveTab]   = useState('stickers'); // 'stickers' | 'gifs'
+  const [activeTab, setActiveTab]   = useState('stickers'); 
   const [items, setItems]           = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading]       = useState(false);
   const [page, setPage]             = useState(1);
   const [hasNext, setHasNext]       = useState(true);
-  const [mode, setMode]             = useState('trending'); // 'trending' | 'search'
+  const [mode, setMode]             = useState('trending'); 
 
   const searchTimeoutRef = useRef(null);
   const currentQueryRef  = useRef('');
@@ -59,7 +59,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
     }
   }, [loading]);
 
-  // Reload when tab switches
+  
   useEffect(() => {
     setItems([]);
     setPage(1);
@@ -68,7 +68,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
     setMode('trending');
     currentQueryRef.current = '';
     fetchItems('', 1, true, activeTab === 'stickers' ? STICKER_BASE : GIF_BASE);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [activeTab]);
 
   const handleSearch = (q) => {
@@ -134,7 +134,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
         border: `1px solid ${border}`,
       }}
     >
-      {/* Tabs */}
+      {}
       <div className="flex flex-shrink-0" style={{ borderBottom: `1px solid ${border}` }}>
         {TABS.map(tab => (
           <button
@@ -155,7 +155,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
         ))}
       </div>
 
-      {/* Search */}
+      {}
       <div className="flex items-center gap-2 px-3 pt-2 pb-2 flex-shrink-0">
         <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-1.5"
           style={{ backgroundColor: inputBg }}>
@@ -182,14 +182,14 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
         </div>
       </div>
 
-      {/* Trending / Results label */}
+      {}
       <div className="px-3 pb-1 flex-shrink-0">
         <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: subText }}>
           {mode === 'trending' ? 'Trending' : `Results for "${searchQuery}"`}
         </span>
       </div>
 
-      {/* Grid */}
+      {}
       <div
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-2 pb-2"
@@ -238,7 +238,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
         )}
       </div>
 
-      {/* Attribution */}
+      {}
       <div className="flex-shrink-0 px-3 py-1.5 flex justify-end"
         style={{ borderTop: `1px solid ${border}` }}>
         <span className="text-[9px] font-medium" style={{ color: subText, opacity: 0.6 }}>

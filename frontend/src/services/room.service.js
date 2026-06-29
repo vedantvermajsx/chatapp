@@ -60,6 +60,15 @@ class RoomService {
     return response.data;
   }
 
+  async searchRoomMembers(roomId, query, limit = 6, signal) {
+    const response = await api.get(`${this.basePath}/${roomId}/members`, {
+      params: { search: query, skip: 0, limit },
+      signal,
+    });
+    const raw = response.data;
+    return Array.isArray(raw) ? raw : (raw.members ?? []);
+  }
+
   async deleteRoom(roomId) {
     const response = await api.delete(`${this.basePath}/${roomId}`);
     return response.data;

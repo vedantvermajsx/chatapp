@@ -29,7 +29,7 @@ export const dbRooms = {
   async saveJoinedRooms(rooms) {
     try {
       const store = await getStore(STORES.rooms, 'readwrite');
-      // mark joined rooms with a special searchQuery key
+      
       const index = store.index('searchQuery');
       const cursorReq = index.openCursor(IDBKeyRange.only('__joined__'));
       cursorReq.onsuccess = (e) => {

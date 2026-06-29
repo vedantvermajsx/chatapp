@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
   username: { type: String, required: true, unique: true },
-  age: { type: Number, required: true },
-  gender: { type: String, required: true },
+  dob: { type: Date, required: true },
+  gender: { type: Number, required: true },
   bio: { type: String, default: '' },
   avatar: { type: String, default: '' },
-  password: { type: String, required: true },
   role: { type: String, default: 'user' },
   lastSeen: { type: Date, default: Date.now },
   isOnline: { type: Boolean, default: false }

@@ -11,7 +11,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
       className="px-3 md:px-4 py-3 border-t flex-shrink-0 flex items-center gap-2"
       style={{ borderColor: border, backgroundColor: theme.background }}
     >
-      {/* User avatar + name */}
+      {}
       <div className="flex items-center gap-2 flex-1 min-w-0 mr-1">
         <Avatar url={user.avatar} name={user.username} gender={user.gender} size={8} />
         <span className="text-xs font-semibold truncate" style={{ color: theme.otherMessageText }}>
@@ -19,7 +19,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
         </span>
       </div>
 
-      {/* Action buttons */}
+      {}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {user.role !== 'guest' && (
           <button

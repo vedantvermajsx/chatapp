@@ -17,5 +17,9 @@
     "express"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "glob": "^13.0.6",
+    "strip-comments": "^2.0.1"
+  }
 }

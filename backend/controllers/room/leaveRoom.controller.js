@@ -39,7 +39,7 @@ export async function leaveRoom(req, res) {
     };
 
     const payload = {
-      id: _id.toString(),
+      _id: _id.toString(),
       roomId,
       userId,
       username,

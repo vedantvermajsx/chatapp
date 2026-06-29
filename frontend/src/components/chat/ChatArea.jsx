@@ -324,6 +324,7 @@ const ChatArea = memo(function ChatArea({
           hasMoreMessages={hasMoreMessages}
           loadingMessages={loadingMessages}
           messages={messages}
+          currentUser={user}
           messagesEndRef={messagesEndRef}
           isPrivateChat={!!currentPrivateChat}
           topPadding={headerHeight}

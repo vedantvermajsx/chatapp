@@ -5,13 +5,13 @@ import UserRoom from '../../models/userRoom.model.js';
 import RoomMessageRead from '../../models/roomMessageRead.model.js';
 import ConversationRead from '../../models/conversationRead.model.js';
 
-// ── Cold-path: compute unread counts from MongoDB ─────────────────────────────
-// Runs inside cacheService — backend never touches Mongo for this.
+
+
 
 async function computeFromDB(userId) {
   const result = {};
 
-  // ── Room unread ─────────────────────────────────────────────────────────────
+  
   let userRoom = await UserRoom.findOne({ userId }).lean();
   let roomIds = userRoom?.roomIds?.map(String) ?? null;
 
@@ -78,7 +78,7 @@ async function computeFromDB(userId) {
     });
   }
 
-  // ── Private unread ──────────────────────────────────────────────────────────
+  
   const readRecords = await ConversationRead.find({ receiverId: userId }).lean();
 
   const privatePipeline = [
@@ -133,16 +133,8 @@ async function computeFromDB(userId) {
   return result;
 }
 
-// ── Controllers ───────────────────────────────────────────────────────────────
 
-/**
- * GET /unread/:userId
- *
- * Cache hit  → return immediately (O(1))
- * Cache cold → compute from Mongo, seed cache, return result
- *
- * Backend receives warm data either way — never falls back to Mongo itself.
- */
+
 export const getUnread = async (req, res) => {
   const { userId } = req.params;
   try {
@@ -152,9 +144,9 @@ export const getUnread = async (req, res) => {
       return res.json({ cold: false, counts: cached });
     }
 
-    // Cold — compute inside cacheService, seed, return
+    
     const counts = await computeFromDB(userId);
-    UnreadCacheService.seed(userId, counts); // sync seed before responding
+    UnreadCacheService.seed(userId, counts); 
     res.json({ cold: false, counts });
   } catch (err) {
     console.error('[unread.controller] getUnread error:', err);
@@ -162,7 +154,6 @@ export const getUnread = async (req, res) => {
   }
 };
 
-/** POST /unread/:userId/increment  — body: { chatKey } */
 export const incrementUnread = (req, res) => {
   const { userId } = req.params;
   const { chatKey } = req.body;
@@ -171,7 +162,6 @@ export const incrementUnread = (req, res) => {
   res.json({ ok: true });
 };
 
-/** POST /unread/members/increment  — body: { memberIds, senderId, chatKey } */
 export const incrementUnreadForMembers = (req, res) => {
   const { memberIds, senderId, chatKey } = req.body;
   if (!memberIds?.length || !chatKey) return res.status(400).json({ message: 'memberIds and chatKey required' });
@@ -179,7 +169,6 @@ export const incrementUnreadForMembers = (req, res) => {
   res.json({ ok: true });
 };
 
-/** POST /unread/:userId/reset  — body: { chatKey } */
 export const resetUnread = (req, res) => {
   const { userId } = req.params;
   const { chatKey } = req.body;
@@ -188,7 +177,6 @@ export const resetUnread = (req, res) => {
   res.json({ ok: true });
 };
 
-/** POST /unread/:userId/seed  — body: { counts } — only seeds if cache is cold */
 export const seedUnread = (req, res) => {
   const { userId } = req.params;
   const { counts } = req.body;
@@ -197,7 +185,6 @@ export const seedUnread = (req, res) => {
   res.json({ ok: true });
 };
 
-/** DELETE /unread/:userId  — invalidate (force recompute from DB next read) */
 export const invalidateUnread = (req, res) => {
   const { userId } = req.params;
   UnreadCacheService.invalidate(userId);

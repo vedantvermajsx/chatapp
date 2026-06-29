@@ -20,7 +20,6 @@ export const authenticate = async (req, res, next) => {
 
     req.user = {
       _id: idStr,
-      id: idStr,
       username: user.username,
       avatar: user.avatar,
       gender: user.gender,

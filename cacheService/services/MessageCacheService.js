@@ -149,6 +149,7 @@ export function appendRoomMessages(roomId, messages) {
           text: msg.content,
           timestamp: msg.timestamp,
         };
+        if (msg.taggedUser) formatted.taggedUser = msg.taggedUser;
         if (msg.isSystemMessage) {
           formatted.isSystemMessage = true;
           formatted.systemType = msg.systemType || null;
@@ -193,6 +194,7 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
           timestamp: msg.timestamp,
           media: msg.media || null,
         };
+        if (msg.taggedUser) formatted.taggedUser = msg.taggedUser;
         if (msg.isSystemMessage) {
           formatted.isSystemMessage = true;
           formatted.systemType = msg.systemType || null;

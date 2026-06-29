@@ -4,8 +4,15 @@ export const addRoomMember = async (req, res) => {
   try {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ error: 'userId required' });
-    await roomCacheService.addRoomMember(req.params.id, userId);
-    res.json({ ok: true });
+
+    const roomId = req.params.id;
+    await roomCacheService.addRoomMember(roomId, userId);
+
+    
+    const roomDoc = await roomCacheService.getRoomById(roomId);
+    const roomData = roomDoc ? await roomCacheService.addUserRoom(userId, roomId, roomDoc) : null;
+
+    res.json({ ok: true, room: roomData });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

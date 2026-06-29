@@ -166,7 +166,7 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
                 }
             </button>
 
-            {/* Waveform + seek area */}
+            {}
             <div
                 className="flex-1 flex flex-col gap-1 cursor-pointer select-none"
                 onClick={handleSeek}
@@ -175,7 +175,7 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
                 aria-valuemax={duration || 1}
                 aria-valuenow={0}
             >
-                {/* Waveform bars — colors driven by RAF, initial state is dimColor */}
+                {}
                 <div ref={waveformRef} className="flex items-end gap-[2px] h-[20px] overflow-hidden">
                     {BAR_HEIGHTS.map((h, i) => (
                         <div
@@ -190,7 +190,7 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
                     ))}
                 </div>
 
-                {/* Progress track — uses scaleX for GPU-composited, jank-free motion */}
+                {}
                 <div
                     className="relative w-full rounded-full overflow-hidden"
                     style={{ height: 2, background: dimColor }}

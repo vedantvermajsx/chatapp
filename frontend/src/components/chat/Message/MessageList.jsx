@@ -11,6 +11,7 @@ const MessageList = ({
   hasMoreMessages,
   loadingMessages,
   messages,
+  currentUser,
   messagesEndRef,
   isPrivateChat,
   topPadding = 64,
@@ -85,6 +86,7 @@ const MessageList = ({
                   gender={msg.gender}
                   isPrivateChat={isPrivateChat}
                   progress={msg.uploadProgress}
+                  isTagged={msg.taggedUser && currentUser && (msg.taggedUser === currentUser._id || msg.taggedUser === currentUser.id)}
                 />
               }
             </div>

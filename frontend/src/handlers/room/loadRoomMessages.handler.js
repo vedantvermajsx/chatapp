@@ -60,7 +60,7 @@ async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages
 
     let mergedMessages = currentCache.messages;
     let keepGoing = true;
-    let safety = 0; // avoid runaway loops if something is wrong server-side
+    let safety = 0; 
 
     while (keepGoing && safety < 50) {
       safety += 1;

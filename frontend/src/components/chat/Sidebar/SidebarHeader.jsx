@@ -10,7 +10,7 @@ const SidebarHeader = ({ showMobileClose, onCloseSidebar }) => {
       className="px-4 md:px-6 py-4 md:py-5 flex items-center justify-between border-b flex-shrink-0"
       style={{ borderColor: border }}
     >
-      {/* Brand */}
+      {}
       <div className="flex items-center gap-3">
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center"
@@ -23,7 +23,7 @@ const SidebarHeader = ({ showMobileClose, onCloseSidebar }) => {
         </span>
       </div>
 
-      {/* Mobile close */}
+      {}
       {showMobileClose && (
         <button
           onClick={onCloseSidebar}

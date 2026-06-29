@@ -9,9 +9,10 @@ function RegisterForm({ setCurrForm }) {
   const { register } = useAuth();
 
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [gender, setGender] = useState(0);
-  const [age, setAge] = useState(18);
+  const [dob, setDob] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState(null);
@@ -42,13 +43,13 @@ function RegisterForm({ setCurrForm }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-    if (age < 1 || age > 120) {
-      setError('Please enter a valid age');
+    if (!dob) {
+      setError('Please enter your date of birth');
       return;
     }
     setIsLoading(true);
     try {
-      const result = await register(username, gender, password, age);
+      const result = await register(username, email, gender, password, dob);
       if (result.success) {
         navigate('/chat');
       } else {
@@ -88,6 +89,21 @@ function RegisterForm({ setCurrForm }) {
 
         <div className="relative">
           <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <input
+            id="register-email"
+            name="email"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
+            required
+            className="w-full pl-12 pr-4 py-3 bg-[#e6e6e6] border-none rounded-2xl focus:outline-none shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff] focus:shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 placeholder:text-gray-400 disabled:opacity-50"
+          />
+        </div>
+
+        <div className="relative">
+          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <select
             id="register-gender"
             name="gender"
@@ -106,17 +122,14 @@ function RegisterForm({ setCurrForm }) {
         <div className="relative">
           <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
-            id="register-age"
-            name="age"
-            type="number"
-            placeholder="Age"
-            min="1"
-            max="120"
-            value={age}
-            onChange={(e) => setAge(parseInt(e.target.value))}
+            id="register-dob"
+            name="dob"
+            type="date"
+            value={dob}
+            onChange={(e) => setDob(e.target.value)}
             disabled={isLoading}
             required
-            className="w-full pl-12 pr-4 py-3 bg-[#e6e6e6] border-none rounded-2xl focus:outline-none shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff] focus:shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 placeholder:text-gray-400 disabled:opacity-50"
+            className="w-full pl-12 pr-4 py-3 bg-[#e6e6e6] border-none rounded-2xl focus:outline-none shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff] focus:shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 disabled:opacity-50"
           />
         </div>
 

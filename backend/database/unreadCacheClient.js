@@ -1,21 +1,23 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { attachHmacInterceptor } from '../utils/hmacClient.js';
 dotenv.config();
 
 class UnreadCacheClient {
   constructor() {
     this.client = axios.create({
       baseURL: process.env.CACHE_SERVICE_ROOT_URL,
-      headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_SERVICE_SECRET },
-      timeout: 2000, // fast — never block the message flow
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 2000, 
     });
+    attachHmacInterceptor(this.client);
   }
 
   
   async getAll(userId) {
     try {
       const res = await this.client.get(`/unread/${userId}`);
-      return res.data; // { cold: false, counts: { room_x: N, ... } }
+      return res.data; 
     } catch (err) {
       if (err.response?.status === 404) return { cold: true, counts: {} };
       console.error('[UnreadCacheClient] getAll error:', err.message);

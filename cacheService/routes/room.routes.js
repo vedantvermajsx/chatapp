@@ -15,6 +15,7 @@ import { getMemberIds } from '../controllers/room/getMemberIds.controller.js';
 import { addRoomMember } from '../controllers/room/addRoomMember.controller.js';
 import { removeRoomMember } from '../controllers/room/removeRoomMember.controller.js';
 import { markRoomDeleted } from '../controllers/room/markRoomDeleted.controller.js';
+import { getUserJoinedRooms } from '../controllers/room/getUserJoinedRooms.controller.js';
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.post('/:id/refresh', refreshRoom);
 router.get('/:id', getRoomById);
 router.get('/name/:name', getRoomByName);
 router.get('/user/:userId', getRoomsByUser);
+router.get('/user/:userId/joined', getUserJoinedRooms);
 router.get('/:id/members', getMembers);
 router.post('/:id/invalidate-members', invalidateMembers);
 router.delete('/:id', deleteRoom);

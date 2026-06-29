@@ -2,18 +2,6 @@ import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
 import { applyLastRead } from '../../utils/applyLastRead.js';
 
-/**
- * On app open: for every joined room and private chat, fetch only the messages
- * that arrived AFTER the last message we already have cached in IDB.
- *
- * - If IDB has messages  → fetch after=latestTimestamp (delta of new messages)
- * - If IDB is cold       → fetch latest 20 messages fresh
- *
- * All results are merged into IDB + messageCache so when the user taps any
- * chat it shows instantly with all new messages already appended at the bottom.
- *
- * Runs fully in the background — no loading state, no UI blocking.
- */
 export const prefetchAllMessagesHandler = async (
   joinedRooms = [],
   privateChats = [],
@@ -34,7 +22,7 @@ export const prefetchAllMessagesHandler = async (
     })).filter(t => t.id)
   ];
 
-  // Process in batches to avoid hammering the server
+  
   for (let i = 0; i < tasks.length; i += CONCURRENCY) {
     const batch = tasks.slice(i, i + CONCURRENCY);
     await Promise.allSettled(batch.map(task => _prefetchChat(task, messageCache)));
@@ -43,17 +31,17 @@ export const prefetchAllMessagesHandler = async (
 
 async function _prefetchChat({ type, id, cacheKey }, messageCache) {
   try {
-    // 1. Read what we already have stored in IDB
+    
     const idbData = await dbService.getMessages(cacheKey);
     const existingMessages = idbData?.messages ?? [];
     const latestTimestamp = idbData?.latestTimestamp ?? null;
     const existingHasMore = idbData?.hasMore ?? false;
 
     if (latestTimestamp && existingMessages.length > 0) {
-      // ── DELTA FETCH: get only messages AFTER our latest cached message ──
-      // Loop in case more than one page's worth of messages arrived while
-      // we were offline — a single fetch would otherwise silently drop the
-      // remainder, since there's no scroll-triggered "load newer" path.
+      
+      
+      
+      
       let mergedMessages = existingMessages;
       let cursor = latestTimestamp;
       let fetchedAnything = false;
@@ -93,7 +81,7 @@ async function _prefetchChat({ type, id, cacheKey }, messageCache) {
       const seenChanged = type === 'private' && lastRead && mergedMessages !== existingMessages;
 
       if (!fetchedAnything && !seenChanged) {
-        // Nothing new — just warm the in-memory cache from IDB
+        
         if (!messageCache.current[cacheKey]) {
           messageCache.current[cacheKey] = {
             messages: existingMessages,
@@ -104,7 +92,7 @@ async function _prefetchChat({ type, id, cacheKey }, messageCache) {
         return;
       }
 
-      // Write to in-memory cache
+      
       messageCache.current[cacheKey] = {
         messages: mergedMessages,
         hasMore: existingHasMore,
@@ -112,7 +100,7 @@ async function _prefetchChat({ type, id, cacheKey }, messageCache) {
       };
 
     } else {
-      // ── COLD CACHE: no local data at all — fetch latest 20 messages ──
+      
       const res = type === 'room'
         ? await messageService.getRoomMessages(id, 20)
         : await messageService.getPrivateMessages(id, 20);
@@ -135,7 +123,7 @@ async function _prefetchChat({ type, id, cacheKey }, messageCache) {
       };
     }
   } catch (err) {
-    // Non-fatal — user will still see messages when they open the chat
+    
     console.warn(`[prefetch] ${cacheKey}:`, err?.message);
   }
 }

@@ -28,9 +28,9 @@ const handleMarkRoomRead = (socket) => async ({ roomId, messageId, timestamp }) 
       .select('lastReadAt')
       .lean();
 
-    // Compare against the previously read message's *creation* time, not
-    // when it was marked as seen — an older message arriving late should
-    // never regress (or redundantly re-trigger) the read state.
+    
+    
+    
     if (existing?.lastReadAt && lastReadAt <= existing.lastReadAt) {
       socket.emit('roomReadAck', { roomId });
       return;

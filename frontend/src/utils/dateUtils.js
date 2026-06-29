@@ -55,3 +55,10 @@ export const formatSeenAt = (seenAt) => {
   if (diffDays < 7) return `Seen ${diffDays}d ago`;
   return `Seen on ${seenDate.toLocaleDateString()}`;
 };
+
+export const formatMessageTime = (timestamp) => {
+  if (!timestamp) return '';
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(d);
+};

@@ -38,7 +38,7 @@ export const getRoomMessages = async (req, res) => {
       const formattedMessages = messages.map((msg) => {
   if (msg.isSystemMessage) {
     return {
-      id: msg._id ||  msg.id ,
+      _id: msg._id || msg.id,
       isSystemMessage: true,
       systemType: msg.systemType || null,
       text: msg.content || msg.text || '',
@@ -49,7 +49,7 @@ export const getRoomMessages = async (req, res) => {
   const senderDetails = userDetailsMap.get(msg.senderId) || deletedUserFallback();
 
   return {
-    id: msg._id ||  msg.id,
+    _id: msg._id || msg.id,
     text: msg.content || msg.text || '',
     isOwn: msg.senderId === userId,
     timestamp: msg.timestamp,
@@ -57,6 +57,7 @@ export const getRoomMessages = async (req, res) => {
     gender: senderDetails.gender,
     avatar: senderDetails.avatar,
     media:msg.media?_addQualities(msg.media):null,
+    taggedUser: msg.taggedUser,
   };
 });
 

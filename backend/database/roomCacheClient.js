@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { attachHmacInterceptor } from '../utils/hmacClient.js';
 
 dotenv.config();
 
@@ -9,8 +10,9 @@ class RoomCacheClient {
 
     this.client = axios.create({
       baseURL: this.baseUrl,
-      headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_SERVICE_SECRET }
+      headers: { 'Content-Type': 'application/json' }
     });
+    attachHmacInterceptor(this.client);
 
     console.log('Room cache client service:', this.baseUrl);
   }
@@ -162,9 +164,11 @@ class RoomCacheClient {
 
   async addRoomMember(roomId, userId) {
     try {
-      await this.client.post(`/rooms/${roomId}/members/add`, { userId });
+      const response = await this.client.post(`/rooms/${roomId}/members/add`, { userId });
+      return response.data?.room ?? null;
     } catch (err) {
       console.error(`[RoomCacheClient] Error in addRoomMember for room ${roomId}:`, err.message);
+      return null;
     }
   }
 
@@ -173,6 +177,16 @@ class RoomCacheClient {
       await this.client.post(`/rooms/${roomId}/members/remove`, { userId });
     } catch (err) {
       console.error(`[RoomCacheClient] Error in removeRoomMember for room ${roomId}:`, err.message);
+    }
+  }
+
+  async getJoinedRooms(userId) {
+    try {
+      const response = await this.client.get(`/rooms/user/${userId}/joined`);
+      return response.data;
+    } catch (err) {
+      console.error(`[RoomCacheClient] Error in getJoinedRooms for user ${userId}:`, err.message);
+      return null;
     }
   }
 }

@@ -10,6 +10,7 @@ import roomRoutes from './routes/room.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import userRoutes from './routes/user.routes.js';
 import { requestLogger } from './middleware/logger.js';
+import { globalLimiter, authLimiter, uploadLimiter } from './middleware/rateLimiter.js';
 import {bloomFilter} from './utils/bloomFilterService.js';
 import { setupGuestChangeStream } from './models/guest.model.js';
 
@@ -36,13 +37,14 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(requestLogger);
+app.use(globalLimiter);
 
 
 
-
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/messages/upload', uploadLimiter);
 app.use('/api/messages', messageRoutes);
 app.get('/health', (_, res) => res.json({ ok: true }));
 

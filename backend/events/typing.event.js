@@ -66,7 +66,7 @@ export function handleTyping(socket, io) {
       roomTyping.get(room).set(userId, timer);
 
       const count = roomTyping.get(room).size;
-      // Emit to everyone in the room except the typer
+      
       socket.to(room).emit('typingRoom', { roomId: room, count });
     }
   };

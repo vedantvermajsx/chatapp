@@ -11,12 +11,6 @@ function userKey(userId)   { return `user:${userId}`; }
 function usernameKey(name) { return `user:username:${name.toLowerCase()}`; }
 function emailKey(email)   { return `user:email:${email.toLowerCase()}`; }
 
-// Nothing downstream of this cache ever needs the password hash or raw
-// email — login compares the password against Mongo directly, never via
-// this cache. Strip them here so a credential can never leave this service,
-// regardless of which caller seeds the doc (queueService seeds the *full*
-// Mongo document on registration, which is where this would otherwise leak
-// in from).
 function sanitize(user) {
   if (!user) return user;
   const { password, email, ...safe } = user;

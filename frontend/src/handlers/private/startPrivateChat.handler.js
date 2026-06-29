@@ -76,7 +76,7 @@ async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, set
     let mergedMessages = currentCache.messages;
     let lastRead = null;
     let keepGoing = true;
-    let safety = 0; // avoid runaway loops if something is wrong server-side
+    let safety = 0; 
 
     while (keepGoing && safety < 50) {
       safety += 1;

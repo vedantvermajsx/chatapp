@@ -5,7 +5,7 @@ import { _addQualities } from '../../utils/addQualities.js';
 
 function deletedUserFallback(otherUserId) {
   return {
-    id: otherUserId,
+    _id: otherUserId,
     username: 'Deleted User',
     gender: null,
     avatar: getDefaultAvatar(0),
@@ -35,11 +35,11 @@ export const getPrivateChats = async (req, res) => {
 
         const rawOtherUser = userDetailsMap.get(otherUserId) || deletedUserFallback(otherUserId);
 
-        // Only what the chat list UI actually needs — never forward the raw
-        // cached user/guest document (it carries the password hash, age,
-        // timestamps, __v, etc.)
+        
+        
+        
         const otherUser = {
-          id: String(rawOtherUser._id || rawOtherUser.id || otherUserId),
+          _id: String(rawOtherUser._id || rawOtherUser.id || otherUserId),
           username: rawOtherUser.username,
           avatar: rawOtherUser.avatar,
           gender: rawOtherUser.gender,
@@ -50,7 +50,7 @@ export const getPrivateChats = async (req, res) => {
         return {
           otherUser,
           lastMessage: {
-            id: String(lastMessage._id || lastMessage.id),
+            _id: String(lastMessage._id || lastMessage.id),
             senderId: lastMessage.senderId,
             receiverId: lastMessage.receiverId,
             content: lastMessage.content,

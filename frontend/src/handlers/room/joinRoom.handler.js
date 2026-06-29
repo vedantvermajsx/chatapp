@@ -20,7 +20,7 @@ export const joinRoomHandler = async (
 
   setLoadingJoinRoom(true);
   try {
-    // 1. Optimistically set room from what we already know
+    
     let room = roomObject || joinedRooms.find(r => r._id === roomId) || null;
     if (room) setCurrentRoom(room);
 
@@ -45,8 +45,8 @@ export const joinRoomHandler = async (
 
     const res = await roomService.joinRoom(roomId, data);
 
-    // 2. If we didn't have the room object (e.g. joining from Global tab),
-    //    use the room returned by the server so header/input work immediately
+    
+    
     if (!room) {
       const serverRoom = res?.room || res?.data?.room || null;
       if (serverRoom) {

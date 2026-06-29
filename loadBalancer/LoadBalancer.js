@@ -16,8 +16,8 @@ class LoadBalancer {
       healthCheckIntervalMs = 10000 * 10,
       maxRetries = 3,
       port = 8080,
-      rateLimitWindowMs = 60 * 1,
-      rateLimitMaxRequests = 100000
+      rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+      rateLimitMaxRequests = parseInt(process.env.RATE_LIMIT_MAX, 10) || 300
     } = options;
 
     this.healthManager = new ServerHealthManager(
@@ -39,14 +39,14 @@ class LoadBalancer {
 
     this.app = express();
 
-    // One raw http-proxy instance per backend target, shared for both
-    // regular HTTP requests and WebSocket upgrades. Using http-proxy
-    // directly (rather than http-proxy-middleware's Express wrapper)
-    // gives us a real, stable `.web()` / `.ws()` API to call manually
-    // for sticky routing — http-proxy-middleware v3 does not reliably
-    // expose a callable `.upgrade()` on the middleware function itself,
-    // and calling it incorrectly corrupts the WebSocket handshake
-    // (surfaces on the client as "Invalid frame header").
+    
+    
+    
+    
+    
+    
+    
+    
     this.proxies = new Map();
     for (const server of servers) {
       const proxy = httpProxy.createProxyServer({
@@ -138,10 +138,10 @@ class LoadBalancer {
     });
 
     this.app.use(async (req, res) => {
-      // socket.io requests must be sticky — every request for a given
-      // client (polling AND the WS upgrade) must always land on the
-      // same backend process, since socket.io session state lives only
-      // in that one process's memory.
+      
+      
+      
+      
       const isSocketIO = req.path.startsWith('/socket.io');
       let target;
 
@@ -171,12 +171,12 @@ class LoadBalancer {
     );
   }
 
-  // Picks a backend deterministically for a given client IP, so every
-  // socket.io request from that client (polling handshake and the
-  // later WS upgrade) lands on the same backend process. Without this,
-  // the upgrade can land on a different process than the one that
-  // issued the session, which the client sees as a failed handshake
-  // ("Invalid frame header").
+  
+  
+  
+  
+  
+  
   getStickyServer(clientIp) {
     const healthy = [...this.healthManager.servers].filter(
       (s) => this.healthManager.serverStatus.get(s)?.healthy !== false
@@ -219,12 +219,12 @@ class LoadBalancer {
       );
     });
 
-    // Manual upgrade handling so we can apply the same sticky-routing
-    // decision used for the HTTP polling requests above. proxy.ws()
-    // is http-proxy's real, documented API for forwarding a WebSocket
-    // upgrade to a target — this replaces the previous (incorrect)
-    // call to a non-existent `.upgrade()` method on an Express
-    // middleware function, which was corrupting the handshake.
+    
+    
+    
+    
+    
+    
     this.server.on('upgrade', (req, socket, head) => {
       const clientIp = this.getClientIp(req);
       const target = this.getStickyServer(clientIp);
