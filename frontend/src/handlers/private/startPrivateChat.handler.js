@@ -1,5 +1,6 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
+import { applyLastRead } from '../../utils/applyLastRead.js';
 
 export const startPrivateChatHandler = async (
   otherUser,
@@ -46,14 +47,15 @@ export const startPrivateChatHandler = async (
   setLoadingMessages(true);
   try {
     const res = await messageService.getPrivateMessages(otherUser.id, 20);
+    const messagesWithRead = applyLastRead(res.messages, res.lastRead);
     messageCache.current[cacheKey] = {
-      messages: res.messages,
+      messages: messagesWithRead,
       hasMore: res.hasMore,
       timestamp: Date.now(),
     };
-    setMessages(res.messages);
+    setMessages(messagesWithRead);
     setHasMoreMessages(res.hasMore);
-    await dbService.saveMessages(cacheKey, res.messages, res.hasMore);
+    await dbService.saveMessages(cacheKey, messagesWithRead, res.hasMore);
   } catch (error) {
     const idbFallback = await dbService.getMessages(cacheKey);
     if (idbFallback.messages.length > 0) {
@@ -68,24 +70,47 @@ export const startPrivateChatHandler = async (
 
 async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, setMessages, setHasMoreMessages, messageCache) {
   try {
-    const latestTimestamp = currentCache.messages?.[currentCache.messages.length - 1]?.timestamp;
+    let latestTimestamp = currentCache.messages?.[currentCache.messages.length - 1]?.timestamp;
     if (!latestTimestamp) return;
 
-    const res = await messageService.getPrivateMessages(otherUserId, 20, null, latestTimestamp);
-    if (!res.messages?.length) return;
+    let mergedMessages = currentCache.messages;
+    let lastRead = null;
+    let keepGoing = true;
+    let safety = 0; // avoid runaway loops if something is wrong server-side
 
-    const existingIds = new Set(currentCache.messages.map(m => String(m.id)));
-    const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
-    if (!reallyNew.length) return;
+    while (keepGoing && safety < 50) {
+      safety += 1;
 
-    const merged = [...currentCache.messages, ...reallyNew];
+      const res = await messageService.getPrivateMessages(otherUserId, 50, null, latestTimestamp);
+      lastRead = res.lastRead ?? lastRead;
+      if (!res.messages?.length) {
+        keepGoing = res.hasMore ?? false;
+        if (!keepGoing) break;
+        continue;
+      }
+
+      const existingIds = new Set(mergedMessages.map(m => String(m.id)));
+      const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
+
+      if (reallyNew.length) {
+        mergedMessages = [...mergedMessages, ...reallyNew];
+        latestTimestamp = reallyNew[reallyNew.length - 1].timestamp;
+        await dbService.mergeNewMessages(cacheKey, reallyNew);
+      }
+
+      keepGoing = res.hasMore;
+    }
+
+    if (lastRead) {
+      mergedMessages = applyLastRead(mergedMessages, lastRead);
+    }
+
     messageCache.current[cacheKey] = {
-      messages: merged,
+      messages: mergedMessages,
       hasMore: currentCache.hasMore,
       timestamp: Date.now(),
     };
-    setMessages(merged);
-    await dbService.mergeNewMessages(cacheKey, reallyNew);
+    setMessages(mergedMessages);
   } catch {
   }
 }

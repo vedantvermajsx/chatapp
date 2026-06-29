@@ -14,8 +14,8 @@ const getMediaUrl = (file) => {
 };
 
 const TABS = [
-  { id: 'stickers', label: '🪄 Stickers' },
-  { id: 'gifs',     label: '🎬 GIFs'     },
+  { id: 'stickers', label: 'Stickers' },
+  { id: 'gifs',     label: 'GIFs'     },
 ];
 
 const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
@@ -185,7 +185,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
       {/* Trending / Results label */}
       <div className="px-3 pb-1 flex-shrink-0">
         <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: subText }}>
-          {mode === 'trending' ? '🔥 Trending' : `Results for "${searchQuery}"`}
+          {mode === 'trending' ? 'Trending' : `Results for "${searchQuery}"`}
         </span>
       </div>
 

@@ -11,14 +11,27 @@ function userKey(userId)   { return `user:${userId}`; }
 function usernameKey(name) { return `user:username:${name.toLowerCase()}`; }
 function emailKey(email)   { return `user:email:${email.toLowerCase()}`; }
 
+// Nothing downstream of this cache ever needs the password hash or raw
+// email — login compares the password against Mongo directly, never via
+// this cache. Strip them here so a credential can never leave this service,
+// regardless of which caller seeds the doc (queueService seeds the *full*
+// Mongo document on registration, which is where this would otherwise leak
+// in from).
+function sanitize(user) {
+  if (!user) return user;
+  const { password, email, ...safe } = user;
+  return safe;
+}
+
 const UserCacheService = {
 
   _seed(user) {
     const id = String(user._id);
-    userCache.set(userKey(id), user, USER_TTL);
+    const safe = sanitize(user);
+    userCache.set(userKey(id), safe, USER_TTL);
     if (user.username) userCache.set(usernameKey(user.username), id, INDEX_TTL);
     if (user.email)    userCache.set(emailKey(user.email),       id, INDEX_TTL);
-    return user;
+    return safe;
   },
 
   seedUser(userDoc) {
@@ -58,8 +71,8 @@ const UserCacheService = {
       ? await Guest.findById(userId).lean()
       : await User.findById(userId).lean();
 
-    if (user) this._seed(user);
-    return user || null;
+    if (!user) return null;
+    return this._seed(user);
   },
 
   async getUserByUsername(username) {
@@ -72,8 +85,8 @@ const UserCacheService = {
     const user = await User.findOne({ username }).lean()
       || await Guest.findOne({ username }).lean();
 
-    if (user) this._seed(user);
-    return user || null;
+    if (!user) return null;
+    return this._seed(user);
   },
 
   async getUserByEmail(email) {
@@ -83,8 +96,8 @@ const UserCacheService = {
       if (u) return u;
     }
     const user = await User.findOne({ email }).lean();
-    if (user) this._seed(user);
-    return user || null;
+    if (!user) return null;
+    return this._seed(user);
   },
 
   async checkDuplicate(username, email) {

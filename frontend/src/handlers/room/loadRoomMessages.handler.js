@@ -55,24 +55,37 @@ export const loadRoomMessagesHandler = async (
 
 async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages, setHasMoreMessages, messageCache) {
   try {
-    const latestTimestamp = currentCache.messages?.[currentCache.messages.length - 1]?.timestamp;
+    let latestTimestamp = currentCache.messages?.[currentCache.messages.length - 1]?.timestamp;
     if (!latestTimestamp) return;
 
-    const res = await messageService.getRoomMessages(roomId, 20, null, latestTimestamp);
-    if (!res.messages?.length) return; 
+    let mergedMessages = currentCache.messages;
+    let keepGoing = true;
+    let safety = 0; // avoid runaway loops if something is wrong server-side
 
-    const existingIds = new Set(currentCache.messages.map(m => String(m.id)));
-    const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
-    if (!reallyNew.length) return;
+    while (keepGoing && safety < 50) {
+      safety += 1;
 
-    const merged = [...currentCache.messages, ...reallyNew];
-    messageCache.current[cacheKey] = {
-      messages: merged,
-      hasMore: currentCache.hasMore,
-      timestamp: Date.now(),
-    };
-    setMessages(merged);
-    await dbService.mergeNewMessages(cacheKey, reallyNew);
+      const res = await messageService.getRoomMessages(roomId, 50, null, latestTimestamp);
+      if (!res.messages?.length) break;
+
+      const existingIds = new Set(mergedMessages.map(m => String(m.id)));
+      const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
+
+      if (reallyNew.length) {
+        mergedMessages = [...mergedMessages, ...reallyNew];
+        latestTimestamp = reallyNew[reallyNew.length - 1].timestamp;
+
+        messageCache.current[cacheKey] = {
+          messages: mergedMessages,
+          hasMore: currentCache.hasMore,
+          timestamp: Date.now(),
+        };
+        setMessages(mergedMessages);
+        await dbService.mergeNewMessages(cacheKey, reallyNew);
+      }
+
+      keepGoing = res.hasMore;
+    }
   } catch {
   }
 }

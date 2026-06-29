@@ -13,25 +13,29 @@ export const getLastRead = async (req, res) => {
 };
 
 /** POST /last-read/:userId/room  — body: { roomId, messageId, lastReadAt } */
-export const setRoomLastRead = (req, res) => {
+export const setRoomLastRead = async (req, res) => {
   try {
     const { userId } = req.params;
     const { roomId, messageId, lastReadAt } = req.body;
     if (!roomId) return res.status(400).json({ error: 'roomId required' });
-    LastReadCacheService.setRoom(userId, roomId, { messageId, lastReadAt: new Date(lastReadAt) });
+    await LastReadCacheService.setRoom(userId, roomId, { messageId, lastReadAt: new Date(lastReadAt) });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-/** POST /last-read/:userId/private  — body: { peerId, messageId, lastSeenAt } */
-export const setPrivateLastRead = (req, res) => {
+/** POST /last-read/:userId/private  — body: { peerId, messageId, timestamp, lastSeenAt } */
+export const setPrivateLastRead = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { peerId, messageId, lastSeenAt } = req.body;
+    const { peerId, messageId, timestamp, lastSeenAt } = req.body;
     if (!peerId) return res.status(400).json({ error: 'peerId required' });
-    LastReadCacheService.setPrivate(userId, peerId, { messageId, lastSeenAt: new Date(lastSeenAt) });
+    await LastReadCacheService.setPrivate(userId, peerId, {
+      messageId,
+      timestamp: timestamp ? new Date(timestamp) : null,
+      lastSeenAt: new Date(lastSeenAt),
+    });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

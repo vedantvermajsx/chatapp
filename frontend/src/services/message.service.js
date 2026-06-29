@@ -23,6 +23,7 @@ class MessageService {
     }
   }
 
+
   async sendPrivateMessage({ receiverId, content, receiverModel = 'User', media, uuid, isSystemMessage, systemType, skipToast = false }) {
     try {
       const response = await api.post(`${this.basePath}/private/send`, {
@@ -88,22 +89,42 @@ class MessageService {
     }
   }
 
-  async uploadFile(file, folder = 'data', skipToast = false) {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', folder);
-      const response = await api.post(`${this.basePath}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
-    } catch (error) {
-      if (navigator.onLine) {
-        toast.error(error.response?.data?.message || 'Failed to upload file');
+  async uploadFile(file, folder = 'data', skipToast = false, onProgress = null) {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+
+    const response = await api.post(`${this.basePath}/upload`,formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: ({ loaded, total }) => {
+
+          console.log(loaded,' : ',total);
+  if (!total) return;
+
+  const percentage = Math.min(
+    100,
+    Math.round((loaded * 100) / total)
+  );
+
+  onProgress?.(percentage);
+},
       }
-      throw error;
+    );
+    
+    console.log(response);
+
+    return response.data;
+  } catch (error) {
+    if (navigator.onLine && !skipToast) {
+      toast.error(error.response?.data?.message || 'Failed to upload file');
     }
+    throw error;
   }
+}
 }
 
 const messageService = new MessageService();

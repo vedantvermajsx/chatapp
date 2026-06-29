@@ -141,10 +141,10 @@ export function appendRoomMessages(roomId, messages) {
     const existingIds = new Set(cached.messages.map((m) => String(m.id)));
 
     const newMapped = messages
-      .filter((msg) => !existingIds.has(String(msg._id)))
+      .filter((msg) => !existingIds.has(String(msg._id || msg.id)))
       .map((msg) => {
         const formatted = {
-          id: msg._id,
+          id: msg._id || msg.id,
           senderId: msg.senderId,
           text: msg.content,
           timestamp: msg.timestamp,
@@ -167,7 +167,7 @@ export function appendRoomMessages(roomId, messages) {
 export function appendPrivateMessages(senderId, receiverId, messages) {
   const msg = messages[0];
   if (msg) {
-    const msgId = msg._id;
+    const msgId = msg._id || msg.id;
     messageCache.set(
       privateMessageDirectKey(msg.senderId, msg.receiverId, msgId),
       { id: msgId, senderId: msg.senderId, receiverId: msg.receiverId, timestamp: msg.timestamp },
@@ -183,10 +183,10 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
     const existingIds = new Set(cached.messages.map((m) => String(m.id)));
 
     const newMapped = messages
-      .filter((msg) => !existingIds.has(String(msg._id)))
+      .filter((msg) => !existingIds.has(String(msg._id || msg.id)))
       .map((msg) => {
         const formatted = {
-          id: msg._id,
+          id: msg._id  || msg.id,
           senderId: msg.senderId,
           receiverId: msg.receiverId,
           text: msg.content,

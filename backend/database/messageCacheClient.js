@@ -8,7 +8,7 @@ class MessageCacheClient {
     this.baseUrl = process.env.CACHE_SERVICE_ROOT_URL;
     this.client = axios.create({
       baseURL: this.baseUrl,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_SERVICE_SECRET },
     });
     console.log('Message cache service:', this.baseUrl);
   }

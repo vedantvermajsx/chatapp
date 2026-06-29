@@ -102,33 +102,44 @@ function Chat() {
     setJoinedRooms(prev => prev.filter(r => r._id !== roomId));
   }, [setJoinedRooms]);
 
+  // Keyed by chatKey -> creation timestamp (ms) of the last message we told
+  // the server was read. We deliberately compare *creation* time, not
+  // seenAt/lastSeenAt, so a message that arrives "late" but was actually
+  // created earlier than what we already marked read never re-triggers or
+  // regresses the read state.
   const lastMarkedReadRef = useRef({});
 
   const handleChatRead = useCallback((chatKey, lastMessage) => {
-    if (!socket || !chatKey || !user) return;
-    if (chatKey.startsWith('private_') && lastMessage?.senderId && lastMessage?.id) {
-      if (lastMarkedReadRef.current[chatKey] !== lastMessage.id) {
-        lastMarkedReadRef.current[chatKey] = lastMessage.id;
-        socket.emit('markRead', {
-          senderId: lastMessage.senderId,
-          receiverId: lastMessage.receiverId,
-          messageId: lastMessage.id,
-          timestamp: lastMessage.timestamp,
-        });
-      }
+    if (!socket || !chatKey || !user || !lastMessage?.id || !lastMessage?.timestamp) return;
+
+    const newMsgTime = new Date(lastMessage.timestamp).getTime();
+    if (Number.isNaN(newMsgTime)) return;
+
+    const prevMsgTime = lastMarkedReadRef.current[chatKey];
+    const isNewer = prevMsgTime == null || newMsgTime > prevMsgTime;
+    if (!isNewer) return;
+
+    if (chatKey.startsWith('private_') && lastMessage.senderId) {
+      lastMarkedReadRef.current[chatKey] = newMsgTime;
+      socket.emit('markRead', {
+        senderId: lastMessage.senderId,
+        receiverId: lastMessage.receiverId,
+        messageId: lastMessage.id,
+        timestamp: lastMessage.timestamp,
+      });
     }
+
     // For room chats, emit markRoomRead so server keeps RoomMessageRead in sync
     if (chatKey.startsWith('room_')) {
       const roomId = chatKey.replace('room_', '');
-      if (lastMarkedReadRef.current[chatKey] !== lastMessage?.id) {
-        lastMarkedReadRef.current[chatKey] = lastMessage?.id ?? null;
-        socket.emit('markRoomRead', {
-          roomId,
-          messageId: lastMessage?.id ?? null,
-          timestamp: lastMessage?.timestamp ?? new Date().toISOString()
-        });
-      }
+      lastMarkedReadRef.current[chatKey] = newMsgTime;
+      socket.emit('markRoomRead', {
+        roomId,
+        messageId: lastMessage.id,
+        timestamp: lastMessage.timestamp,
+      });
     }
+
     setUnreadCounts(prev => {
       if (!prev[chatKey]) return prev;
       const next = { ...prev };

@@ -1,5 +1,6 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
+import { applyLastRead } from '../../utils/applyLastRead.js';
 
 /**
  * On app open: for every joined room and private chat, fetch only the messages
@@ -50,13 +51,48 @@ async function _prefetchChat({ type, id, cacheKey }, messageCache) {
 
     if (latestTimestamp && existingMessages.length > 0) {
       // ── DELTA FETCH: get only messages AFTER our latest cached message ──
-      const res = type === 'room'
-        ? await messageService.getRoomMessages(id, 50, null, latestTimestamp)
-        : await messageService.getPrivateMessages(id, 50, null, latestTimestamp);
+      // Loop in case more than one page's worth of messages arrived while
+      // we were offline — a single fetch would otherwise silently drop the
+      // remainder, since there's no scroll-triggered "load newer" path.
+      let mergedMessages = existingMessages;
+      let cursor = latestTimestamp;
+      let fetchedAnything = false;
+      let keepGoing = true;
+      let safety = 0;
+      let lastRead = null;
 
-      const newMessages = res?.messages ?? [];
+      while (keepGoing && safety < 50) {
+        safety += 1;
 
-      if (newMessages.length === 0) {
+        const res = type === 'room'
+          ? await messageService.getRoomMessages(id, 50, null, cursor)
+          : await messageService.getPrivateMessages(id, 50, null, cursor);
+
+        if (type === 'private') lastRead = res?.lastRead ?? lastRead;
+
+        const newMessages = res?.messages ?? [];
+        if (newMessages.length === 0) break;
+
+        const existingIds = new Set(mergedMessages.map(m => String(m.id)));
+        const reallyNew = newMessages.filter(m => !existingIds.has(String(m.id)));
+
+        if (reallyNew.length) {
+          mergedMessages = [...mergedMessages, ...reallyNew];
+          cursor = reallyNew[reallyNew.length - 1].timestamp;
+          fetchedAnything = true;
+          await dbService.mergeNewMessages(cacheKey, reallyNew);
+        }
+
+        keepGoing = res?.hasMore ?? false;
+      }
+
+      if (type === 'private' && lastRead) {
+        mergedMessages = applyLastRead(mergedMessages, lastRead);
+      }
+
+      const seenChanged = type === 'private' && lastRead && mergedMessages !== existingMessages;
+
+      if (!fetchedAnything && !seenChanged) {
         // Nothing new — just warm the in-memory cache from IDB
         if (!messageCache.current[cacheKey]) {
           messageCache.current[cacheKey] = {
@@ -68,30 +104,9 @@ async function _prefetchChat({ type, id, cacheKey }, messageCache) {
         return;
       }
 
-      // Deduplicate (socket may have already written some)
-      const existingIds = new Set(existingMessages.map(m => String(m.id)));
-      const reallyNew = newMessages.filter(m => !existingIds.has(String(m.id)));
-
-      if (reallyNew.length === 0) {
-        if (!messageCache.current[cacheKey]) {
-          messageCache.current[cacheKey] = {
-            messages: existingMessages,
-            hasMore: existingHasMore,
-            timestamp: Date.now()
-          };
-        }
-        return;
-      }
-
-      // Append new messages after existing ones
-      const merged = [...existingMessages, ...reallyNew];
-
-      // Persist to IDB
-      await dbService.mergeNewMessages(cacheKey, reallyNew);
-
       // Write to in-memory cache
       messageCache.current[cacheKey] = {
-        messages: merged,
+        messages: mergedMessages,
         hasMore: existingHasMore,
         timestamp: Date.now()
       };
@@ -107,10 +122,14 @@ async function _prefetchChat({ type, id, cacheKey }, messageCache) {
 
       if (fetchedMessages.length === 0) return;
 
-      await dbService.saveMessages(cacheKey, fetchedMessages, hasMore);
+      const finalMessages = type === 'private'
+        ? applyLastRead(fetchedMessages, res?.lastRead)
+        : fetchedMessages;
+
+      await dbService.saveMessages(cacheKey, finalMessages, hasMore);
 
       messageCache.current[cacheKey] = {
-        messages: fetchedMessages,
+        messages: finalMessages,
         hasMore,
         timestamp: Date.now()
       };

@@ -6,7 +6,7 @@ class UnreadCacheClient {
   constructor() {
     this.client = axios.create({
       baseURL: process.env.CACHE_SERVICE_ROOT_URL,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_SERVICE_SECRET },
       timeout: 2000, // fast — never block the message flow
     });
   }

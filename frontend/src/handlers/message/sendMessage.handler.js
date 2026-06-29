@@ -48,16 +48,17 @@ export const sendMessageHandler = async (
   }
 
   const optimisticMessage = {
-    id: tempId,
-    username: user.username,
-    text: inputMessage,
-    isOwn: true,
-    timestamp: new Date().toISOString(),
-    gender: user.gender,
-    avatar: user.avatar || null,
-    media: pendingMedia,
-    isPending: true
-  };
+  id: tempId,
+  username: user.username,
+  text: inputMessage,
+  isOwn: true,
+  timestamp: new Date().toISOString(),
+  gender: user.gender,
+  avatar: user.avatar || null,
+  media: pendingMedia,
+  uploadProgress: 0,
+  isPending: true
+};
 
   if (currentRoom) {
     setMessages((prev) => [...prev, optimisticMessage]);
@@ -107,10 +108,44 @@ export const sendMessageHandler = async (
       
       let finalMediaToUse = finalMedia;
       if (selectedFile) {
-        const uploadResult = await messageService.uploadFile(selectedFile);
+        const uploadResult = await messageService.uploadFile(
+  selectedFile,
+  'data',
+  false,
+  (progress) => {
+    setMessages(prev =>
+      prev.map(msg =>
+        (msg.id || msg._id) === tempId
+          ? {
+              ...msg,
+              uploadProgress: progress
+            }
+          : msg
+      )
+    );
+
+    const cacheKey = currentRoom
+      ? `room_${currentRoom._id}`
+      : `private_${currentPrivateChat.id}`;
+
+    if (messageCache.current[cacheKey]) {
+      messageCache.current[cacheKey].messages =
+        messageCache.current[cacheKey].messages.map(msg =>
+          (msg.id || msg._id) === tempId
+            ? {
+                ...msg,
+                uploadProgress: progress
+              }
+            : msg
+        );
+    }
+  }
+);
+
         finalMediaToUse = {
           type: uploadResult.type,
           url: uploadResult.url,
+          thumbnailUrl:uploadResult.thumbnailUrl,
           isPending: false
         };
         if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
@@ -137,14 +172,14 @@ export const sendMessageHandler = async (
           isPending: false
         };
 
-        setMessages((prev)=>prev.map((msg)=> (msg.id === tempId || msg.id === newMessageObj.id? newMessageObj:msg)));
+        setMessages((prev)=>prev.map((msg)=> ((msg.id || msg._id) === tempId || (msg.id || msg._id) === newMessageObj.id? newMessageObj:msg)));
 
         const cacheKey = `room_${currentRoom._id}`;
         if (messageCache.current[cacheKey]) {
           messageCache.current[cacheKey] = {
             ...messageCache.current[cacheKey],
             messages: messageCache.current[cacheKey].messages.map((msg) =>
-              (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg
+              (msg.id || msg._id) === tempId || (msg.id || msg._id) === newMessageObj.id ? newMessageObj : msg
             )
           };
         }
@@ -178,7 +213,7 @@ export const sendMessageHandler = async (
           messageCache.current[cacheKey] = {
             ...messageCache.current[cacheKey],
             messages: messageCache.current[cacheKey].messages.map((msg) =>
-              (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg
+              (msg.id || msg._id) === tempId || (msg.id || msg._id) === newMessageObj.id ? newMessageObj : msg
             )
           };
         }
@@ -283,7 +318,7 @@ export const sendStickerHandler = async (
       };
 
       setMessages((prev) => prev.map((msg) =>
-        (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg
+        (msg.id || msg._id) === tempId || (msg.id || msg._id) === newMessageObj.id ? newMessageObj : msg
       ));
 
       if (currentRoom) {
@@ -292,7 +327,7 @@ export const sendStickerHandler = async (
           messageCache.current[cacheKey] = {
             ...messageCache.current[cacheKey],
             messages: messageCache.current[cacheKey].messages.map((msg) =>
-              (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg
+              (msg.id || msg._id)  === tempId || (msg.id || msg._id) === newMessageObj.id ? newMessageObj : msg
             )
           };
         }
@@ -302,7 +337,7 @@ export const sendStickerHandler = async (
           messageCache.current[cacheKey] = {
             ...messageCache.current[cacheKey],
             messages: messageCache.current[cacheKey].messages.map((msg) =>
-              (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg
+              (msg.id || msg._id)  === tempId || (msg.id || msg._id) === newMessageObj.id ? newMessageObj : msg
             )
           };
         }

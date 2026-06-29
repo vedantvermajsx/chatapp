@@ -4,6 +4,13 @@ import UserRoom from "../../models/userRoom.model.js";
 
 export async function handleMemberLeft({ roomId, userId }) {
   try {
+
+    const room = await Room.findById(roomId);
+
+
+    if(!room || room.groupAdmin === userId) return;
+
+
     await Room.updateOne(
       { _id: roomId },
       { $pull: { groupMembers: userId } },

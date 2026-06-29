@@ -7,7 +7,7 @@ import { useNeumorphism } from '../../../hooks/useNeumorphism';
 import ChatMediaPreview from './ChatMediaPreview';
 import ChatVoiceRecorder from './ChatVoiceRecorder';
 import StickerPicker from './StickerPicker';
-import { SUPPORTED_FORMATS} from '../../../utils/constants.js';
+import { SUPPORTED_FORMATS } from '../../../utils/constants.js';
 
 const ChatInput = memo(forwardRef(({
   user,
@@ -34,15 +34,16 @@ const ChatInput = memo(forwardRef(({
   const { getShadow } = useNeumorphism();
   const MAX_CHARS = 1000;
   const TYPING_STOP_DELAY = 2000;
-  // Backend clears typing state after 5s of silence (see typing.event.js TYPING_TIMEOUT_MS).
-  // Re-send 'typing' comfortably before that while the user keeps typing, so long
-  // typing bursts don't get auto-cleared server-side and then never recover.
   const TYPING_HEARTBEAT_INTERVAL = 3000;
 
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef(null);
   const typingTargetRef = useRef(null);
   const lastTypingEmitRef = useRef(0);
+
+  // Derived state
+  const isTyping = inputMessage.trim() !== '';
+  const hasContent = isTyping || !!selectedFile;
 
   const getTypingPayload = (charCount) => {
     if (currentRoom) return { type: 'room', roomId: currentRoom._id };
@@ -74,7 +75,6 @@ const ChatInput = memo(forwardRef(({
       lastTypingEmitRef.current = now;
       socket.emit('typing', payload);
     } else if (currentPrivateChat) {
-      // Char count changes more often than the heartbeat; keep it fresh for private chats.
       socket.emit('typing', payload);
     }
 
@@ -82,10 +82,8 @@ const ChatInput = memo(forwardRef(({
     typingTimeoutRef.current = setTimeout(stopTyping, TYPING_STOP_DELAY);
   };
 
-  // Stop typing whenever the active chat changes or the component unmounts
   useEffect(() => {
     return () => stopTyping();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRoom?._id, currentPrivateChat?.id]);
 
   useEffect(() => {
@@ -162,7 +160,6 @@ const ChatInput = memo(forwardRef(({
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1 || items[i].type.indexOf('video') !== -1) {
         const file = items[i].getAsFile();
-
         handleFileSelect({ target: { files: [file] } });
         e.preventDefault();
         handled = true;
@@ -274,6 +271,9 @@ const ChatInput = memo(forwardRef(({
 
   return (
     <div className="p-2 sm:p-6 border-t relative" style={{ backgroundColor: theme.background, borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
+      {disabled && (
+        <div className="absolute inset-0 z-20 cursor-not-allowed" style={{ backgroundColor: theme.background, opacity: 0.6 }} />
+      )}
       <ChatMediaPreview
         selectedFile={selectedFile}
         isProcessingMedia={isProcessingMedia}
@@ -309,40 +309,17 @@ const ChatInput = memo(forwardRef(({
             disabled={disabled}
           />
 
+          {/* Paperclip — always visible */}
           <label
             htmlFor="file-upload"
             className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all flex-shrink-0 cursor-pointer"
-            style={{
-              boxShadow: 'none'
-            }}
+            style={{ boxShadow: 'none' }}
             onMouseDown={(e) => e.preventDefault()}
             onTouchStart={(e) => e.preventDefault()}
-
             title="Attach image/video"
           >
             <Paperclip className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
           </label>
-
-          <button
-            type="button"
-            onClick={handleToggleStickerPicker}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-            className="hidden sm:flex py-3 sm:py-4 items-center justify-center rounded-full transition-all flex-shrink-0"
-            style={{
-              boxShadow: 'none'
-            }}
-            title="Open sticker picker"
-          >
-            <Sticker className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
-          </button>
-
-          <ChatVoiceRecorder
-            theme={theme}
-            isRecording={isRecording}
-            setIsRecording={setIsRecording}
-            onAudioReady={(audioFile) => handleFileSelect({ target: { files: [audioFile] } })}
-          />
 
           <div className="flex-1 relative min-w-0">
             {isRecording && (
@@ -439,16 +416,44 @@ const ChatInput = memo(forwardRef(({
             )}
           </div>
 
-          <button
-            type="submit"
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-            className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-12 h-12 hover:opacity-80"
-            style={{ backgroundColor: theme.myMessageBubble }}
-            disabled={disabled || (!inputMessage && !selectedFile)}
-          >
-            <Send className="w-6 h-6 mr-1 mt-1" style={{ color: theme.myMessageText }} />
-          </button>
+          {/* Sticker — right side, hidden when typing */}
+          {!isTyping && (
+            <button
+              type="button"
+              onClick={handleToggleStickerPicker}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
+              className="flex py-3 sm:py-4 items-center justify-center rounded-full transition-all flex-shrink-0"
+              style={{ boxShadow: 'none' }}
+              title="Open sticker picker"
+            >
+              <Sticker className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+            </button>
+          )}
+
+          {/* Mic — right side, hidden when typing */}
+          {!isTyping && (
+            <ChatVoiceRecorder
+              theme={theme}
+              isRecording={isRecording}
+              setIsRecording={setIsRecording}
+              onAudioReady={(audioFile) => handleFileSelect({ target: { files: [audioFile] } })}
+            />
+          )}
+
+          {/* Send — only shown when there's content */}
+          {hasContent && (
+            <button
+              type="submit"
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
+              className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-12 h-12 hover:opacity-80"
+              style={{ backgroundColor: theme.myMessageBubble }}
+              disabled={disabled}
+            >
+              <Send className="w-6 h-6 mr-1 mt-1" style={{ color: theme.myMessageText }} />
+            </button>
+          )}
         </div>
       </form>
     </div>

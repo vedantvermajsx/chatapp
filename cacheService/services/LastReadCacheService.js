@@ -5,10 +5,13 @@
  *
  * Key schema:
  *   lastRead:{userId}:room_{roomId}     → { messageId, lastReadAt }
- *   lastRead:{userId}:private_{peerId}  → { messageId, lastSeenAt }
+ *   lastRead:{userId}:private_{peerId}  → { messageId, timestamp, lastSeenAt }
  *
- * TTL: 7 days. On cold-miss the caller is expected to load from Mongo
- * and call set() — the service never hits Mongo itself.
+ * TTL: 7 days. Reads are cache-first with a Mongo fallback on cold-miss.
+ * Writes are write-through: every set() persists to Mongo *and* refreshes
+ * the cache, so this service is the single place that owns both the cache
+ * and the durable copy of read-state — callers never touch the Mongo
+ * models directly.
  */
 
 import { messageCache } from './CacheService.js';
@@ -53,10 +56,14 @@ const LastReadCacheService = {
     } else if (chatKey.startsWith('private_')) {
       const senderId = chatKey.slice(8);
       record = await ConversationRead.findOne({ senderId, receiverId: userId })
-        .select('messageId lastSeenAt')
+        .select('messageId timestamp lastSeenAt')
         .lean();
       if (record) {
-        const val = { messageId: record.messageId, lastSeenAt: record.lastSeenAt };
+        const val = {
+          messageId: record.messageId,
+          timestamp: record.timestamp,
+          lastSeenAt: record.lastSeenAt,
+        };
         messageCache.set(key(userId, chatKey), val, TTL);
         return val;
       }
@@ -65,14 +72,25 @@ const LastReadCacheService = {
     return null;
   },
 
-  // ── setters ────────────────────────────────────────────────────────────────
+  // ── setters (write-through: Mongo + cache) ──────────────────────────────────
 
-  setRoom(userId, roomId, { messageId, lastReadAt }) {
+  async setRoom(userId, roomId, { messageId, lastReadAt }) {
+    await RoomMessageRead.findOneAndUpdate(
+      { userId, roomId },
+      { $set: { lastReadMessageId: messageId ?? null, lastReadAt } },
+      { upsert: true }
+    );
     messageCache.set(key(userId, `room_${roomId}`), { messageId, lastReadAt }, TTL);
   },
 
-  setPrivate(userId, peerId, { messageId, lastSeenAt }) {
-    messageCache.set(key(userId, `private_${peerId}`), { messageId, lastSeenAt }, TTL);
+  async setPrivate(userId, peerId, { messageId, timestamp, lastSeenAt }) {
+    // userId = the reader, peerId = the author of the message being read.
+    await ConversationRead.findOneAndUpdate(
+      { senderId: peerId, receiverId: userId },
+      { $set: { messageId, timestamp, lastSeenAt } },
+      { upsert: true }
+    );
+    messageCache.set(key(userId, `private_${peerId}`), { messageId, timestamp, lastSeenAt }, TTL);
   },
 
   // ── invalidation ───────────────────────────────────────────────────────────

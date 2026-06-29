@@ -1,21 +1,34 @@
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
 const SidebarSearch = ({ searchQuery, setSearchQuery }) => {
   const { theme, getInputProps } = useNeumorphism();
+  const border = theme.isLight ? '#cbd5e0' : '#4a5568';
 
   return (
-    <div className="p-3 md:p-5 border-b" style={{ borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
-      <div className="relative">
-        <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5" style={{ color: theme.otherUsernameColor, opacity: 0.7 }} />
+    <div className="px-4 md:px-5 py-3 border-b flex-shrink-0" style={{ borderColor: border }}>
+      <div className="relative flex items-center">
+        <Search
+          className="absolute left-4 w-3.5 h-3.5 pointer-events-none"
+          style={{ color: theme.otherUsernameColor, opacity: 0.6 }}
+        />
         <input
           type="text"
-          placeholder="Search rooms..."
+          placeholder="Search..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 md:pl-16 pr-4 md:pr-6 py-3 md:py-4 border-none focus:border-transparent focus:ring-0 rounded-2xl focus:outline-none text-sm md:text-base transition-all"
+          className="w-full pl-10 pr-8 py-2.5 rounded-xl border-none focus:outline-none text-sm transition-all"
           {...getInputProps(1, 3, 2, 4)}
+          style={{ ...getInputProps(1, 3, 2, 4).style, color: theme.otherMessageText }}
         />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 opacity-50 hover:opacity-100 transition-opacity"
+          >
+            <X className="w-3.5 h-3.5" style={{ color: theme.otherUsernameColor }} />
+          </button>
+        )}
       </div>
     </div>
   );

@@ -98,5 +98,5 @@ export async function fetchMessagesAfter({ query, limit, after, mapMessage = (m)
     totalBytes += size;
   }
 
-  return { messages: selected, hasMore: false };
+  return { messages: selected, hasMore: hasMore || selected.length < batch.length };
 }

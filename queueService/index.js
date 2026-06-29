@@ -16,7 +16,7 @@ const messageQueue = new BatchQueue({
   flushInterval: 500,
   processBatch: processMessageBatch,
 });
-
+ 
 async function start() {
   await connectDB();
   connectToBroker();

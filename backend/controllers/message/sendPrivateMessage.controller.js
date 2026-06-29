@@ -4,6 +4,7 @@ import userCacheClient from '../../database/userCacheClient.js';
 import emitNewPrivateMessage from '../../emitters/newPrivateMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
+import { _addQualities } from '../../utils/addQualities.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
@@ -54,7 +55,7 @@ export async function sendPrivateMessage(req, res) {
       avatar: sender.avatar,
       isOnline: sender.isOnline,
       lastSeen: sender.lastSeen,
-      media: media || null,
+      media: media ? _addQualities(media) : null,
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
     };

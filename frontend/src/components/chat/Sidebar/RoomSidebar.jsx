@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCallback, useState } from 'react';
 import roomService from '../../../services/room.service';
@@ -19,7 +19,7 @@ import SidebarSearch from './SidebarSearch';
 import SidebarFooter from './SidebarFooter';
 import ThemePicker from './ThemePicker';
 
-const TABS = ['My Chats', 'Global'];
+const TABS = ['Chats', 'Explore'];
 
 function RoomSidebar({
   user,
@@ -54,19 +54,20 @@ function RoomSidebar({
   unreadCounts = {}
 }) {
   const { updateUser } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
-  const [activeTab, setActiveTab] = useState('My Chats');
+  const [activeTab, setActiveTab] = useState('Chats');
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const deletePrivateChatMutation = useDeletePrivateChat();
   const { getNeumorphicProps } = useNeumorphism();
 
-  const isLight = theme.isLight;
-  const borderColor = isLight ? '#cbd5e0' : '#4a5568';
+  const border = theme.isLight ? '#cbd5e0' : '#4a5568';
+  const accent = theme.primary || '#6366f1';
 
   const handleDeletePrivateChat = async (otherUserId, e) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this private chat?')) {
+    if (window.confirm('Delete this private chat?')) {
       try {
         await deletePrivateChatMutation.mutateAsync(otherUserId);
         toast.success('Chat deleted');
@@ -78,7 +79,7 @@ function RoomSidebar({
         if (currentPrivateChat?.id === otherUserId) {
           setCurrentPrivateChat(null);
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to delete chat');
       }
     }
@@ -89,25 +90,24 @@ function RoomSidebar({
     try {
       const data = await roomService.createRoom(newRoomName, newRoomDesc);
       const newRoom = data.room;
-      toast.success('Room created successfully!');
+      toast.success('Room created');
       setNewRoomName('');
       setNewRoomDesc('');
       setShowCreateRoom(false);
-      // Add to joinedRooms immediately (creator is auto-member on backend)
+      setShowCreateForm(false);
       if (newRoom && setJoinedRooms) {
         setJoinedRooms(prev => {
           const exists = prev.some(r => r._id === newRoom._id);
           return exists ? prev : [newRoom, ...prev];
         });
       }
-      // Navigate creator into the new room (emits socket joinRoom + loads messages)
       if (newRoom && onRoomCreated) {
         onRoomCreated(newRoom);
       } else if (newRoom && setCurrentRoom) {
         setCurrentPrivateChat && setCurrentPrivateChat(null);
         setCurrentRoom(newRoom);
       }
-      setActiveTab('My Chats');
+      setActiveTab('Chats');
       loadRooms();
       if (loadJoinedRooms) loadJoinedRooms();
     } catch (error) {
@@ -125,23 +125,23 @@ function RoomSidebar({
     onCloseSidebar && onCloseSidebar();
   }, [startPrivateChat, onCloseSidebar]);
 
-  // Total unread count for the "My Chats" tab badge
   const myChatsUnread = Object.entries(unreadCounts).reduce((sum, [, v]) => sum + v, 0);
 
   const renderTabBar = () => (
-    <div className="flex mx-3 md:mx-5 mb-1 rounded-2xl overflow-hidden border" style={{ borderColor }}>
+    <div className="flex px-4 md:px-5 pt-3 pb-0 gap-1 flex-shrink-0">
       {TABS.map(tab => {
         const isActive = activeTab === tab;
-        const badge = tab === 'My Chats' && myChatsUnread > 0 ? myChatsUnread : 0;
+        const badge = tab === 'Chats' && myChatsUnread > 0 ? myChatsUnread : 0;
         return (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className="flex-1 py-2 text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-1.5"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-t-xl text-xs font-semibold transition-all relative"
             style={{
-              backgroundColor: isActive ? (theme.primary || '#6366f1') : 'transparent',
-              color: isActive ? '#fff' : theme.otherMessageText,
-              opacity: isActive ? 1 : 0.6,
+              backgroundColor: isActive ? (theme.isLight ? '#fff' : theme.background) : 'transparent',
+              color: isActive ? accent : theme.otherMessageText,
+              opacity: isActive ? 1 : 0.5,
+              borderBottom: isActive ? `2px solid ${accent}` : '2px solid transparent',
             }}
           >
             {tab}
@@ -157,19 +157,16 @@ function RoomSidebar({
   );
 
   const renderMyChats = () => (
-    <div className="space-y-3 md:space-y-4">
-      {/* Joined Groups */}
+    <div className="space-y-4">
       <RoomList
         rooms={joinedRooms}
         currentRoom={currentRoom}
         handleJoinRoom={handleJoinRoom}
         loadingRooms={loadingJoinedRooms}
         unreadCounts={unreadCounts}
-        label="My Groups"
-        emptyText="Join a group from the Global tab"
+        label="Groups"
+        emptyText="Join a group from Explore"
       />
-
-      {/* Private Chats */}
       <PrivateChatList
         privateChats={privateChats}
         currentPrivateChat={currentPrivateChat}
@@ -181,62 +178,66 @@ function RoomSidebar({
     </div>
   );
 
-  const renderGlobal = () => (
-    <GlobalRoomList
-      currentRoom={currentRoom}
-      handleJoinRoom={handleJoinRoom}
-      searchQuery={searchQuery}
-    />
-  );
-
   const renderSidebarContent = (showMobileClose) => (
-    <div className="flex flex-col h-full relative overflow-y-hidden" style={{ backgroundColor: theme.background }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: theme.background }}>
       <SidebarHeader showMobileClose={showMobileClose} onCloseSidebar={onCloseSidebar} />
 
       <SidebarSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
       {renderTabBar()}
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-5">
-        {activeTab === 'My Chats' ? renderMyChats() : renderGlobal()}
-      </div>
+      {/* Divider under tabs */}
+      <div className="mx-4 md:mx-5 flex-shrink-0" style={{ borderBottom: `1px solid ${border}` }} />
 
-      {/* Create Room + Footer – shown in both tabs */}
-      <div className="p-4 md:p-6 border-t" style={{ borderColor }}>
-        {user.role !== 'guest' && (
-          <button
-            onClick={() => setShowCreateRoom(!showCreateRoom)}
-            className="w-full py-3 md:py-4 font-bold text-sm md:text-base rounded-2xl transition-all flex items-center justify-center gap-2"
-            {...getNeumorphicProps(2, 4, 3, 6)}
-            style={{ ...getNeumorphicProps(2, 4, 3, 6).style, color: theme.otherMessageText }}
-          >
-            <Plus className="w-4 h-4 md:w-5 md:h-5" style={{ color: theme.otherUsernameColor }} />
-            Create Room
-          </button>
-        )}
-
-        {showCreateRoom && (
-          <CreateRoomForm
-            newRoomName={newRoomName}
-            setNewRoomName={setNewRoomName}
-            newRoomDesc={newRoomDesc}
-            setNewRoomDesc={setNewRoomDesc}
-            createRoom={createRoom}
+      {/* Scrollable list */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-4 py-3">
+        {activeTab === 'Chats' ? renderMyChats() : (
+          <GlobalRoomList
+            currentRoom={currentRoom}
+            handleJoinRoom={handleJoinRoom}
+            searchQuery={searchQuery}
           />
         )}
       </div>
 
+      {/* Create Room — only in Chats tab, only non-guest */}
+      {activeTab === 'Chats' && user.role !== 'guest' && (
+        <div className="px-3 md:px-4 py-3 flex-shrink-0" style={{ borderTop: `1px solid ${border}` }}>
+          <button
+            onClick={() => setShowCreateForm(f => !f)}
+            className="w-full py-2.5 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-2"
+            {...getNeumorphicProps(1, 3, 2, 5)}
+            style={{ ...getNeumorphicProps(1, 3, 2, 5).style, color: theme.otherMessageText }}
+          >
+            <Plus className="w-3.5 h-3.5" style={{ color: theme.otherUsernameColor }} />
+            New Room
+            {showCreateForm
+              ? <ChevronUp className="w-3 h-3 ml-auto opacity-40" />
+              : <ChevronDown className="w-3 h-3 ml-auto opacity-40" />
+            }
+          </button>
+          {showCreateForm && (
+            <div className="mt-2">
+              <CreateRoomForm
+                newRoomName={newRoomName}
+                setNewRoomName={setNewRoomName}
+                newRoomDesc={newRoomDesc}
+                setNewRoomDesc={setNewRoomDesc}
+                createRoom={createRoom}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       <SidebarFooter
         user={user}
         onShowSettings={() => setShowUserSettings(true)}
-        onToggleThemePicker={() => setShowThemePicker(!showThemePicker)}
+        onToggleThemePicker={() => setShowThemePicker(p => !p)}
         onLogout={logout}
       />
 
-      <ThemePicker
-        show={showThemePicker}
-        onClose={() => setShowThemePicker(false)}
-      />
+      <ThemePicker show={showThemePicker} onClose={() => setShowThemePicker(false)} />
 
       {showUserSettings && (
         <UserSettingsModal
@@ -254,7 +255,7 @@ function RoomSidebar({
         {showSidebar && (
           <div className="fixed inset-0 z-50">
             <div className="absolute inset-0 bg-black/50" onClick={onCloseSidebar} />
-            <div className="absolute left-0 top-0 h-full w-80" style={{ backgroundColor: theme.background }}>
+            <div className="absolute left-0 top-0 h-full w-72" style={{ backgroundColor: theme.background }}>
               {renderSidebarContent(true)}
             </div>
           </div>
@@ -265,8 +266,8 @@ function RoomSidebar({
 
   return (
     <div
-      className="w-80 flex-shrink-0 border-r hidden md:block"
-      style={{ backgroundColor: theme.background, borderColor }}
+      className="w-72 flex-shrink-0 border-r hidden md:block"
+      style={{ backgroundColor: theme.background, borderColor: border }}
     >
       {renderSidebarContent(false)}
     </div>

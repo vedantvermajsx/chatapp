@@ -10,7 +10,18 @@ export async function getProfile(req, res) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.status(200).json({message: "User fetched successfully", user});
+    const profile = {
+      id: String(user._id),
+      username: user.username,
+      avatar: user.avatar,
+      gender: user.gender,
+      age: user.age,
+      bio: user.bio,
+      isOnline: user.isOnline,
+      lastSeen: user.lastSeen,
+    };
+
+    res.status(200).json({ message: "User fetched successfully", user: profile });
 
   } catch (error) {
     console.log("Error in getProfile controller:", error.message);

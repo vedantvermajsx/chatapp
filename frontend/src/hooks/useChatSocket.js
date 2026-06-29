@@ -106,10 +106,9 @@ export const useChatSocket = (user, {
         }),
       };
 
-      // Only push into the visible message list if this is the active room
       if (isActiveRoom) {
         setMessages((prev) => {
-          if (msg._id && prev.some(m => String(m.id) === String(msg._id))) return prev;
+          if ((msg._id || msg.id)  && prev.some(m => String(m.id) === String(msg._id  || msg.id))) return prev;
           const existingOptimisticIndex = prev.findIndex(m =>
             m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
           );
@@ -123,7 +122,6 @@ export const useChatSocket = (user, {
         });
       }
 
-      // Always update the in-memory cache for this room
       const cacheKey = `room_${msg.roomId}`;
       if (messageCache.current[cacheKey]) {
         const prevMessages = messageCache.current[cacheKey].messages;
@@ -269,12 +267,11 @@ export const useChatSocket = (user, {
       const messageCache = messageCacheRef.current;
       const cacheKey = `private_${receiverId}`;
 
-      // Always update the cache so isSeen is correct when user opens the chat later
       if (messageCache.current[cacheKey]) {
         const prevMessages = messageCache.current[cacheKey].messages;
         const updatedMessages = prevMessages.map(msg => {
           if (!msg.isOwn || msg.isSystemMessage) return msg;
-          if (msg.id === messageId) return { ...msg, isSeen: true, seenAt: lastSeenAt };
+          if ((msg.id || msg._id) === messageId) return { ...msg, isSeen: true, seenAt: lastSeenAt };
           if (msg.isSeen) return { ...msg, isSeen: false, seenAt: null };
           return msg;
         });
@@ -288,14 +285,13 @@ export const useChatSocket = (user, {
         }
       }
 
-      // Only update the visible message list if user is currently in this chat
       const isActiveChat = currentPrivateChat && String(currentPrivateChat.id) === String(receiverId);
       if (!isActiveChat) return;
 
       setMessages(prev => {
         const updated = prev.map(msg => {
           if (!msg.isOwn || msg.isSystemMessage) return msg;
-          if (msg.id === messageId) return { ...msg, isSeen: true, seenAt: lastSeenAt };
+          if ((msg.id || msg._id) === messageId) return { ...msg, isSeen: true, seenAt: lastSeenAt };
           if (msg.isSeen) return { ...msg, isSeen: false, seenAt: null };
           return msg;
         });

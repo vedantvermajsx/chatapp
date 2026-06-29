@@ -24,7 +24,7 @@ const MessageList = ({
   const lastNonOwnIndex = (() => {
     if (!messages) return -1;
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (!messages[i].isSystemMessage && !messages[i].isOwn) return i;
+      if (!messages[i].isOwn) return i;
     }
     return -1;
   })();
@@ -74,16 +74,17 @@ const MessageList = ({
         <div className="space-y-4">
           {messages.map((msg, idx) => (
             <div
-              key={msg.id}
+              key={msg._id || msg.id}
               ref={idx === lastNonOwnIndex ? lastMsgElRef : null}
             >
-              {msg?.isSystemMessage ? <SystemMessage msg={msg} /> :
+              {msg?.isSystemMessage ? <SystemMessage msg={msg} isPrivateChat={isPrivateChat} /> :
                 <Message
                   msg={msg}
                   isOwn={msg.isOwn}
                   senderAvatar={msg.avatar}
                   gender={msg.gender}
                   isPrivateChat={isPrivateChat}
+                  progress={msg.uploadProgress}
                 />
               }
             </div>

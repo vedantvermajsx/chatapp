@@ -6,7 +6,7 @@ class LastReadCacheClient {
   constructor() {
     this.client = axios.create({
       baseURL: process.env.CACHE_SERVICE_ROOT_URL,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_SERVICE_SECRET },
       timeout: 2000
     });
   }
@@ -31,9 +31,9 @@ class LastReadCacheClient {
     }
   }
 
-  async setPrivate(userId, peerId, { messageId, lastSeenAt }) {
+  async setPrivate(userId, peerId, { messageId, timestamp, lastSeenAt }) {
     try {
-      await this.client.post(`/last-read/${userId}/private`, { peerId, messageId, lastSeenAt });
+      await this.client.post(`/last-read/${userId}/private`, { peerId, messageId, timestamp, lastSeenAt });
     } catch (err) {
       console.error('[LastReadCacheClient] setPrivate error:', err.message);
     }

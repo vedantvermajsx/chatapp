@@ -1,4 +1,5 @@
 import messageService from '../../services/message.service.js';
+import { applyLastRead } from '../../utils/applyLastRead.js';
 
 export const loadMoreMessagesHandler = async (
   otherUser,
@@ -16,7 +17,7 @@ export const loadMoreMessagesHandler = async (
     const earliestTimestamp = messages[0].timestamp;
     const res = await messageService.getPrivateMessages(otherUser.id, 20, earliestTimestamp);
 
-    const merged = [...res.messages, ...messages];
+    const merged = applyLastRead([...res.messages, ...messages], res.lastRead);
     setMessages(merged);
     setHasMoreMessages(res.hasMore);
   } catch (error) {

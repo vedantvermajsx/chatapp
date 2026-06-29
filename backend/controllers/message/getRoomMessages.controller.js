@@ -1,7 +1,7 @@
 import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
-import getThumbnail from '../../utils/getThumbnail.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
+import { _addQualities } from '../../utils/addQualities.js';
 
 function deletedUserFallback() {
   return {
@@ -38,7 +38,7 @@ export const getRoomMessages = async (req, res) => {
       const formattedMessages = messages.map((msg) => {
   if (msg.isSystemMessage) {
     return {
-      id: msg._id,
+      id: msg._id ||  msg.id ,
       isSystemMessage: true,
       systemType: msg.systemType || null,
       text: msg.content || msg.text || '',
@@ -48,26 +48,15 @@ export const getRoomMessages = async (req, res) => {
 
   const senderDetails = userDetailsMap.get(msg.senderId) || deletedUserFallback();
 
-  const media = msg.media?.url
-    ? {
-        ...msg.media,
-        thumbnailUrl: getThumbnail(
-          msg.media.url,
-          msg.media.type === 'video',
-          msg.media.type === 'audio'
-        ),
-      }
-    : null;
-
   return {
-    id: msg._id,
+    id: msg._id ||  msg.id,
     text: msg.content || msg.text || '',
     isOwn: msg.senderId === userId,
     timestamp: msg.timestamp,
     username: senderDetails.username,
     gender: senderDetails.gender,
     avatar: senderDetails.avatar,
-    media,
+    media:msg.media?_addQualities(msg.media):null,
   };
 });
 

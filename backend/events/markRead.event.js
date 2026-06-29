@@ -1,4 +1,3 @@
-import ConversationRead from '../models/conversationRead.model.js';
 import { getIO } from '../socket.js';
 import unreadCacheClient from '../database/unreadCacheClient.js';
 import lastReadCacheClient from '../database/lastReadCacheClient.js';
@@ -17,22 +16,24 @@ const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId,
   const messageTimestamp = timestamp ? new Date(timestamp) : new Date();
   const now = new Date();
 
-  const existing = await ConversationRead.findOne({ senderId, receiverId })
-    .select('messageId timestamp')
-    .lean();
+  // Cache-first (Mongo fallback on cold cache) — lastReadCacheClient/the
+  // cache service is the single owner of this read-state, so we never
+  // touch the ConversationRead model directly here.
+  const existing = await lastReadCacheClient.get(receiverId, `private_${senderId}`);
 
   if (existing?.messageId === messageId) return;
 
-  if (existing?.timestamp && messageTimestamp <= existing.timestamp) return;
+  // Gate on the message's *creation* time, not when it was marked seen —
+  // an older message arriving late should never regress or re-trigger this.
+  if (existing?.timestamp && messageTimestamp <= new Date(existing.timestamp)) return;
 
-  await ConversationRead.findOneAndUpdate(
-    { senderId, receiverId },
-    { messageId, timestamp: messageTimestamp, lastSeenAt: now },
-    { upsert: true, new: true }
-  );
+  await lastReadCacheClient.setPrivate(receiverId, senderId, {
+    messageId,
+    timestamp: messageTimestamp,
+    lastSeenAt: now,
+  });
 
   unreadCacheClient.reset(receiverId, `private_${senderId}`).catch(() => {});
-  lastReadCacheClient.setPrivate(receiverId, senderId, { messageId, lastSeenAt: now }).catch(() => {});
 
   publish('notification.lastread.private', {
     userId: receiverId,

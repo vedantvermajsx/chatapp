@@ -2,7 +2,7 @@ import { getPrivateMessages as getPrivateMessagesService } from '../../services/
 
 function mapPrivateMessage(msg) {
   return {
-    id: msg._id,
+    id: msg._id || msg.id,
     senderId: msg.senderId,
     receiverId: msg.receiverId,
     text: msg.content,

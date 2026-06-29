@@ -9,7 +9,7 @@ class RoomCacheClient {
 
     this.client = axios.create({
       baseURL: this.baseUrl,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', 'x-internal-key': process.env.INTERNAL_SERVICE_SECRET }
     });
 
     console.log('Room cache client service:', this.baseUrl);

@@ -3,6 +3,15 @@ import UserRoom from "../../models/userRoom.model.js";
 
 export async function handleMemberJoined({ roomId, userId }) {
   try {
+
+    const room = await Room.findById(roomId);
+
+    if (!room) {
+      throw new Error('Room is not a group chat');
+    }
+
+    if (room.groupMembers.includes(userId)) return;
+
     await Room.updateOne(
       { _id: roomId },
       { $addToSet: { groupMembers: userId } },

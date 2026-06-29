@@ -4,8 +4,8 @@ import xss from 'xss';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
-import getThumbnail from '../../utils/getThumbnail.js';
 import { onlineUsers } from '../../socket.js';
+import { _addQualities } from '../../utils/addQualities.js';
 
 export async function sendRoomMessage(req, res) {
   try {
@@ -41,17 +41,6 @@ export async function sendRoomMessage(req, res) {
       timestamp,
     };
 
-    const emittedMedia = media?.url
-      ? {
-          ...media,
-          thumbnailUrl: getThumbnail(
-            media.url,
-            media.type === 'video',
-            media.type === 'audio'
-          ),
-        }
-      : null;
-
     const payload = {
       _id,
       roomId,
@@ -65,7 +54,7 @@ export async function sendRoomMessage(req, res) {
       avatar: sender.avatar,
       isOnline: sender.isOnline,
       lastSeen: sender.lastSeen,
-      media: emittedMedia,
+      media: media?_addQualities(media):null,
     };
 
     enqueueMessage(messageData);

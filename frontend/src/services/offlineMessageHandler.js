@@ -29,25 +29,25 @@ export const sendPendingMessages = async () => {
         }
         
         if (pendingMsg.type === 'room') {
-          const response = await messageService.sendRoomMessage({
+          await messageService.sendRoomMessage({
             roomId: pendingMsg.roomId,
             text: pendingMsg.text,
             media: finalMedia,
-            uuid: pendingMsg.id,
+            uuid: pendingMsg.id || pendingMsg._id,
             skipToast: true
           });
         } else if (pendingMsg.type === 'private') {
-          const response = await messageService.sendPrivateMessage({
+          await messageService.sendPrivateMessage({
             receiverId: pendingMsg.receiverId,
             receiverModel: pendingMsg.receiverModel,
             content: pendingMsg.text,
             media: finalMedia,
-            uuid: pendingMsg.id,
+            uuid: pendingMsg.id || pendingMsg._id,
             skipToast: true
           });
         }
         
-        await dbService.removePendingMessage(pendingMsg.id);
+        await dbService.removePendingMessage(pendingMsg.id || pendingMsg._id);
       } catch (error) {
         console.error('Failed to send pending message:', error);
       }
