@@ -3,7 +3,7 @@ import { publish } from '../../utils/messageBroker.js';
 const handleWebrtcSignal = (socket, io) => async (payload) => {
   try {
     const { targetId, type, data, callerData } = payload;
-    const senderId = socket.user.id;
+    const senderId = String(socket.user._id || socket.user.id);
 
     if (!targetId || !type) {
       return;

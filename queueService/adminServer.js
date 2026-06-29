@@ -7,7 +7,7 @@ export function createAdminServer({ port, getStats }) {
   const app = express();
 
   const adminLimiter = rateLimit({
-    windowMs: parseInt(process.env.ADMIN_RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000, // 1 min
+    windowMs: parseInt(process.env.ADMIN_RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000,
     max: parseInt(process.env.ADMIN_RATE_LIMIT_MAX, 10) || 60,
     standardHeaders: true,
     legacyHeaders: false,

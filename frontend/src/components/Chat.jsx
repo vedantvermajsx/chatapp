@@ -85,10 +85,10 @@ function Chat() {
       navigate('/login');
       return;
     }
-    
+
     Promise.all([loadJoinedRooms(), loadPrivateChats()]).then(
       ([joinedRooms, privateChats]) => {
-        
+
         prefetchAllMessagesHandler(
           joinedRooms ?? [],
           privateChats ?? [],
@@ -102,15 +102,15 @@ function Chat() {
     setJoinedRooms(prev => prev.filter(r => r._id !== roomId));
   }, [setJoinedRooms]);
 
-  
-  
-  
-  
-  
+
+
+
+
+
   const lastMarkedReadRef = useRef({});
 
   const handleChatRead = useCallback((chatKey, lastMessage) => {
-    if (!socket || !chatKey || !user || !lastMessage?.id || !lastMessage?.timestamp) return;
+    if (!socket || !chatKey || !user || !(lastMessage?.id || lastMessage?._id) || !lastMessage?.timestamp) return;
 
     const newMsgTime = new Date(lastMessage.timestamp).getTime();
     if (Number.isNaN(newMsgTime)) return;
@@ -124,18 +124,18 @@ function Chat() {
       socket.emit('markRead', {
         senderId: lastMessage.senderId,
         receiverId: lastMessage.receiverId,
-        messageId: lastMessage.id,
+        messageId: lastMessage.id || lastMessage._id,
         timestamp: lastMessage.timestamp,
       });
     }
 
-    
+
     if (chatKey.startsWith('room_')) {
       const roomId = chatKey.replace('room_', '');
       lastMarkedReadRef.current[chatKey] = newMsgTime;
       socket.emit('markRoomRead', {
         roomId,
-        messageId: lastMessage.id,
+        messageId: lastMessage.id || lastMessage._id,
         timestamp: lastMessage.timestamp,
       });
     }

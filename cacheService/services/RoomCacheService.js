@@ -82,8 +82,6 @@ class RoomCacheService {
       return empty;
     }
 
-    // User _ids are stored as strings; Guest _ids are also strings (guest_xxx).
-    // Split into regular users (non-guest) and guests by prefix.
     const regularIds = memberIds.filter(id => !id.startsWith('guest_'));
     const guestIds   = memberIds.filter(id =>  id.startsWith('guest_'));
 

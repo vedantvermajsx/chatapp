@@ -1,10 +1,5 @@
 import crypto from 'crypto';
 
-// Identical signing utility to backend/utils/hmacClient.js.
-// Kept as a separate file per service to avoid cross-service shared packages.
-// NOTE: HMAC_SECRET and SERVICE_ID are read lazily (inside functions) rather
-// than at the top level, because ESM imports are hoisted before dotenv.config()
-// runs in the entry point — a top-level read would always capture `undefined`.
 
 function sha256(str) {
   return crypto.createHash('sha256').update(str, 'utf8').digest('hex');

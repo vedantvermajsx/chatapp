@@ -32,7 +32,6 @@ export function hmacAuth(req, res, next) {
   
   const rawBody = req.rawBody || '';
   const bodyHash = sha256(rawBody);
-  // Use the full path (no query string) so it matches what the client resolved
   const urlPath = req.originalUrl.split('?')[0];
   const signingString = `${req.method}\n${urlPath}\n${timestamp}\n${bodyHash}`;
 

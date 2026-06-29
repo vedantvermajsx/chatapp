@@ -22,11 +22,7 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unread = 0 
                             {room.groupName}
                         </h3>
                         <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                            {unread > 0 && (
-                                <span className="min-w-[1.1rem] h-[1.1rem] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
-                                    {unread > 99 ? '99+' : unread}
-                                </span>
-                            )}
+
                             <span className="text-[10px] md:text-xs font-semibold" style={{ color: theme.otherUsernameColor }}>
                                 {room.memberCount ?? 0}
                             </span>

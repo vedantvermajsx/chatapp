@@ -1,13 +1,11 @@
 import { memo } from 'react';
-import { MessageCircle, Trash2 } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import Spinner from '../../common/Spinner';
-import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { useNeumorphism } from '../../../hooks/useNeumorphism';
+import PrivateChat from './PrivateChat';
 
 const PrivateChatList = memo(function PrivateChatList({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat, unreadCounts = {} }) {
   const { theme } = useTheme();
-  const { getNeumorphicProps } = useNeumorphism();
   const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
   return (
     <div className="pt-4">
@@ -25,57 +23,14 @@ const PrivateChatList = memo(function PrivateChatList({ privateChats, currentPri
             const chatUserId = chat.otherUser.id || chat.otherUser._id;
             const unread = unreadCounts[`private_${chatUserId}`] || 0;
             return (
-              <div
-                key={chat.otherUser.id || chat.otherUser._id}
-                onClick={() => handleStartPrivateChat({ ...chat.otherUser, id: chat.otherUser.id || chat.otherUser._id })}
-                className="p-3 md:p-5 rounded-2xl cursor-pointer transition-all"
-                {...getNeumorphicProps(2, 4, 3, 6, currentPrivateChat?.id === chat.otherUser.id, true)}
-              >
-                <div className="flex items-start gap-3 md:gap-4">
-                  <div className="flex-shrink-0">
-                    <Avatar
-                      url={chat.otherUser.avatar}
-                      name={chat.otherUser.username}
-                      gender={chat.otherUser.gender}
-                      size={8}
-                      mdSize={12}
-                      isOnline={chat.otherUser.isOnline}
-                      lastSeen={chat.otherUser.lastSeen}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-bold text-xs md:text-sm truncate" style={{ color: theme.otherMessageText }}>
-                        {chat.otherUser.username}
-                      </h3>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        {unread > 0 && (
-                          <span className="min-w-[1.1rem] h-[1.1rem] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1">
-                            {unread > 99 ? '99+' : unread}
-                          </span>
-                        )}
-
-                      </div>
-                    </div>
-                    <p className="text-xs md:text-sm truncate mt-1 md:mt-2 font-medium" style={{
-                      color: unread > 0 ? (theme.primary || '#6366f1') : theme.otherMessageText,
-                      opacity: unread > 0 ? 1 : 0.8,
-                    }}>
-                      {unread > 0
-                        ? `${unread > 99 ? '99+' : unread > 9 ? '9+' : unread} new message${unread === 1 ? '' : 's'}`
-                        : (chat.lastMessage?.content ? chat.lastMessage.content.replace('__SYSTEM_CALL__', '') : 'Start a conversation')
-                      }
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => handleDeletePrivateChat(chat.otherUser.id || chat.otherUser._id, e)}
-                    className="p-1 rounded-full opacity-50 hover:opacity-100 transition-opacity self-center flex-shrink-0"
-                    title="Delete Chat"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </button>
-                </div>
-              </div>
+              <PrivateChat
+                key={chatUserId}
+                chat={chat}
+                currentPrivateChat={currentPrivateChat}
+                handleStartPrivateChat={handleStartPrivateChat}
+                handleDeletePrivateChat={handleDeletePrivateChat}
+                unread={unread}
+              />
             );
           })
         )}

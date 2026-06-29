@@ -1,10 +1,9 @@
 import crypto from 'crypto';
 
-const TIMESTAMP_TOLERANCE_MS = 30 * 1000; // ±30s
+const TIMESTAMP_TOLERANCE_MS = 30 * 1000;
 
 export function verifyWsMessage(msgObj) {
-  // Read lazily so dotenv.config() in the entry point has time to run first.
-  // (ESM imports are hoisted, so module-level reads happen before dotenv loads.)
+
   const HMAC_SECRET = process.env.HMAC_SECRET;
   if (!HMAC_SECRET) {
     return { valid: false, reason: 'HMAC_SECRET not configured on broker' };

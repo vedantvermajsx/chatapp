@@ -128,28 +128,39 @@ function RoomSidebar({
   const myChatsUnread = Object.entries(unreadCounts).reduce((sum, [, v]) => sum + v, 0);
 
   const renderTabBar = () => (
-    <div className="flex px-4 md:px-5 pt-3 pb-0 gap-1 flex-shrink-0">
-      {TABS.map(tab => {
+    <div
+      className="flex flex-shrink-0"
+      style={{ borderBottom: `1px solid ${border}` }}
+    >
+      {TABS.map((tab) => {
         const isActive = activeTab === tab;
-        const badge = tab === 'Chats' && myChatsUnread > 0 ? myChatsUnread : 0;
+        const badge = tab === "Chats" && myChatsUnread > 0 ? myChatsUnread : 0;
+
         return (
           <button
             key={tab}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => setActiveTab(tab)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-t-xl text-xs font-semibold transition-all relative"
+            className="relative flex-1 py-2.5 text-xs font-semibold transition-colors"
             style={{
-              backgroundColor: isActive ? (theme.isLight ? '#fff' : theme.background) : 'transparent',
               color: isActive ? accent : theme.otherMessageText,
-              opacity: isActive ? 1 : 0.5,
-              borderBottom: isActive ? `2px solid ${accent}` : '2px solid transparent',
+              opacity: isActive ? 1 : 0.8,
+              borderBottom: isActive
+                ? `2px solid ${accent}`
+                : "transparent",
+              backgroundColor: "transparent",
             }}
           >
-            {tab}
-            {badge > 0 && (
-              <span className="min-w-[1rem] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
-                {badge > 99 ? '99+' : badge}
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1.5">
+              {tab}
+
+              {badge > 0 && (
+                <span className="min-w-[1rem] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
+            </span>
           </button>
         );
       })}
@@ -185,11 +196,6 @@ function RoomSidebar({
       <SidebarSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
       {renderTabBar()}
-
-      {}
-      <div className="mx-4 md:mx-5 flex-shrink-0" style={{ borderBottom: `1px solid ${border}` }} />
-
-      {}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-4 py-3">
         {activeTab === 'Chats' ? renderMyChats() : (
           <GlobalRoomList
@@ -200,7 +206,7 @@ function RoomSidebar({
         )}
       </div>
 
-      {}
+      { }
       {activeTab === 'Chats' && user.role !== 'guest' && (
         <div className="px-3 md:px-4 py-3 flex-shrink-0" style={{ borderTop: `1px solid ${border}` }}>
           <button

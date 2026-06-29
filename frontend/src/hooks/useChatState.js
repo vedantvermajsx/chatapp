@@ -41,10 +41,8 @@ export const useChatState = (user) => {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [hasMoreMembers, setHasMoreMembers] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
-  // unreadCounts: { 'room_{id}': number, 'private_{userId}': number }
   const [unreadCounts, setUnreadCounts] = useState({});
 
-  // Load persisted unread counts from IndexedDB on mount
   useEffect(() => {
     dbService.loadUnreadCounts().then(saved => {
       if (saved && Object.keys(saved).length > 0) {
@@ -53,7 +51,6 @@ export const useChatState = (user) => {
     });
   }, []);
 
-  // Persist unread counts to IndexedDB whenever they change
   useEffect(() => {
     dbService.saveUnreadCounts(unreadCounts);
   }, [unreadCounts]);

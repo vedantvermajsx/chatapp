@@ -41,9 +41,9 @@ export function attachHmacInterceptor(axiosInstance) {
         const baseUrl = new URL(
           config.baseURL.endsWith('/') ? config.baseURL : config.baseURL + '/'
         );
-        const basePath = baseUrl.pathname.replace(/\/$/, ''); // e.g. "/bloom"
-        const relPath = fullPath.startsWith('/') ? fullPath : '/' + fullPath;  // e.g. "/seed"
-        fullPath = basePath + relPath; // e.g. "/bloom/seed"
+        const basePath = baseUrl.pathname.replace(/\/$/, ''); 
+        const relPath = fullPath.startsWith('/') ? fullPath : '/' + fullPath;  
+        fullPath = basePath + relPath; 
       }
     } catch {
     }

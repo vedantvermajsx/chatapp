@@ -56,6 +56,8 @@ const ChatArea = memo(function ChatArea({
   const scrollSaveTimers = useRef({});
 
   const [zoomImageUrl, setZoomImageUrl] = useState(null);
+  const [zoomMedia, setZoomMedia] = useState(null);
+  const [zoomMediaType, setZoomMediaType] = useState(null);
   const [containerHeight, setContainerHeight] = useState(null);
   const [offsetTop, setOffsetTop] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(64);
@@ -280,7 +282,11 @@ const ChatArea = memo(function ChatArea({
   }, [sendMessage]);
 
   useEffect(() => {
-    const handleOpenZoom = (e) => setZoomImageUrl(e.detail.url);
+    const handleOpenZoom = (e) => {
+      setZoomImageUrl(e.detail.url);
+      setZoomMedia(e.detail.media || null);
+      setZoomMediaType(e.detail.type || 'image');
+    };
     window.addEventListener('openImageZoom', handleOpenZoom);
     return () => window.removeEventListener('openImageZoom', handleOpenZoom);
   }, []);
@@ -385,7 +391,9 @@ const ChatArea = memo(function ChatArea({
       <ImageZoomModal
         isOpen={!!zoomImageUrl}
         imageUrl={zoomImageUrl}
-        onClose={() => setZoomImageUrl(null)}
+        media={zoomMedia}
+        mediaType={zoomMediaType}
+        onClose={() => { setZoomImageUrl(null); setZoomMedia(null); setZoomMediaType(null); }}
       />
     </div>
   );

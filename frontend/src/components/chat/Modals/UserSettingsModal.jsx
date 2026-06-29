@@ -17,12 +17,11 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState(null);
   const fileInputRef = useRef(null);
-  const requestRef = useRef(0); // tracks the latest request ID to discard stale responses
+  const requestRef = useRef(0);
 
   useEffect(() => {
     const trimmed = username.trim();
 
-    // Skip check if username hasn't changed
     if (trimmed === user.username) {
       setUsernameStatus(null);
       return;
@@ -35,13 +34,13 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
 
     setUsernameStatus('checking');
 
-    
+
     const requestId = ++requestRef.current;
 
     const timeout = setTimeout(async () => {
       try {
         const res = await authService.checkUsername(trimmed);
-        
+
         if (requestId !== requestRef.current) return;
         setUsernameStatus(res.isTaken ? 'taken' : 'available');
       } catch (err) {
@@ -194,23 +193,8 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-bold mb-2" style={{ color: theme.otherUsernameColor }}>Or, Image URL</label>
-              <input
-                type="text"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                className="w-full px-4 py-3 border-none rounded-xl focus:outline-none transition-all text-sm"
-                style={{
-                  backgroundColor: theme.background,
-                  color: theme.otherMessageText,
-                  boxShadow: isLight
-                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)'
-                    : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)'
-                }}
-                placeholder="https://..."
-              />
-            </div>
+
+
 
           </form>
         </div>

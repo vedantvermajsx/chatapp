@@ -143,9 +143,7 @@ export const sendMessageHandler = async (
 );
 
         finalMediaToUse = {
-          type: uploadResult.type,
-          url: uploadResult.url,
-          thumbnailUrl:uploadResult.thumbnailUrl,
+          ...uploadResult,
           isPending: false
         };
         if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
