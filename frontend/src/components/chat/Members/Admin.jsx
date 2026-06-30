@@ -1,6 +1,7 @@
 import { MessageSquare } from 'lucide-react';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
+import Member from './Member';
 
 const getGenderLabel = (gender) => {
     const labels = ['Male', 'Female', 'Other'];
@@ -16,9 +17,9 @@ function Admin({
     const { theme } = useTheme();
 
     return (
-        <div 
+        <div key={admin._id}
             className="flex items-center gap-3 p-3 rounded-2xl"
-            style={{ 
+            style={{
                 backgroundColor: theme.isLight ? 'rgba(0, 128, 128, 0.15)' : 'rgba(96, 165, 250, 0.15)',
                 boxShadow: theme.isLight ? '0px 0px 1px rgba(0,0,0,0.2), 0px 0px 0px rgba(0,128,128,0.3)' : '0px 0px 1px rgba(0,0,0,0.5), 0px 0px 0px rgba(96, 165, 250,0.3)'
             }}
@@ -44,9 +45,9 @@ function Admin({
 
             {admin.id !== currentUserId && (
                 <button
-                    onClick={() => onStartPrivateChat(admin)}
+                    onClick={() => onStartPrivateChat({ ...admin, id: admin.id || admin._id })}
                     className="p-2 rounded-full transition-all"
-                    style={{ 
+                    style={{
                         backgroundColor: theme.isLight ? 'rgba(0, 128, 128, 0.15)' : 'rgba(96, 165, 250, 0.15)'
                     }}
                     title="Private Chat"

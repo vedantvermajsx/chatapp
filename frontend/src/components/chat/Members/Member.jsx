@@ -19,12 +19,13 @@ function Member({
     const { theme } = useTheme();
     const { getShadow, getNeumorphicProps } = useNeumorphism();
 
+
     if (admin) return <Admin admin={member} currentUserId={currentUserId} onStartPrivateChat={onStartPrivateChat} isOnline={isOnline} />
 
     return (
-        <div 
+        <div key={member._id}
             className="flex items-center gap-3 p-3 rounded-2xl"
-            style={{ 
+            style={{
                 backgroundColor: theme.background,
                 boxShadow: getShadow(theme.isLight, false, 1, 3)
             }}
@@ -48,9 +49,9 @@ function Member({
                 </p>
             </div>
 
-            {member.id !== currentUserId && (
+            {member._id !== currentUserId && (
                 <button
-                    onClick={() => onStartPrivateChat(member)}
+                    onClick={() => onStartPrivateChat({ ...member, id: member.id || member._id })}
                     className="p-2 rounded-full transition-all"
                     {...getNeumorphicProps(3, 6, 2, 4)}
                     title="Private Chat"

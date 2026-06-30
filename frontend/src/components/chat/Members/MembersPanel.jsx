@@ -37,7 +37,7 @@ const MembersPanel = memo(function MembersPanel({
   const offlineMembers = filteredMembers.filter(m => !m.isOnline).sort((a, b) => a.username.localeCompare(b.username));
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div id={admin + 'panel'} className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
       <div
         className="absolute right-0 top-0 h-full w-4/5 sm:w-72 md:w-80 overflow-hidden flex flex-col"
@@ -110,13 +110,13 @@ const MembersPanel = memo(function MembersPanel({
           ) : (
             <>
               {onlineMembers.length > 0 && (
-                <div className="mb-5">
+                <div key={admin + 'panel' + 'online'} className="mb-5">
                   <h3 className="text-sm font-bold mb-4 px-2" style={{ color: theme.otherUsernameColor }}>Online</h3>
                   <div className="space-y-3">
                     {onlineMembers.map((member) => (
                       <Member
-                        admin={admin == member.id}
-                        key={member.id}
+                        admin={admin == member._id}
+                        key={member._id}
                         member={member}
                         currentUserId={currentUserId}
                         onStartPrivateChat={onStartPrivateChat}
@@ -128,14 +128,14 @@ const MembersPanel = memo(function MembersPanel({
               )}
 
               {offlineMembers.length > 0 && (
-                <div>
+                <div key={admin + 'panel' + 'offline'}>
                   <div className="border-t my-4 mx-2" style={{ borderColor: isLight ? '#cbd5e0' : '#4a5568' }} />
                   <h3 className="text-sm font-bold mb-4 px-2" style={{ color: theme.otherUsernameColor }}>Offline</h3>
                   <div className="space-y-3">
                     {offlineMembers.map((member) => (
                       <Member
-                        admin={admin == member.id}
-                        key={member.id}
+                        admin={admin == member._id}
+                        key={member._id}
                         member={member}
                         currentUserId={currentUserId}
                         onStartPrivateChat={onStartPrivateChat}

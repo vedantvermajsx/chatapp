@@ -16,6 +16,8 @@ const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId,
   const messageTimestamp = timestamp ? new Date(timestamp) : new Date();
   const now = new Date();
 
+
+  console.log(senderId+"  "+receiverId+"  "+messageId);
   
   
   

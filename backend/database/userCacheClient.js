@@ -14,12 +14,23 @@ class UserCacheClient {
     attachHmacInterceptor(this.client);
   }
 
-  async seedUser(userDoc) {
-    try {
-      await this.client.post('/users/seed', userDoc);
-    } catch (err) {
-      console.warn('[UserCacheClient] seedUser error:', err.message);
+  async seedUser(userDoc, { retries = 2, retryDelayMs = 150 } = {}) {
+    let lastErr;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        await this.client.post('/users/seed', userDoc);
+        return;
+      } catch (err) {
+        lastErr = err;
+        console.warn(
+          `[UserCacheClient] seedUser attempt ${attempt + 1}/${retries + 1} failed for ${userDoc._id}: ${err.message}`
+        );
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, retryDelayMs * (attempt + 1)));
+        }
+      }
     }
+    throw new Error(`seedUser failed after ${retries + 1} attempts: ${lastErr.message}`);
   }
 
   async checkDuplicate(username, email) {

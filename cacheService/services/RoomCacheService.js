@@ -7,6 +7,20 @@ import { roomCache } from './CacheService.js';
 import { invalidateRoomMessages } from './MessageCacheService.js';
 
 const MEMBERS_PAGE_TTL_SECONDS = 300;
+const NAME_LOOKUP_TTL_SECONDS = 300;
+const USER_ROOMLIST_TTL_SECONDS = 300;
+const ALL_ROOMS_TTL_SECONDS = 60;
+
+const inFlight = new Map();
+
+async function dedupe(key, fetcher) {
+  const existing = inFlight.get(key);
+  if (existing) return existing;
+
+  const promise = fetcher().finally(() => inFlight.delete(key));
+  inFlight.set(key, promise);
+  return promise;
+}
 
 class RoomCacheService {
   async addRoomToCache(id, data) {
@@ -15,16 +29,17 @@ class RoomCacheService {
   }
 
   async getRoomById(id) {
-    let room = roomCache.get(`room:${id}`);
+    const cacheKey = `room:${id}`;
+    const cached = roomCache.get(cacheKey);
+    if (cached) return cached;
 
-    if (!room) {
-      room = await Room.findById(id);
+    return dedupe(cacheKey, async () => {
+      const room = await Room.findById(id);
       if (room) {
         await this.addRoomToCache(id, room);
       }
-    }
-
-    return room;
+      return room;
+    });
   }
 
   async isValidRoomId(id){
@@ -58,11 +73,29 @@ class RoomCacheService {
   }
 
   async getRoomByName(groupName) {
-    return Room.findOne({ groupName });
+    const cacheKey = `room:name:${groupName}`;
+    const cached = roomCache.get(cacheKey);
+    if (cached) return cached;
+
+    return dedupe(cacheKey, async () => {
+      const room = await Room.findOne({ groupName });
+      if (room) {
+        roomCache.set(cacheKey, room, NAME_LOOKUP_TTL_SECONDS);
+      }
+      return room;
+    });
   }
 
   async getRoomsByUserId(userId) {
-    return Room.find({ groupMembers: userId }).select('_id').lean();
+    const cacheKey = `roomsByUser:${userId}`;
+    const cached = roomCache.get(cacheKey);
+    if (cached) return cached;
+
+    return dedupe(cacheKey, async () => {
+      const rooms = await Room.find({ groupMembers: userId }).select('_id').lean();
+      roomCache.set(cacheKey, rooms, USER_ROOMLIST_TTL_SECONDS);
+      return rooms;
+    });
   }
 
   async getRoomMembers(roomId, { skip = 0, limit = 20, search = '' } = {}) {
@@ -72,66 +105,102 @@ class RoomCacheService {
     const cached = roomCache.get(cacheKey);
     if (cached) return cached;
 
-    const room = await this.getRoomById(roomId);
-    if (!room) return null;
+    return dedupe(cacheKey, async () => {
+      const room = await this.getRoomById(roomId);
+      if (!room) return null;
 
-    const memberIds = (room.groupMembers || []).map(String);
-    if (memberIds.length === 0) {
-      const empty = { members: [], total: 0, hasMore: false };
-      roomCache.set(cacheKey, empty, MEMBERS_PAGE_TTL_SECONDS);
-      return empty;
-    }
-
-    const regularIds = memberIds.filter(id => !id.startsWith('guest_'));
-    const guestIds   = memberIds.filter(id =>  id.startsWith('guest_'));
-
-    const guestCollectionName = Guest.collection.name;
-
-    const pipeline = [
-      
-      { $match: { _id: { $in: regularIds } } },
-      {
-        $unionWith: {
-          coll: guestCollectionName,
-          pipeline: [{ $match: { _id: { $in: guestIds } } }]
-        }
-      },
-      ...(search ? [{ $match: { username: { $regex: search, $options: 'i' } } }] : []),
-      { $sort: { username: 1 } },
-      {
-        $facet: {
-          data: [
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $project: {
-                _id: 1,
-                username: 1,
-                gender: 1,
-                isOnline: 1,
-                role: { $ifNull: ['$role', 'guest'] },
-                avatar: { $ifNull: ['$avatar', ''] },
-                bio: { $ifNull: ['$bio', ''] }
-              }
-            }
-          ],
-          totalCount: [{ $count: 'count' }]
-        }
+      const memberIds = (room.groupMembers || []).map(String);
+      if (memberIds.length === 0) {
+        const empty = { members: [], total: 0, hasMore: false };
+        roomCache.set(cacheKey, empty, MEMBERS_PAGE_TTL_SECONDS);
+        return empty;
       }
-    ];
 
-    const [result] = await User.aggregate(pipeline);
-    const members = result?.data || [];
-    const total = result?.totalCount?.[0]?.count || 0;
+      let page;
 
-    const page = {
-      members,
-      total,
-      hasMore: skip + members.length < total
-    };
+      if (!search) {
+        // No ordering requirement: slice the page out of the already-known
+        // member list *before* touching Mongo, then fetch only those ~20
+        // docs by indexed _id. Cost scales with page size, not room size.
+        const pageIds = memberIds.slice(skip, skip + limit);
+        const pageRegularIds = pageIds.filter(id => !id.startsWith('guest_'));
+        const pageGuestIds   = pageIds.filter(id =>  id.startsWith('guest_'));
 
-    roomCache.set(cacheKey, page, MEMBERS_PAGE_TTL_SECONDS);
-    return page;
+        const projection = '_id username gender isOnline role avatar bio';
+
+        const [regularDocs, guestDocs] = await Promise.all([
+          pageRegularIds.length
+            ? User.find({ _id: { $in: pageRegularIds } }).select(projection).lean()
+            : [],
+          pageGuestIds.length
+            ? Guest.find({ _id: { $in: pageGuestIds } }).select(projection).lean()
+            : [],
+        ]);
+
+        const byId = new Map(
+          [...regularDocs, ...guestDocs].map(d => [String(d._id), d])
+        );
+
+        const members = pageIds
+          .map(id => byId.get(id))
+          .filter(Boolean)
+          .map(d => ({
+            _id: d._id,
+            username: d.username,
+            gender: d.gender,
+            isOnline: d.isOnline,
+            role: d.role ?? 'guest',
+            avatar: d.avatar ?? '',
+            bio: d.bio ?? '',
+          }));
+
+        page = {
+          members,
+          total: memberIds.length,
+          hasMore: skip + limit < memberIds.length,
+        };
+      } else {
+        const regularIds = memberIds.filter(id => !id.startsWith('guest_'));
+        const guestIds   = memberIds.filter(id =>  id.startsWith('guest_'));
+
+        const projection = '_id username gender isOnline role avatar bio';
+
+        const [regularDocs, guestDocs] = await Promise.all([
+          regularIds.length
+            ? User.find({ _id: { $in: regularIds } }).select(projection).lean()
+            : [],
+          guestIds.length
+            ? Guest.find({ _id: { $in: guestIds } }).select(projection).lean()
+            : [],
+        ]);
+
+        const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+        const matched = [...regularDocs, ...guestDocs]
+          .filter(d => re.test(d.username || ''))
+          .map(d => ({
+            _id: d._id,
+            username: d.username,
+            gender: d.gender,
+            isOnline: d.isOnline,
+            role: d.role ?? 'guest',
+            avatar: d.avatar ?? '',
+            bio: d.bio ?? '',
+          }));
+
+        const total = matched.length;
+        const members = matched.slice(skip, skip + limit);
+
+        page = {
+          members,
+          total,
+          hasMore: skip + members.length < total
+        };
+      }
+
+      roomCache.set(cacheKey, page, MEMBERS_PAGE_TTL_SECONDS);
+      return page;
+    });
   }
 
   async invalidateRoomMembers(roomId, { maxMembers = 500, pageSize = 20 } = {}) {
@@ -141,39 +210,48 @@ class RoomCacheService {
   }
 
   async getAllRooms({ search = '', skip = 0, limit = 20 } = {}) {
-    const matchStage = search
-      ? { groupName: { $regex: search, $options: 'i' } }
-      : {};
+    const cacheKey = `allRooms:${skip}:${limit}:${search}`;
+    const cached = roomCache.get(cacheKey);
+    if (cached) return cached;
 
-    const [result] = await Room.aggregate([
-      { $match: matchStage },
-      { $sort: { createdAt: -1 } },
-      {
-        $facet: {
-          data: [
-            { $skip: skip },
-            { $limit: limit },
-            {
-              $project: {
-                _id: 1,
-                groupName: 1,
-                groupDescription: 1,
-                groupAdmin: 1,
-                groupPic: 1,
-                createdAt: 1,
-                updatedAt: 1,
-                memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
+    return dedupe(cacheKey, async () => {
+      const matchStage = search
+        ? { groupName: { $regex: search, $options: 'i' } }
+        : {};
+
+      const [result] = await Room.aggregate([
+        { $match: matchStage },
+        { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            data: [
+              { $skip: skip },
+              { $limit: limit },
+              {
+                $project: {
+                  _id: 1,
+                  groupName: 1,
+                  groupDescription: 1,
+                  groupAdmin: 1,
+                  groupPic: 1,
+                  createdAt: 1,
+                  updatedAt: 1,
+                  memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
+                }
               }
-            }
-          ],
-          totalCount: [{ $count: 'count' }]
+            ],
+            totalCount: [{ $count: 'count' }]
+          }
         }
-      }
-    ]);
+      ]);
 
-    const rooms = result?.data ?? [];
-    const total = result?.totalCount?.[0]?.count ?? 0;
-    return { rooms, total };
+      const rooms = result?.data ?? [];
+      const total = result?.totalCount?.[0]?.count ?? 0;
+      const page = { rooms, total };
+
+      roomCache.set(cacheKey, page, ALL_ROOMS_TTL_SECONDS);
+      return page;
+    });
   }
 
   async deleteRoomCache(id) {
@@ -196,13 +274,14 @@ class RoomCacheService {
     const cached = roomCache.get(key);
     if (cached) return cached;
 
-    
-    const room = await this.getRoomById(roomId);
-    if (!room) return null;
+    return dedupe(key, async () => {
+      const room = await this.getRoomById(roomId);
+      if (!room) return null;
 
-    const ids = (room.groupMembers || []).map(String);
-    roomCache.set(key, ids, 3600);
-    return ids;
+      const ids = (room.groupMembers || []).map(String);
+      roomCache.set(key, ids, 3600);
+      return ids;
+    });
   }
 
   async addRoomMember(roomId, userId) {
@@ -272,32 +351,33 @@ class RoomCacheService {
     const cached = roomCache.get(key);
     if (cached) return cached;
 
-    
-    const userRoom = await UserRoom.findOne({ userId }).lean();
-    const roomIds = userRoom?.roomIds ?? [];
-    if (roomIds.length === 0) {
-      roomCache.set(key, [], 3600);
-      return [];
-    }
-
-    const objectIds = roomIds
-      .filter(id => mongoose.Types.ObjectId.isValid(id))
-      .map(id => new mongoose.Types.ObjectId(id));
-
-    const rooms = await Room.aggregate([
-      { $match: { _id: { $in: objectIds } } },
-      { $sort: { updatedAt: -1 } },
-      {
-        $project: {
-          _id: 1, groupName: 1, groupDescription: 1,
-          groupAdmin: 1, groupPic: 1, createdAt: 1, updatedAt: 1,
-          memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
-        }
+    return dedupe(key, async () => {
+      const userRoom = await UserRoom.findOne({ userId }).lean();
+      const roomIds = userRoom?.roomIds ?? [];
+      if (roomIds.length === 0) {
+        roomCache.set(key, [], 3600);
+        return [];
       }
-    ]);
 
-    roomCache.set(key, rooms, 3600);
-    return rooms;
+      const objectIds = roomIds
+        .filter(id => mongoose.Types.ObjectId.isValid(id))
+        .map(id => new mongoose.Types.ObjectId(id));
+
+      const rooms = await Room.aggregate([
+        { $match: { _id: { $in: objectIds } } },
+        { $sort: { updatedAt: -1 } },
+        {
+          $project: {
+            _id: 1, groupName: 1, groupDescription: 1,
+            groupAdmin: 1, groupPic: 1, createdAt: 1, updatedAt: 1,
+            memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
+          }
+        }
+      ]);
+
+      roomCache.set(key, rooms, 3600);
+      return rooms;
+    });
   }
 
   async addUserRoom(userId, roomId, roomData) {
@@ -332,6 +412,7 @@ class RoomCacheService {
 
   invalidateUserRooms(userId) {
     roomCache.delete(this._userRoomsKey(userId));
+    roomCache.delete(`roomsByUser:${userId}`);
   }
 }
 

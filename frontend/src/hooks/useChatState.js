@@ -10,7 +10,8 @@ import {
   loadRoomMessagesHandler,
   loadMoreRoomMessagesHandler,
   prefetchAllMessagesHandler,
-  loadNewerMessagesHandler
+  loadNewerMessagesHandler,
+  catchUpNewerMessagesHandler
 } from '../handlers/chat.handlers';
 import { sendStickerHandler } from '../handlers/message/sendMessage.handler.js';
 import roomService from '../services/room.service';
@@ -121,6 +122,39 @@ export const useChatState = (user) => {
   }, [currentRoom, roomMembers.length, hasMoreMembers, setRoomMembers, setHasMoreMembers]);
 
   const sendMessage = useCallback(async (e, socket) => {
+    e.preventDefault();
+
+    if (!inputMessage && !selectedFile) return;
+
+    if (hasMoreNewerMessages && messages.length > 0) {
+      loadingNewerMessagesRef.current = true;
+      setLoadingNewerMessages(true);
+      try {
+        if (currentPrivateChat) {
+          await catchUpNewerMessagesHandler(
+            currentPrivateChat.id,
+            'private',
+            messages,
+            setMessages,
+            setHasMoreNewerMessages,
+            messageCache
+          );
+        } else if (currentRoom) {
+          await catchUpNewerMessagesHandler(
+            currentRoom._id,
+            'room',
+            messages,
+            setMessages,
+            setHasMoreNewerMessages,
+            messageCache
+          );
+        }
+      } finally {
+        loadingNewerMessagesRef.current = false;
+        setLoadingNewerMessages(false);
+      }
+    }
+
     await sendMessageHandler(
       e,
       currentRoom,
@@ -136,9 +170,38 @@ export const useChatState = (user) => {
       selectedFile,
       setSelectedFile
     );
-  }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile]);
+  }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile, hasMoreNewerMessages, messages]);
 
   const sendSticker = useCallback(async (stickerEmoji) => {
+    if (hasMoreNewerMessages && messages.length > 0) {
+      loadingNewerMessagesRef.current = true;
+      setLoadingNewerMessages(true);
+      try {
+        if (currentPrivateChat) {
+          await catchUpNewerMessagesHandler(
+            currentPrivateChat.id,
+            'private',
+            messages,
+            setMessages,
+            setHasMoreNewerMessages,
+            messageCache
+          );
+        } else if (currentRoom) {
+          await catchUpNewerMessagesHandler(
+            currentRoom._id,
+            'room',
+            messages,
+            setMessages,
+            setHasMoreNewerMessages,
+            messageCache
+          );
+        }
+      } finally {
+        loadingNewerMessagesRef.current = false;
+        setLoadingNewerMessages(false);
+      }
+    }
+
     await sendStickerHandler(
       stickerEmoji,
       currentRoom,
@@ -149,7 +212,7 @@ export const useChatState = (user) => {
       setPrivateChats,
       messageCache
     );
-  }, [currentRoom, currentPrivateChat, user, privateChats]);
+  }, [currentRoom, currentPrivateChat, user, privateChats, hasMoreNewerMessages, messages]);
 
   const joinRoom = useCallback(async (roomId, socket, roomObject = null) => {
     const switchId = ++currentSwitchId.current;

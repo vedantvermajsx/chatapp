@@ -3,7 +3,6 @@ import { handleAuthSuccess } from './auth.helper.js';
 import { isUsernameTaken } from './usernameTaken.js';
 import { enqueueGuestRegistration } from '../../utils/queueClient.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
-import userCacheClient from '../../database/userCacheClient.js';
 
 export async function createGuest(req, res) {
   try {
@@ -45,13 +44,12 @@ export async function createGuest(req, res) {
 
     enqueueGuestRegistration(guestData);
 
-    userCacheClient.seedUser({ _id: guestId, ...guestData }).catch(err => {
-      console.warn('[createGuest] Failed to seed guest cache:', err.message);
-    });
-
     await handleAuthSuccess(res, { _id: guestId, ...guestData }, 'guest');
   } catch (err) {
     console.error('[createGuest] unexpected error:', err.message);
+    if (err.message?.startsWith('seedUser failed')) {
+      return res.status(503).json({ message: 'Cache service unavailable, please retry' });
+    }
     res.status(500).json({ message: err.message });
   }
 }

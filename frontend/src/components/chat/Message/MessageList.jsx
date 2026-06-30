@@ -34,7 +34,7 @@ const MessageList = ({
   const lastNonOwnIndex = (() => {
     if (!messages) return -1;
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (!messages[i].isOwn) return i;
+      if (!messages[i].isOwn && !messages[i].isSystemMessage) return i;
     }
     return -1;
   })();

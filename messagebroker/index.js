@@ -5,11 +5,17 @@ import unsubscribeFromChannel from './events/unsubscribeFromChannel.js';
 import publishToChannel from './events/publishToChannel.js';
 import removeSubscriberFromAllChannels from './events/removeSubscriberFromAllChannels.js';
 import { verifyWsMessage } from './utils/hmacVerify.js';
+import { InboundQueue } from './utils/MessageQueue.js';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 4000;
 const MAX_CONNECTIONS_PER_IP = parseInt(process.env.MAX_CONNECTIONS_PER_IP, 10) || 10;
+const INBOUND_TOKENS_PER_INTERVAL = parseInt(process.env.INBOUND_TOKENS_PER_INTERVAL, 10) || 20;
+const INBOUND_INTERVAL_MS = parseInt(process.env.INBOUND_INTERVAL_MS, 10) || 1000;
+const INBOUND_MAX_QUEUE_SIZE = process.env.INBOUND_MAX_QUEUE_SIZE
+  ? parseInt(process.env.INBOUND_MAX_QUEUE_SIZE, 10)
+  : Infinity;
 
 const wss = new WebSocketServer({ port: PORT });
 
@@ -24,6 +30,36 @@ function getClientIp(req) {
     req.socket?.remoteAddress ||
     '0.0.0.0'
   );
+}
+
+function processMessage(ws, message) {
+  let data;
+  try {
+    data = JSON.parse(message);
+  } catch (error) {
+    console.error('Error parsing message:', error);
+    return;
+  }
+
+  const { valid, reason } = verifyWsMessage(data);
+  if (!valid) {
+    console.warn(`[MessageBroker] Invalid message from [${ws.clientIp}]: ${reason}. Discarding.`);
+    return;
+  }
+
+  switch (data.type) {
+    case 'SUBSCRIBE':
+      subscribeToChannel(subscribers, data.channel, ws);
+      break;
+    case 'UNSUBSCRIBE':
+      unsubscribeFromChannel(subscribers, data.channel, ws);
+      break;
+    case 'PUBLISH':
+      publishToChannel(subscribers, data.channel, data.payload, ws);
+      break;
+    default:
+      console.log('Unknown message type:', data.type);
+  }
 }
 
 console.log(`Message Broker Service started on port ${PORT}`);
@@ -50,34 +86,18 @@ wss.on('connection', (ws, req) => {
     ws.isAlive = true;
   });
 
+  ws.inboundQueue = new InboundQueue(
+    ws,
+    (rawMessage) => processMessage(ws, rawMessage),
+    {
+      tokensPerInterval: INBOUND_TOKENS_PER_INTERVAL,
+      intervalMs: INBOUND_INTERVAL_MS,
+      maxQueueSize: INBOUND_MAX_QUEUE_SIZE
+    }
+  );
+
   ws.on('message', (message) => {
-    let data;
-    try {
-      data = JSON.parse(message);
-    } catch (error) {
-      console.error('Error parsing message:', error);
-      return;
-    }
-
-    const { valid, reason } = verifyWsMessage(data);
-    if (!valid) {
-      console.warn(`[MessageBroker] Invalid message from [${ws.clientIp}]: ${reason}. Discarding.`);
-      return;
-    }
-
-    switch (data.type) {
-      case 'SUBSCRIBE':
-        subscribeToChannel(subscribers, data.channel, ws);
-        break;
-      case 'UNSUBSCRIBE':
-        unsubscribeFromChannel(subscribers, data.channel, ws);
-        break;
-      case 'PUBLISH':
-        publishToChannel(subscribers, data.channel, data.payload, ws);
-        break;
-      default:
-        console.log('Unknown message type:', data.type);
-    }
+    ws.inboundQueue.enqueue(message);
   });
 
   ws.on('close', () => {
@@ -89,6 +109,9 @@ wss.on('connection', (ws, req) => {
     }
     console.log(`Client disconnected from message broker [${ws.clientIp}]`);
     removeSubscriberFromAllChannels(subscribers, ws);
+
+    if (ws.inboundQueue) ws.inboundQueue.destroy();
+    if (ws.outboundQueue) ws.outboundQueue.destroy();
   });
 
   ws.on('error', (error) => {
