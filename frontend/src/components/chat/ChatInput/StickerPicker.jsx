@@ -3,9 +3,9 @@ import { Search, Loader2, X } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
-const API_KEY = 'whfWi9b9GT96eeKyfpWvfQv4opK52rA5GZ6FQT5nxYezH0RLuTUtbHjwIZ3BZAbK';
+const API_KEY = import.meta.env.VITE_KLIPY_API_KEY;
 const STICKER_BASE = `https://api.klipy.com/api/v1/${API_KEY}/stickers`;
-const GIF_BASE     = `https://api.klipy.com/api/v1/${API_KEY}/gifs`;
+const GIF_BASE = `https://api.klipy.com/api/v1/${API_KEY}/gifs`;
 
 
 const getMediaUrl = (file) => {
@@ -15,23 +15,23 @@ const getMediaUrl = (file) => {
 
 const TABS = [
   { id: 'stickers', label: 'Stickers' },
-  { id: 'gifs',     label: 'GIFs'     },
+  { id: 'gifs', label: 'GIFs' },
 ];
 
 const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
 
-  const [activeTab, setActiveTab]   = useState('stickers'); 
-  const [items, setItems]           = useState([]);
+  const [activeTab, setActiveTab] = useState('stickers');
+  const [items, setItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading]       = useState(false);
-  const [page, setPage]             = useState(1);
-  const [hasNext, setHasNext]       = useState(true);
-  const [mode, setMode]             = useState('trending'); 
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(true);
+  const [mode, setMode] = useState('trending');
 
   const searchTimeoutRef = useRef(null);
-  const currentQueryRef  = useRef('');
+  const currentQueryRef = useRef('');
 
   const base = activeTab === 'stickers' ? STICKER_BASE : GIF_BASE;
 
@@ -43,7 +43,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
         ? `${tabBase}/search?q=${encodeURIComponent(q)}&page=${pg}&per_page=12`
         : `${tabBase}/trending?page=${pg}&per_page=12`;
 
-      const res  = await fetch(url);
+      const res = await fetch(url);
       const json = await res.json();
 
       const list = json?.data?.data || [];
@@ -59,7 +59,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
     }
   }, [loading]);
 
-  
+
   useEffect(() => {
     setItems([]);
     setPage(1);
@@ -68,7 +68,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
     setMode('trending');
     currentQueryRef.current = '';
     fetchItems('', 1, true, activeTab === 'stickers' ? STICKER_BASE : GIF_BASE);
-  
+
   }, [activeTab]);
 
   const handleSearch = (q) => {
@@ -116,25 +116,25 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
     onStickerSelect({ type: activeTab === 'stickers' ? 'sticker' : 'gif', url });
   };
 
-  const border  = theme.isLight ? '#e2e8f0' : '#374151';
+  const border = theme.isLight ? '#e2e8f0' : '#374151';
   const inputBg = theme.isLight ? '#f1f5f9' : '#1f2937';
-  const cardBg  = theme.isLight ? '#f8fafc' : '#1f2937';
+  const cardBg = theme.isLight ? '#f8fafc' : '#1f2937';
   const subText = theme.otherUsernameColor;
-  const accent  = theme.myMessageBackground || '#6366f1';
+  const accent = theme.myMessageBackground || '#6366f1';
 
   return (
     <div
       ref={pickerRef}
-      className="absolute bottom-full left-0 mb-2 z-50 rounded-2xl flex flex-col overflow-hidden"
+      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-5 z-50 rounded-2xl flex flex-col overflow-hidden"
       style={{
-        width: '320px',
+        width: 'min(320px, calc(100vw - 40px))',
         height: '420px',
         backgroundColor: theme.background,
         boxShadow: getShadow(theme.isLight, false, 4, 12),
         border: `1px solid ${border}`,
       }}
     >
-      {}
+      { }
       <div className="flex flex-shrink-0" style={{ borderBottom: `1px solid ${border}` }}>
         {TABS.map(tab => (
           <button
@@ -155,7 +155,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
         ))}
       </div>
 
-      {}
+      { }
       <div className="flex items-center gap-2 px-3 pt-2 pb-2 flex-shrink-0">
         <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-1.5"
           style={{ backgroundColor: inputBg }}>
@@ -182,14 +182,14 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
         </div>
       </div>
 
-      {}
+      { }
       <div className="px-3 pb-1 flex-shrink-0">
         <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: subText }}>
           {mode === 'trending' ? 'Trending' : `Results for "${searchQuery}"`}
         </span>
       </div>
 
-      {}
+      { }
       <div
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-2 pb-2"
@@ -238,7 +238,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
         )}
       </div>
 
-      {}
+      { }
       <div className="flex-shrink-0 px-3 py-1.5 flex justify-end"
         style={{ borderTop: `1px solid ${border}` }}>
         <span className="text-[9px] font-medium" style={{ color: subText, opacity: 0.6 }}>

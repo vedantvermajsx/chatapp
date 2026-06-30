@@ -12,7 +12,7 @@ const ThemePicker = ({ show, onClose }) => {
   return (
     <div className="absolute bottom-20 left-1/2 -translate-x-1/2 p-4 md:p-6 rounded-2xl z-50 w-80 max-h-[70vh] overflow-y-auto custom-scrollbar" style={{
       backgroundColor: theme.background,
-      boxShadow: getShadow(theme.isLight, false, 2, 10)
+      boxShadow: getShadow(theme.isLight, false, 2, 4)
     }}>
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-sm font-bold" style={{ color: theme.otherMessageText }}>Select Theme</h3>
@@ -26,7 +26,7 @@ const ThemePicker = ({ show, onClose }) => {
               onClose();
             }}
             className="p-3 rounded-xl flex flex-col items-center gap-2 transition-all"
-            {...getNeumorphicProps(2, 5, 2, 5, theme.id === t.id, true)}
+            {...getNeumorphicProps(2, 2, 1, 1, theme.id === t.id, true)}
           >
             <div className="flex gap-1">
               <div className="w-4 h-4 rounded-full" style={{ backgroundColor: t.myMessageBubble }} />

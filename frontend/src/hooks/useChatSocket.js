@@ -45,7 +45,13 @@ export const useChatSocket = (user, {
 
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      return;
+    }
     const token = localStorage.getItem('token');
     if (!socketRef.current) {
       socketRef.current = io(import.meta.env.VITE_LOAD_BALENCER_URL, {
@@ -62,7 +68,12 @@ export const useChatSocket = (user, {
         }
       });
     }
-  }, [user]);
+
+    return () => {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
+  }, [user?._id || user?.id]);
 
   useEffect(() => {
     if (!socketRef.current) return;

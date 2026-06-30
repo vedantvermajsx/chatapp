@@ -1,10 +1,29 @@
 import mongoose from 'mongoose';
 import Room from '../models/room.model.js';
-import User from '../models/user.model.js';
-import Guest from '../models/guest.model.js';
 import UserRoom from '../models/userRoom.model.js';
 import { roomCache } from './CacheService.js';
 import { invalidateRoomMessages } from './MessageCacheService.js';
+import UserCacheService from './UserCacheService.js';
+
+const MEMBER_PROJECTION = ({ _id, username, gender, isOnline, role, avatar, bio }) => ({
+  _id,
+  username,
+  gender,
+  isOnline,
+  role: role ?? 'guest',
+  avatar: avatar ?? '',
+  bio: bio ?? '',
+});
+
+async function resolveMembers(ids) {
+  const results = await Promise.all(
+    ids.map(async (id) => {
+      const user = await UserCacheService.getUserById(id);
+      return user ? MEMBER_PROJECTION(user) : null;
+    })
+  );
+  return results.filter(Boolean);
+}
 
 const MEMBERS_PAGE_TTL_SECONDS = 300;
 const NAME_LOOKUP_TTL_SECONDS = 300;
@@ -119,40 +138,8 @@ class RoomCacheService {
       let page;
 
       if (!search) {
-        // No ordering requirement: slice the page out of the already-known
-        // member list *before* touching Mongo, then fetch only those ~20
-        // docs by indexed _id. Cost scales with page size, not room size.
         const pageIds = memberIds.slice(skip, skip + limit);
-        const pageRegularIds = pageIds.filter(id => !id.startsWith('guest_'));
-        const pageGuestIds   = pageIds.filter(id =>  id.startsWith('guest_'));
-
-        const projection = '_id username gender isOnline role avatar bio';
-
-        const [regularDocs, guestDocs] = await Promise.all([
-          pageRegularIds.length
-            ? User.find({ _id: { $in: pageRegularIds } }).select(projection).lean()
-            : [],
-          pageGuestIds.length
-            ? Guest.find({ _id: { $in: pageGuestIds } }).select(projection).lean()
-            : [],
-        ]);
-
-        const byId = new Map(
-          [...regularDocs, ...guestDocs].map(d => [String(d._id), d])
-        );
-
-        const members = pageIds
-          .map(id => byId.get(id))
-          .filter(Boolean)
-          .map(d => ({
-            _id: d._id,
-            username: d.username,
-            gender: d.gender,
-            isOnline: d.isOnline,
-            role: d.role ?? 'guest',
-            avatar: d.avatar ?? '',
-            bio: d.bio ?? '',
-          }));
+        const members = await resolveMembers(pageIds);
 
         page = {
           members,
@@ -160,33 +147,10 @@ class RoomCacheService {
           hasMore: skip + limit < memberIds.length,
         };
       } else {
-        const regularIds = memberIds.filter(id => !id.startsWith('guest_'));
-        const guestIds   = memberIds.filter(id =>  id.startsWith('guest_'));
-
-        const projection = '_id username gender isOnline role avatar bio';
-
-        const [regularDocs, guestDocs] = await Promise.all([
-          regularIds.length
-            ? User.find({ _id: { $in: regularIds } }).select(projection).lean()
-            : [],
-          guestIds.length
-            ? Guest.find({ _id: { $in: guestIds } }).select(projection).lean()
-            : [],
-        ]);
+        const allMembers = await resolveMembers(memberIds);
 
         const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-
-        const matched = [...regularDocs, ...guestDocs]
-          .filter(d => re.test(d.username || ''))
-          .map(d => ({
-            _id: d._id,
-            username: d.username,
-            gender: d.gender,
-            isOnline: d.isOnline,
-            role: d.role ?? 'guest',
-            avatar: d.avatar ?? '',
-            bio: d.bio ?? '',
-          }));
+        const matched = allMembers.filter(d => re.test(d.username || ''));
 
         const total = matched.length;
         const members = matched.slice(skip, skip + limit);

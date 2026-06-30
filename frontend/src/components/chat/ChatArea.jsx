@@ -93,6 +93,13 @@ const ChatArea = memo(function ChatArea({
       setContainerHeight(window.visualViewport.height);
       setOffsetTop(window.visualViewport.offsetTop);
       if (window.scrollY !== 0) window.scrollTo(0, 0);
+
+      if (isUserAtBottom.current) {
+        requestAnimationFrame(() => {
+          const el = messagesContainerRef.current;
+          if (el) el.scrollTop = el.scrollHeight;
+        });
+      }
     };
     update();
     window.visualViewport.addEventListener('resize', update);

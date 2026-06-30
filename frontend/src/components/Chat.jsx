@@ -160,7 +160,7 @@ function Chat() {
         : null;
     if (!chatKey) return;
     if (hasMoreNewerMessages) return;
-    const lastNonOwnMessage = [...messages].reverse().find(m => !m.isOwn) ?? null;
+    const lastNonOwnMessage = [...messages].reverse().find(m => !m.isOwn && !m.isSystemMessage) ?? null;
     handleChatRead(chatKey, lastNonOwnMessage);
   }, [currentRoom?._id, currentPrivateChat?.id, handleChatRead, messages, hasMoreNewerMessages]);
 
