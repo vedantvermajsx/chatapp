@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Loader2, X } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
+import { isMobile } from 'react-device-detect';
 
 const API_KEY = import.meta.env.VITE_KLIPY_API_KEY;
 console.log("key" + API_KEY)
@@ -126,7 +127,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
   return (
     <div
       ref={pickerRef}
-      className="sticky bottom-full left-1/4 -translate-x-6 mb-5 z-50 rounded-2xl flex flex-col overflow-hidden"
+      className="sticky bottom-full left-1/4  -translate-x-6  z-50 rounded-2xl flex flex-col overflow-hidden"
       style={{
         width: 'min(320px, calc(100vw - 40px))',
         height: '420px',
