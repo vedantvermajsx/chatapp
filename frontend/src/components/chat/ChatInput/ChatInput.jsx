@@ -34,7 +34,7 @@ const ChatInput = memo(forwardRef(({
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [mentionQuery, setMentionQuery] = useState(null); 
+  const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [mentionSuggestions, setMentionSuggestions] = useState([]);
   const [isMentionLoading, setIsMentionLoading] = useState(false);
@@ -374,17 +374,7 @@ const ChatInput = memo(forwardRef(({
   }, [inputMessage]);
 
   return (
-    <div className="p-2 sm:p-6 border-t relative" style={{ backgroundColor: theme.background, borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
-      {disabled && (
-        <div className="absolute inset-0 z-20 cursor-not-allowed" style={{ backgroundColor: theme.background, opacity: 0.6 }} />
-      )}
-      <ChatMediaPreview
-        selectedFile={selectedFile}
-        isProcessingMedia={isProcessingMedia}
-        onRemoveFile={onRemoveFile}
-        theme={theme}
-      />
-
+    <>
       {showStickerPicker && (
         <StickerPicker
           pickerRef={stickerPickerRef}
@@ -393,214 +383,227 @@ const ChatInput = memo(forwardRef(({
       )}
 
 
-      <MentionDropdown
-        mentionQuery={mentionQuery}
-        isMentionLoading={isMentionLoading}
-        mentionSuggestions={mentionSuggestions}
-        theme={theme}
-        mentionIndex={mentionIndex}
-        setMentionIndex={setMentionIndex}
-        insertMention={insertMention}
-        mentionListRef={mentionListRef}
-      />
-
-      <form onSubmit={(e) => { stopTyping(); sendMessage(e); }} className="flex items-center justify-center">
-        {user && (
-          <div className="mr-3 flex-shrink-0 hidden sm:block">
-            <Avatar url={user.avatar} name={user.username} gender={user.gender} size={12} />
-          </div>
+      <div className="p-2 sm:p-6 border-t relative" style={{ backgroundColor: theme.background, borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
+        {disabled && (
+          <div className="absolute inset-0 z-20 cursor-not-allowed" style={{ backgroundColor: theme.background, opacity: 0.6 }} />
         )}
-        <div className="w-full sm:w-4/5 lg:w-3/4 flex items-center gap-2 sm:gap-3 rounded-2xl px-4 sm:px-6 py-2 sm:py-1 relative" style={{
-          backgroundColor: theme.background,
-          boxShadow: getShadow(theme.isLight, false, 2, 5)
-        }}>
-          <input
-            ref={fileInputRef}
-            id="file-upload"
-            name="file"
-            type="file"
-            accept="image/*,video/*,audio/*"
-            onChange={handleFileSelect}
-            className="hidden"
-            disabled={disabled}
-          />
+        <ChatMediaPreview
+          selectedFile={selectedFile}
+          isProcessingMedia={isProcessingMedia}
+          onRemoveFile={onRemoveFile}
+          theme={theme}
+        />
 
 
-          <label
-            htmlFor="file-upload"
-            className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all flex-shrink-0 cursor-pointer"
-            style={{ boxShadow: 'none' }}
-            onMouseDown={(e) => e.preventDefault()}
-            onTouchStart={(e) => e.preventDefault()}
-            title="Attach image/video"
-          >
-            <Paperclip className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
-          </label>
+        <MentionDropdown
+          mentionQuery={mentionQuery}
+          isMentionLoading={isMentionLoading}
+          mentionSuggestions={mentionSuggestions}
+          theme={theme}
+          mentionIndex={mentionIndex}
+          setMentionIndex={setMentionIndex}
+          insertMention={insertMention}
+          mentionListRef={mentionListRef}
+        />
 
-          <div className="flex-1 relative min-w-0">
-            {isRecording && (
-              <div className="absolute inset-0 flex items-center gap-3 px-4 rounded-2xl z-10" style={{ backgroundColor: theme.background }}>
-                <div className="flex-shrink-0 flex items-center justify-center">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+        <form onSubmit={(e) => { stopTyping(); sendMessage(e); }} className="flex items-center justify-center">
+          {user && (
+            <div className="mr-3 flex-shrink-0 hidden sm:block">
+              <Avatar url={user.avatar} name={user.username} gender={user.gender} size={12} />
+            </div>
+          )}
+          <div className="w-full sm:w-4/5 lg:w-3/4 flex items-center gap-2 sm:gap-3 rounded-2xl px-4 sm:px-6 py-2 sm:py-1 relative" style={{
+            backgroundColor: theme.background,
+            boxShadow: getShadow(theme.isLight, false, 2, 5)
+          }}>
+            <input
+              ref={fileInputRef}
+              id="file-upload"
+              name="file"
+              type="file"
+              accept="image/*,video/*,audio/*"
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={disabled}
+            />
+
+
+            <label
+              htmlFor="file-upload"
+              className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all flex-shrink-0 cursor-pointer"
+              style={{ boxShadow: 'none' }}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
+              title="Attach image/video"
+            >
+              <Paperclip className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+            </label>
+
+            <div className="flex-1 relative min-w-0">
+              {isRecording && (
+                <div className="absolute inset-0 flex items-center gap-3 px-4 rounded-2xl z-10" style={{ backgroundColor: theme.background }}>
+                  <div className="flex-shrink-0 flex items-center justify-center">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                  </div>
+                  <span className="font-mono text-sm sm:text-base tabular-nums font-semibold" style={{ color: theme.otherMessageText }}>
+                    {formatTime(recordingTime)}
+                  </span>
+                  <span className="text-sm ml-2 animate-pulse" style={{ color: theme.otherUsernameColor }}>
+                    Recording...
                   </span>
                 </div>
-                <span className="font-mono text-sm sm:text-base tabular-nums font-semibold" style={{ color: theme.otherMessageText }}>
-                  {formatTime(recordingTime)}
-                </span>
-                <span className="text-sm ml-2 animate-pulse" style={{ color: theme.otherUsernameColor }}>
-                  Recording...
-                </span>
-              </div>
-            )}
-            <div
-              ref={inputRef}
-              id="chat-message"
-              contentEditable={!disabled && !isRecording}
-              onPaste={handlePaste}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onInput={(e) => {
-                const text = e.currentTarget.innerText;
-                if (text.length > MAX_CHARS) {
-                  e.currentTarget.innerText = text.slice(0, MAX_CHARS);
-                  const range = document.createRange();
-                  const sel = window.getSelection();
-                  range.selectNodeContents(e.currentTarget);
-                  range.collapse(false);
-                  sel.removeAllRanges();
-                  sel.addRange(range);
-                  setInputMessage(e.currentTarget.innerText);
-                } else {
-                  setInputMessage(text);
-                }
-                if (text.trim()) {
-                  handleTypingActivity(text.length);
-                } else {
-                  stopTyping();
-                }
-                if (currentRoom) {
-                  const q = getMentionQuery();
-                  setMentionQuery(q);
-                } else {
-                  setMentionQuery(null);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (mentionQuery !== null && mentionSuggestions.length > 0) {
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    setMentionIndex(i => (i + 1) % mentionSuggestions.length);
-                    return;
+              )}
+              <div
+                ref={inputRef}
+                id="chat-message"
+                contentEditable={!disabled && !isRecording}
+                onPaste={handlePaste}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onInput={(e) => {
+                  const text = e.currentTarget.innerText;
+                  if (text.length > MAX_CHARS) {
+                    e.currentTarget.innerText = text.slice(0, MAX_CHARS);
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(e.currentTarget);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    setInputMessage(e.currentTarget.innerText);
+                  } else {
+                    setInputMessage(text);
                   }
-                  if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    setMentionIndex(i => (i - 1 + mentionSuggestions.length) % mentionSuggestions.length);
-                    return;
-                  }
-                  if (e.key === 'Enter' || e.key === 'Tab') {
-                    e.preventDefault();
-                    insertMention(mentionSuggestions[mentionIndex].username);
-                    return;
-                  }
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setMentionQuery(null);
-                    return;
-                  }
-                }
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  if ((inputMessage || selectedFile) && !disabled) {
+                  if (text.trim()) {
+                    handleTypingActivity(text.length);
+                  } else {
                     stopTyping();
-                    sendMessage(e);
                   }
-                }
-              }}
-              className="py-3 sm:py-4 rounded-2xl border-none focus:outline-none min-w-0 text-base sm:text-lg px-4 overflow-y-auto whitespace-pre-wrap outline-none break-words overflow-x-hidden"
-              style={{
-                opacity: isRecording ? 0 : 1,
-                pointerEvents: isRecording ? 'none' : 'auto',
-                backgroundColor: theme.background,
-                color: theme.otherMessageText,
-                minHeight: '3rem',
-                maxHeight: 'calc(1.5rem * 3 + 1.5rem)',
-                lineHeight: '1.5rem'
-              }}
-              role="textbox"
-              aria-multiline="true"
-            />
-            {!isRecording && inputMessage === '' && (
-              <span style={{
-                color: theme.otherUsernameColor,
-                opacity: 0.6,
-                position: 'absolute',
-                top: '50%',
-                left: '1rem',
-                transform: 'translateY(-50%)',
-                pointerEvents: 'none'
-              }}>
-                Type your message...
-              </span>
+                  if (currentRoom) {
+                    const q = getMentionQuery();
+                    setMentionQuery(q);
+                  } else {
+                    setMentionQuery(null);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (mentionQuery !== null && mentionSuggestions.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setMentionIndex(i => (i + 1) % mentionSuggestions.length);
+                      return;
+                    }
+                    if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setMentionIndex(i => (i - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+                      return;
+                    }
+                    if (e.key === 'Enter' || e.key === 'Tab') {
+                      e.preventDefault();
+                      insertMention(mentionSuggestions[mentionIndex].username);
+                      return;
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setMentionQuery(null);
+                      return;
+                    }
+                  }
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if ((inputMessage || selectedFile) && !disabled) {
+                      stopTyping();
+                      sendMessage(e);
+                    }
+                  }
+                }}
+                className="py-3 sm:py-4 rounded-2xl border-none focus:outline-none min-w-0 text-base sm:text-lg px-4 overflow-y-auto whitespace-pre-wrap outline-none break-words overflow-x-hidden"
+                style={{
+                  opacity: isRecording ? 0 : 1,
+                  pointerEvents: isRecording ? 'none' : 'auto',
+                  backgroundColor: theme.background,
+                  color: theme.otherMessageText,
+                  minHeight: '3rem',
+                  maxHeight: 'calc(1.5rem * 3 + 1.5rem)',
+                  lineHeight: '1.5rem'
+                }}
+                role="textbox"
+                aria-multiline="true"
+              />
+              {!isRecording && inputMessage === '' && (
+                <span style={{
+                  color: theme.otherUsernameColor,
+                  opacity: 0.6,
+                  position: 'absolute',
+                  top: '50%',
+                  left: '1rem',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none'
+                }}>
+                  Type your message...
+                </span>
+              )}
+              {!isRecording && inputMessage.length >= MAX_CHARS - 100 && (
+                <span style={{
+                  position: 'absolute',
+                  bottom: '0.15rem',
+                  right: '0.5rem',
+                  fontSize: '0.7rem',
+                  pointerEvents: 'none',
+                  color: inputMessage.length >= MAX_CHARS ? '#ef4444' : theme.otherUsernameColor,
+                  opacity: 0.8,
+                  fontWeight: inputMessage.length >= MAX_CHARS ? '600' : '400',
+                }}>
+                  {inputMessage.length}/{MAX_CHARS}
+                </span>
+              )}
+            </div>
+
+
+            {!isTyping && (
+              <button
+                type="button"
+                onClick={handleToggleStickerPicker}
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
+                className="flex py-3 sm:py-4 items-center justify-center rounded-full transition-all flex-shrink-0"
+                style={{ boxShadow: 'none' }}
+                title="Open sticker picker"
+              >
+                <Sticker className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+              </button>
             )}
-            {!isRecording && inputMessage.length >= MAX_CHARS - 100 && (
-              <span style={{
-                position: 'absolute',
-                bottom: '0.15rem',
-                right: '0.5rem',
-                fontSize: '0.7rem',
-                pointerEvents: 'none',
-                color: inputMessage.length >= MAX_CHARS ? '#ef4444' : theme.otherUsernameColor,
-                opacity: 0.8,
-                fontWeight: inputMessage.length >= MAX_CHARS ? '600' : '400',
-              }}>
-                {inputMessage.length}/{MAX_CHARS}
-              </span>
+
+
+            {!isTyping && (
+              <ChatVoiceRecorder
+                theme={theme}
+                isRecording={isRecording}
+                setIsRecording={setIsRecording}
+                onAudioReady={(audioFile) => handleFileSelect({ target: { files: [audioFile] } })}
+              />
+            )}
+
+
+            {hasContent && (
+              <button
+                type="submit"
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
+                className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-12 h-12 hover:opacity-80"
+                style={{ backgroundColor: theme.myMessageBubble }}
+                disabled={disabled}
+              >
+                <Send className="w-6 h-6 mr-1 mt-1" style={{ color: theme.myMessageText }} />
+              </button>
             )}
           </div>
-
-
-          {!isTyping && (
-            <button
-              type="button"
-              onClick={handleToggleStickerPicker}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-              className="flex py-3 sm:py-4 items-center justify-center rounded-full transition-all flex-shrink-0"
-              style={{ boxShadow: 'none' }}
-              title="Open sticker picker"
-            >
-              <Sticker className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
-            </button>
-          )}
-
-
-          {!isTyping && (
-            <ChatVoiceRecorder
-              theme={theme}
-              isRecording={isRecording}
-              setIsRecording={setIsRecording}
-              onAudioReady={(audioFile) => handleFileSelect({ target: { files: [audioFile] } })}
-            />
-          )}
-
-
-          {hasContent && (
-            <button
-              type="submit"
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-              className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-12 h-12 hover:opacity-80"
-              style={{ backgroundColor: theme.myMessageBubble }}
-              disabled={disabled}
-            >
-              <Send className="w-6 h-6 mr-1 mt-1" style={{ color: theme.myMessageText }} />
-            </button>
-          )}
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </>
   );
 }));
 
