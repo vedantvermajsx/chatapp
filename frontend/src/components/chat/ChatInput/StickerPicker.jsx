@@ -4,6 +4,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
 const API_KEY = import.meta.env.VITE_KLIPY_API_KEY;
+console.log("key" + API_KEY)
 const STICKER_BASE = `https://api.klipy.com/api/v1/${API_KEY}/stickers`;
 const GIF_BASE = `https://api.klipy.com/api/v1/${API_KEY}/gifs`;
 
@@ -125,7 +126,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
   return (
     <div
       ref={pickerRef}
-      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-5 z-50 rounded-2xl flex flex-col overflow-hidden"
+      className="sticky bottom-full left-1/4 -translate-x-6 mb-5 z-50 rounded-2xl flex flex-col overflow-hidden"
       style={{
         width: 'min(320px, calc(100vw - 40px))',
         height: '420px',
