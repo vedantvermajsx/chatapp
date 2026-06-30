@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import BatchQueue from './BatchQueue.js';
 import { processMessageBatch } from './processors/message/messageProcessor.js';
 import { handleUserRegistered } from './processors/user/userRegistrationProcessor.js';
+import { handleUserOffline, handleUserOnline } from './processors/user/userPresenceProcessor.js';
 import { handleGuestRegistered } from './processors/guest/guestRegistrationProcessor.js';
 import { handleRoomCreated } from './processors/room/handleRoomCreated.js';
 import { handleMemberJoined } from './processors/room/handleMemberJoined.js';
@@ -36,6 +37,17 @@ const guestQueue = new BatchQueue({
   flushInterval: 100,
   maxSize: 10000,
   processBatch: ([item]) => handleGuestRegistered(item),
+});
+
+const presenceQueue = new BatchQueue({
+  batchSize: 1,
+  flushInterval: 100,
+  maxSize: 10000,
+  processBatch: ([item]) => {
+    const { _eventType, ...payload } = item;
+    if (_eventType === 'user.presence.online') return handleUserOnline(payload);
+    if (_eventType === 'user.presence.offline') return handleUserOffline(payload);
+  },
 });
 
 const roomQueue = new BatchQueue({
@@ -79,6 +91,13 @@ async function start() {
   on('guest.registered', (data) => guestQueue.add(data));
   console.log('[GuestRegistrationProcessor] subscribed to guest.registered');
 
+  subscribe('user.presence.online');
+  on('user.presence.online', (data) => presenceQueue.add({ _eventType: 'user.presence.online', ...data }));
+
+  subscribe('user.presence.offline');
+  on('user.presence.offline', (data) => presenceQueue.add({ _eventType: 'user.presence.offline', ...data }));
+  console.log('[UserPresenceProcessor] subscribed to user.presence.online, user.presence.offline');
+
   subscribe('room.created');
   on('room.created', (data) => roomQueue.add({ _eventType: 'room.created', ...data }));
 
@@ -113,6 +132,7 @@ async function start() {
       messageQueue: messageQueue.getStats(),
       userQueue: userQueue.getStats(),
       guestQueue: guestQueue.getStats(),
+      presenceQueue: presenceQueue.getStats(),
       roomQueue: roomQueue.getStats(),
       notificationQueue: notificationQueue.getStats(),
     }),

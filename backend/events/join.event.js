@@ -39,9 +39,16 @@ export default function handleJoin(socket, io) {
       gender
     });
 
+    const lastSeen = new Date();
+
     await userCacheClient.updateUserById(userId, {
       isOnline: true,
-      lastSeen: new Date()
+      lastSeen
+    });
+
+    publish('user.presence.online', {
+      userId,
+      lastSeen: lastSeen.toISOString()
     });
 
     io.emit('userOnline', { userId });

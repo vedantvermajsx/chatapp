@@ -28,10 +28,19 @@ export default function handleDisconnect(socket, io) {
       if (current && current.socketId === socket.id) {
         onlineUsers.delete(disconnectedUserId);
         activeRooms.delete(String(disconnectedUserId));
+
+        const lastSeen = new Date();
+
         await userCacheClient.updateUserById(disconnectedUserId, {
           isOnline: false,
-          lastSeen: new Date()
+          lastSeen
         });
+
+        publish('user.presence.offline', {
+          userId: disconnectedUserId,
+          lastSeen: lastSeen.toISOString()
+        });
+
         io.emit('userOffline', { userId: disconnectedUserId });
         publish('userOffline', { userId: disconnectedUserId });
       }

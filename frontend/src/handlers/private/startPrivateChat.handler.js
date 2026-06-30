@@ -82,13 +82,8 @@ async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, set
     const res = await messageService.getPrivateMessages(otherUserId, fetchLimit, null, latestTimestamp);
     lastRead = res.lastRead ?? lastRead;
 
-    if (!res.messages?.length) {
-      if (setHasMoreNewerMessages) setHasMoreNewerMessages(res.hasMore || false);
-      return;
-    }
-
     const existingIds = new Set(mergedMessages.map(m => String(m.id)));
-    const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
+    const reallyNew = (res.messages || []).filter(m => !existingIds.has(String(m.id)));
 
     if (reallyNew.length) {
       mergedMessages = [...mergedMessages, ...reallyNew];

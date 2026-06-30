@@ -297,13 +297,14 @@ const ChatArea = memo(function ChatArea({
       scrollToBottom();
       setShowNewMsgBanner(false);
       setNewMsgCount(0);
-    } else if (!lastMessage.isOwn && !loadingNewerRef.current) {
+    } else if (!lastMessage.isOwn && !loadingNewerRef.current && !hasMoreNewerMessages) {
       if (messagesAdded <= 1) {
-        if (!hasMoreNewerMessages) {
-          setNewMsgCount(prev => prev + 1);
-        }
+        setNewMsgCount(prev => {
+          const next = prev + 1;
+          setShowNewMsgBanner(next > 0);
+          return next;
+        });
       }
-      setShowNewMsgBanner(true);
     }
   }, [messages, loadingMessages, scrollToBottom, updateAtBottom, unreadCounts, currentRoom?._id, currentPrivateChat?.id, getScrollPosition, hasMoreNewerMessages]);
 

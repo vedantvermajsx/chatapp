@@ -4,8 +4,8 @@ import Guest from '../models/guest.model.js';
 
 const isGuestId = (id) => String(id).startsWith('guest_');
 
-const USER_TTL  = 3600;
-const INDEX_TTL = 86400;
+const USER_TTL  = null; 
+const INDEX_TTL = null; 
 
 function userKey(userId)   { return `user:${userId}`; }
 function usernameKey(name) { return `user:username:${name.toLowerCase()}`; }
@@ -39,11 +39,24 @@ const UserCacheService = {
     console.log(`[UserCacheService] set user ${id} in cache`);
   },
 
-  updateUser(id, patch) {
-    const existing = userCache.get(userKey(id)) || {};
-    const updated = { ...existing, ...patch, _id: id };
-    this._seed(updated);
-    console.log(`[UserCacheService] updated user ${id} in cache`);
+  async updateUser(id, patch) {
+    const Model = isGuestId(id) ? Guest : User;
+    const persisted = await Model.findByIdAndUpdate(
+      id,
+      { $set: patch },
+      { new: true }
+    ).lean();
+
+    if (!persisted) {
+      const existing = userCache.get(userKey(id)) || {};
+      const updated = { ...existing, ...patch, _id: id };
+      this._seed(updated);
+      console.log(`[UserCacheService] updated user ${id} in cache only (not found in DB)`);
+      return updated;
+    }
+
+    const updated = this._seed(persisted);
+    console.log(`[UserCacheService] updated user ${id} in DB and cache`);
     return updated;
   },
 
