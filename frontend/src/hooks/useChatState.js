@@ -66,6 +66,34 @@ export const useChatState = (user) => {
   const currentSwitchId = useRef(0); 
   const CACHE_TTL = 30000;
 
+  useEffect(() => {
+    const handlePendingSent = (e) => {
+      const { cacheKey, tempId, message } = e.detail || {};
+      if (!cacheKey || !tempId || !message) return;
+
+      const reconcile = (list) => {
+        const withoutTemp = list.filter(m => (m.id || m._id) !== tempId);
+        const alreadyHasFinal = withoutTemp.some(m => (m.id || m._id) === message.id);
+        return alreadyHasFinal ? withoutTemp : [...withoutTemp, message];
+      };
+
+      if (messageCache.current[cacheKey]) {
+        messageCache.current[cacheKey] = {
+          ...messageCache.current[cacheKey],
+          messages: reconcile(messageCache.current[cacheKey].messages)
+        };
+      }
+
+      const activeKey = currentRoom?._id ? `room_${currentRoom._id}` : (currentPrivateChat?.id ? `private_${currentPrivateChat.id}` : null);
+      if (activeKey === cacheKey) {
+        setMessages(prev => reconcile(prev));
+      }
+    };
+
+    window.addEventListener('pending-message-sent', handlePendingSent);
+    return () => window.removeEventListener('pending-message-sent', handlePendingSent);
+  }, [currentRoom?._id, currentPrivateChat?.id]);
+
   const clearUnread = useCallback((chatKey) => {
     setUnreadCounts(prev => {
       if (!prev[chatKey]) return prev;

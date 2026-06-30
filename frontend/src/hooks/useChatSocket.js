@@ -76,6 +76,27 @@ export const useChatSocket = (user, {
   }, [user?._id || user?.id]);
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      const socket = socketRef.current;
+      if (!socket) return;
+
+      if (document.visibilityState === 'hidden') {
+        socket.disconnect();
+      } else if (document.visibilityState === 'visible' && !socket.connected) {
+        socket.connect();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handleVisibilityChange);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!socketRef.current) return;
     const socket = socketRef.current;
 

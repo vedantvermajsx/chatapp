@@ -2,10 +2,8 @@ import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Loader2, X } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
-import { isMobile } from 'react-device-detect';
 
 const API_KEY = import.meta.env.VITE_KLIPY_API_KEY;
-console.log("key" + API_KEY)
 const STICKER_BASE = `https://api.klipy.com/api/v1/${API_KEY}/stickers`;
 const GIF_BASE = `https://api.klipy.com/api/v1/${API_KEY}/gifs`;
 
@@ -127,7 +125,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
   return (
     <div
       ref={pickerRef}
-      className="sticky bottom-full left-1/4  -translate-x-6  z-50 rounded-2xl flex flex-col overflow-hidden"
+      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-5 z-50 rounded-2xl flex flex-col overflow-hidden"
       style={{
         width: 'min(320px, calc(100vw - 40px))',
         height: '420px',
@@ -137,6 +135,52 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
       }}
     >
       { }
+      <div className="flex flex-shrink-0" style={{ borderBottom: `1px solid ${border}` }}>
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setActiveTab(tab.id)}
+            className="flex-1 py-2.5 text-xs font-semibold transition-colors"
+            style={{
+              color: activeTab === tab.id ? accent : subText,
+              borderBottom: activeTab === tab.id ? `2px solid ${accent}` : '2px solid transparent',
+              backgroundColor: 'transparent',
+              marginBottom: '-1px',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      { }
+      <div className="flex items-center gap-2 px-3 pt-2 pb-2 flex-shrink-0">
+        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-1.5"
+          style={{ backgroundColor: inputBg }}>
+          <Search className="w-3.5 h-3.5 flex-shrink-0" style={{ color: subText }} />
+          <input
+            type="text"
+            placeholder={`Search ${activeTab}...`}
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="flex-1 bg-transparent text-xs outline-none"
+            style={{ color: theme.otherMessageText }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleClearSearch}
+              className="flex-shrink-0 hover:opacity-70 transition"
+            >
+              <X className="w-3 h-3" style={{ color: subText }} />
+            </button>
+          )}
+        </div>
+      </div>
 
       { }
       <div className="px-3 pb-1 flex-shrink-0">
@@ -193,55 +237,6 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
           </div>
         )}
       </div>
-
-      { }
-      <div className="flex flex-shrink-0" style={{ borderBottom: `1px solid ${border}` }}>
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setActiveTab(tab.id)}
-            className="flex-1 py-2.5 text-xs font-semibold transition-colors"
-            style={{
-              color: activeTab === tab.id ? accent : subText,
-              borderBottom: activeTab === tab.id ? `2px solid ${accent}` : '2px solid transparent',
-              backgroundColor: 'transparent',
-              marginBottom: '-1px',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      { }
-      <div className="flex items-center gap-2 px-3 pt-2 pb-2 flex-shrink-0">
-        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-1.5"
-          style={{ backgroundColor: inputBg }}>
-          <Search className="w-3.5 h-3.5 flex-shrink-0" style={{ color: subText }} />
-          <input
-            type="text"
-            placeholder={`Search ${activeTab}...`}
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="flex-1 bg-transparent text-xs outline-none"
-            style={{ color: theme.otherMessageText }}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={handleClearSearch}
-              className="flex-shrink-0 hover:opacity-70 transition"
-            >
-              <X className="w-3 h-3" style={{ color: subText }} />
-            </button>
-          )}
-        </div>
-      </div>
-
 
       { }
       <div className="flex-shrink-0 px-3 py-1.5 flex justify-end"

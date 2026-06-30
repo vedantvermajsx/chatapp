@@ -18,7 +18,8 @@ export const sendMessageHandler = async (
   setSelectedFile
 ) => {
   e.preventDefault();
-  if (!inputMessage && !selectedFile) return;
+  const trimmedMessage = (inputMessage || '').trim();
+  if (!trimmedMessage && !selectedFile) return;
 
   const tempId = crypto.randomUUID();
   let pendingMedia = null;
@@ -33,24 +34,12 @@ export const sendMessageHandler = async (
     };
   }
 
-  let fileData = null;
-  if (selectedFile) {
-    fileData = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({
-        buffer: reader.result,
-        name: selectedFile.name,
-        type: selectedFile.type
-      });
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(selectedFile);
-    });
-  }
+
 
   const optimisticMessage = {
   id: tempId,
   username: user.username,
-  text: inputMessage,
+  text: trimmedMessage,
   isOwn: true,
   timestamp: new Date().toISOString(),
   gender: user.gender,
@@ -69,6 +58,7 @@ export const sendMessageHandler = async (
         messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
       };
     }
+    await dbService.addMessage(cacheKey, optimisticMessage);
   } else if (currentPrivateChat) {
     setMessages((prev) => [...prev, optimisticMessage]);
     const cacheKey = `private_${currentPrivateChat.id}`;
@@ -78,6 +68,7 @@ export const sendMessageHandler = async (
         messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
       };
     }
+    await dbService.addMessage(cacheKey, optimisticMessage);
   }
 
   setInputMessage('');
@@ -86,15 +77,16 @@ export const sendMessageHandler = async (
   (async () => {
     try {
       let finalMedia = pendingMedia;
-      
+
       const pendingMessageData = {
         id: tempId,
-        text: inputMessage,
+        text: trimmedMessage,
         media: pendingMedia,
-        file: fileData, 
+        mediaType: pendingMedia?.type || null,
+        mediaId: selectedFile ? tempId : null,
         timestamp: new Date().toISOString()
       };
-      
+
       if (currentRoom) {
         pendingMessageData.type = 'room';
         pendingMessageData.roomId = currentRoom._id;
@@ -103,9 +95,17 @@ export const sendMessageHandler = async (
         pendingMessageData.receiverId = currentPrivateChat.id.toString();
         pendingMessageData.receiverModel = currentPrivateChat.role === 'guest' ? 'Guest' : 'User';
       }
-      
+
       await dbService.addPendingMessage(pendingMessageData);
-      
+      if (selectedFile) {
+        await dbService.addFile(tempId, selectedFile);
+      }
+
+      if (!navigator.onLine) {
+        // Stay pending; offlineMessageHandler will pick this up once back online.
+        return;
+      }
+
       let finalMediaToUse = finalMedia;
       if (selectedFile) {
         const uploadResult = await messageService.uploadFile(
@@ -153,7 +153,7 @@ export const sendMessageHandler = async (
       if (currentRoom) {
         const response = await messageService.sendRoomMessage({
           roomId: currentRoom._id,
-          text: inputMessage,
+          text: trimmedMessage,
           media: finalMediaToUse,
           uuid: tempId
         });
@@ -161,7 +161,7 @@ export const sendMessageHandler = async (
         const newMessageObj = {
           id: response._id,
           username: user.username,
-          text: inputMessage,
+          text: trimmedMessage,
           isOwn: true,
           timestamp: response.timestamp,
           gender: user.gender,
@@ -182,12 +182,14 @@ export const sendMessageHandler = async (
           };
         }
         await dbService.addMessage(cacheKey, newMessageObj);
+        if (tempId !== newMessageObj.id) await dbService.removeMessage(cacheKey, tempId);
         await dbService.removePendingMessage(tempId);
+        if (selectedFile) await dbService.removeFile(tempId);
       } else if (currentPrivateChat) {
         const response = await messageService.sendPrivateMessage({
           receiverId: currentPrivateChat.id.toString(),
           receiverModel: currentPrivateChat.role === 'guest' ? 'Guest' : 'User',
-          content: inputMessage,
+          content: trimmedMessage,
           media: finalMediaToUse,
           uuid: tempId
         });
@@ -195,7 +197,7 @@ export const sendMessageHandler = async (
         const newMessageObj = {
           id: response._id,
           username: user.username,
-          text: inputMessage,
+          text: trimmedMessage,
           isOwn: true,
           timestamp: response.timestamp,
           gender: user.gender,
@@ -216,9 +218,11 @@ export const sendMessageHandler = async (
           };
         }
         await dbService.addMessage(cacheKey, newMessageObj);
+        if (tempId !== newMessageObj.id) await dbService.removeMessage(cacheKey, tempId);
         await dbService.removePendingMessage(tempId);
+        if (selectedFile) await dbService.removeFile(tempId);
 
-        updatePrivateChatOptimistically(privateChats, setPrivateChats, currentPrivateChat, inputMessage);
+        updatePrivateChatOptimistically(privateChats, setPrivateChats, currentPrivateChat, trimmedMessage);
       }
     } catch (error) {
       console.error('Failed to send message immediately:', error);

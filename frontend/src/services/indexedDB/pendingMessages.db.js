@@ -27,5 +27,33 @@ export const dbPendingMessages = {
     } catch (error) {
       console.error('Error removing pending message:', error);
     }
+  },
+
+  async addFile(id, file) {
+    try {
+      const store = await getStore(STORES.pendingFiles, 'readwrite');
+      store.put({ id, file });
+    } catch (error) {
+      console.error('Error adding pending file:', error);
+    }
+  },
+
+  async getFile(id) {
+    try {
+      const store = await getStore(STORES.pendingFiles);
+      const record = await promisifyRequest(store.get(id)).catch(() => null);
+      return record?.file ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  async removeFile(id) {
+    try {
+      const store = await getStore(STORES.pendingFiles, 'readwrite');
+      store.delete(id);
+    } catch (error) {
+      console.error('Error removing pending file:', error);
+    }
   }
 };

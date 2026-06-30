@@ -192,6 +192,16 @@ export const dbMessages = {
     }
   },
 
+  async removeMessage(chatKey, id) {
+    if (!id) return;
+    try {
+      const store = await getStore(STORES.messages, 'readwrite');
+      store.delete(id);
+    } catch (error) {
+      console.error('Error removing message:', error);
+    }
+  },
+
   async deleteMessages(chatKey) {
     try {
       const db = await openDB();
