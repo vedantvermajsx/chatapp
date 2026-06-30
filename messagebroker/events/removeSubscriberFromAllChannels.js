@@ -5,4 +5,7 @@ export default function removeSubscriberFromAllChannels(subscribers, ws) {
       subscribers.delete(channel);
     }
   }
+  if (ws.subscribedChannels) {
+    ws.subscribedChannels.clear();
+  }
 }

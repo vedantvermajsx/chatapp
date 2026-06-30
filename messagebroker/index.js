@@ -16,8 +16,15 @@ const INBOUND_INTERVAL_MS = parseInt(process.env.INBOUND_INTERVAL_MS, 10) || 100
 const INBOUND_MAX_QUEUE_SIZE = process.env.INBOUND_MAX_QUEUE_SIZE
   ? parseInt(process.env.INBOUND_MAX_QUEUE_SIZE, 10)
   : Infinity;
+const MAX_PAYLOAD_BYTES = parseInt(process.env.MAX_PAYLOAD_BYTES, 10) || 2 * 1024 * 1024; 
+const MAX_BUFFER_SIZE = parseInt(process.env.MAX_BUFFER_SIZE, 10) || 4 * 1024 * 1024;
+const MAX_SUBSCRIPTIONS_PER_CONNECTION =
+  parseInt(process.env.MAX_SUBSCRIPTIONS_PER_CONNECTION, 10) || 1000;
 
-const wss = new WebSocketServer({ port: PORT });
+const wss = new WebSocketServer({
+  port: PORT,
+  maxPayload: MAX_PAYLOAD_BYTES
+});
 
 const subscribers = new Map();
 
@@ -49,7 +56,9 @@ function processMessage(ws, message) {
 
   switch (data.type) {
     case 'SUBSCRIBE':
-      subscribeToChannel(subscribers, data.channel, ws);
+      subscribeToChannel(subscribers, data.channel, ws, {
+        maxSubscriptions: MAX_SUBSCRIPTIONS_PER_CONNECTION
+      });
       break;
     case 'UNSUBSCRIBE':
       unsubscribeFromChannel(subscribers, data.channel, ws);
@@ -124,9 +133,19 @@ const HEARTBEAT_INTERVAL = 30000;
 const heartbeat = setInterval(() => {
   for (const ws of wss.clients) {
     if (ws.isAlive === false) {
+      console.warn(`[MessageBroker] [${ws.clientIp}] failed heartbeat, terminating`);
       ws.terminate();
       continue;
     }
+
+    if (ws.bufferedAmount > MAX_BUFFER_SIZE) {
+      console.warn(
+        `[MessageBroker] [${ws.clientIp}] bufferedAmount (${ws.bufferedAmount}) exceeded ${MAX_BUFFER_SIZE}, terminating`
+      );
+      ws.terminate();
+      continue;
+    }
+
     ws.isAlive = false;
     ws.ping();
   }
@@ -137,6 +156,11 @@ wss.on('close', () => clearInterval(heartbeat));
 process.on('SIGTERM', () => {
   console.log('Message broker shutting down');
   clearInterval(heartbeat);
+
+  for (const ws of wss.clients) {
+    ws.close(1001, 'Server shutting down');
+  }
+
   wss.close(() => process.exit(0));
 });
 
