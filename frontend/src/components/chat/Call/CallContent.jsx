@@ -17,9 +17,8 @@ const CallContent = ({
       ref={remoteVideoRef}
       autoPlay
       playsInline
-      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-        isVideo && remoteStream && !isConnecting ? 'opacity-100' : 'opacity-0'
-      }`}
+      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isVideo && remoteStream && !isConnecting ? 'opacity-100' : 'opacity-0'
+        }`}
     />
 
     {(!isVideo || isConnecting || !remoteStream) && (
@@ -32,29 +31,15 @@ const CallContent = ({
       >
         {!isMinimized && <div className="absolute w-64 h-64 rounded-full bg-indigo-600/15 blur-3xl -z-10" />}
 
-        {target?.avatar ? (
-          <img
-            src={target.avatar}
-            alt={target.username}
-            className={
-              isMinimized
-                ? 'w-16 h-16 rounded-full object-cover shadow-lg'
-                : `w-28 h-28 rounded-full object-cover shadow-2xl ring-4 ring-white/10 ${isConnecting ? 'animate-pulse' : ''}`
-            }
-          />
-        ) : (
-          <div
-            className={
-              isMinimized
-                ? 'w-16 h-16 rounded-full bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center shadow-lg'
-                : `w-28 h-28 rounded-full bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center shadow-2xl ring-4 ring-white/10 ${isConnecting ? 'animate-pulse' : ''}`
-            }
-          >
-            <span className={isMinimized ? 'text-2xl text-white font-semibold' : 'text-5xl text-white font-semibold'}>
-              {target?.username ? target.username.charAt(0).toUpperCase() : '?'}
-            </span>
-          </div>
-        )}
+        <img
+          src={target?.avatar?.replace('w_50,h_50,c_fill', 'w_100,h_100,c_fill') || 'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1782369805/male_g68rxt.avif'}
+          alt={target.username}
+          className={
+            isMinimized
+              ? 'w-16 h-16 rounded-full object-cover shadow-lg'
+              : `w-28 h-28 rounded-full object-cover shadow-2xl ring-4 ring-white/10 ${isConnecting ? 'animate-pulse' : ''}`
+          }
+        />
 
         {!isMinimized && (
           <div>
