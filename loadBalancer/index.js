@@ -1,5 +1,6 @@
 import { serverslist } from './servers.js'
 import LoadBalancer from "./LoadBalancer.js";
+import { startServicePulse } from "./checkService.js";
 import dotenv from 'dotenv'
 
 
@@ -11,3 +12,4 @@ const loadBalancer = new LoadBalancer(serverslist, {
 });
 
 loadBalancer.start();
+startServicePulse();
