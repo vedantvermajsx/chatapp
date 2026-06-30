@@ -102,8 +102,7 @@ class MessageService {
         },
         onUploadProgress: ({ loaded, total }) => {
 
-          console.log(loaded,' : ',total);
-  if (!total) return;
+           if (!total) return;
 
   const percentage = Math.min(
     100,
@@ -115,8 +114,6 @@ class MessageService {
       }
     );
     
-    console.log(response);
-
     return response.data;
   } catch (error) {
     if (navigator.onLine && !skipToast) {

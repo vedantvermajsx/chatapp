@@ -6,7 +6,6 @@ export async function getJoinedRooms(req, res) {
 
     const cached = await roomCacheClient.getJoinedRooms(userId);
     if (cached) {
-      console.log("[getJoinedRooms] Returning rooms from cache service");
       return res.json(cached);
     }
 

@@ -44,7 +44,6 @@ class LoadBalancerQueue {
         this.healthManager.markUnhealthy(target);
 
         if (retries < this.maxRetries) {
-          console.log(`[Queue] Retrying request (attempt ${retries + 1}/${this.maxRetries})`);
           this.pendingRequests.unshift({ req, res, retries: retries + 1 });
         } else {
           if (!res.headersSent) {

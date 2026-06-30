@@ -118,13 +118,6 @@ async function start() {
     }),
   });
 
-  console.log(
-    '[QueueService] ready — subscribed to: ' +
-    'message.created, room.deleted, ' +
-    'user.registered, guest.registered, ' +
-    'room.created, room.member.joined, room.member.left, ' +
-    'notification.unread.*, notification.lastread.*'
-  );
 }
 
 start().catch((err) => {

@@ -18,7 +18,4 @@ export const processMessageBatch = async (batch) => {
     }
   }
 
-  console.log(
-    `[MessageProcessor] saved ${insertedCount}/${batch.length} messages to MongoDB`
-  );
 };
