@@ -18,7 +18,7 @@ const INBOUND_MAX_QUEUE_SIZE = process.env.INBOUND_MAX_QUEUE_SIZE
 const MAX_PAYLOAD_BYTES = parseInt(process.env.MAX_PAYLOAD_BYTES, 10) || 2 * 1024 * 1024; 
 const MAX_BUFFER_SIZE = parseInt(process.env.MAX_BUFFER_SIZE, 10) || 4 * 1024 * 1024;
 
-const subscribers = new Map();
+export const subscribers = new Map();
 const ipConnectionCount = new Map();
 
 
