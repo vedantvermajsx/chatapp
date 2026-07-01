@@ -1,62 +1,93 @@
 class LoadBalancerQueue {
-  constructor(healthManager, proxies, maxRetries = 3) {
+  constructor(healthManager, proxies, maxRetries = 3, requestTimeoutMs = 20000, maxConcurrent = 50) {
     this.healthManager = healthManager;
     this.proxies = proxies;
     this.maxRetries = maxRetries;
+    this.requestTimeoutMs = requestTimeoutMs;
+    this.maxConcurrent = maxConcurrent;
     this.pendingRequests = [];
-    this.isProcessing = false;
+    this.activeCount = 0;
   }
 
   enqueue(req, res, retries = 0) {
     this.pendingRequests.push({ req, res, retries });
-    if (!this.isProcessing) this._processNext();
+    this._drain();
   }
 
-  _processNext() {
-    if (this.pendingRequests.length === 0) {
-      this.isProcessing = false;
-      return;
+  _drain() {
+    while (this.activeCount < this.maxConcurrent && this.pendingRequests.length > 0) {
+      const item = this.pendingRequests.shift();
+      this.activeCount++;
+      this._handle(item);
     }
+  }
 
-    this.isProcessing = true;
-    const { req, res, retries } = this.pendingRequests.shift();
-
+  _handle({ req, res, retries }) {
     this.healthManager.getNextHealthyServer().then((target) => {
       if (!target) {
         if (!res.headersSent) {
           res.status(502).json({ error: 'No healthy backend servers available' });
         }
-        this._processNext();
+        this._release();
         return;
       }
 
       const proxy = this.proxies.get(target);
 
-      const onFinish = () => this._processNext();
+      let settled = false;
+      const finalize = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(watchdog);
+        res.removeListener('finish', onFinish);
+        res.removeListener('close', onFinish);
+        this._release();
+      };
+
+      const onFinish = () => finalize();
       res.once('finish', onFinish);
-      res.once('close', onFinish);   
+      res.once('close', onFinish);
+
+      const watchdog = setTimeout(() => {
+        console.error(`[Queue] Watchdog timeout (${target}) - forcing release`);
+        this.healthManager.markUnhealthy(target);
+        if (!res.headersSent && res.destroy) {
+          res.destroy();
+        }
+        finalize();
+      }, this.requestTimeoutMs);
 
       proxy.web(req, res, {}, (err) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(watchdog);
         res.removeListener('finish', onFinish);
         res.removeListener('close', onFinish);
 
         console.error(`[Queue] Proxy error (${target}):`, err.message);
         this.healthManager.markUnhealthy(target);
 
+        this.activeCount--;
+
         if (retries < this.maxRetries) {
+          // Requeue at the front so a retry doesn't lose its place to
+          // requests that arrived later.
           this.pendingRequests.unshift({ req, res, retries: retries + 1 });
-        } else {
-          if (!res.headersSent) {
-            res.status(502).json({ error: 'All retries exhausted' });
-          }
+        } else if (!res.headersSent) {
+          res.status(502).json({ error: 'All retries exhausted' });
         }
-        this._processNext();
+        this._drain();
       });
     });
   }
 
+  _release() {
+    this.activeCount--;
+    this._drain();
+  }
+
   process() {
-    if (!this.isProcessing) this._processNext();
+    this._drain();
   }
 
   handleProxyError(req, res, failedTarget) {
@@ -65,15 +96,19 @@ class LoadBalancerQueue {
       const [item] = this.pendingRequests.splice(existing, 1);
       if (item.retries < this.maxRetries) {
         this.pendingRequests.unshift({ req, res, retries: item.retries + 1 });
-        if (!this.isProcessing) this._processNext();
-      } else {
-        if (!res.headersSent) res.status(502).json({ error: 'All retries exhausted' });
+        this._drain();
+      } else if (!res.headersSent) {
+        res.status(502).json({ error: 'All retries exhausted' });
       }
     }
   }
 
   getQueueLength() {
     return this.pendingRequests.length;
+  }
+
+  getActiveCount() {
+    return this.activeCount;
   }
 }
 

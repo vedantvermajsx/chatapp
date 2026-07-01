@@ -15,6 +15,7 @@ class LoadBalancer {
       healthCheckCooldownMs = 30000,
       healthCheckIntervalMs = 10000 * 10,
       maxRetries = 3,
+      maxConcurrent = parseInt(process.env.MAX_CONCURRENT_REQUESTS, 10) || 50,
       port = 8080,
       rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
       rateLimitMaxRequests = parseInt(process.env.RATE_LIMIT_MAX, 10) || 300
@@ -31,7 +32,9 @@ class LoadBalancer {
         target: server,
         changeOrigin: true,
         ws: true,
-        xfwd: true
+        xfwd: true,
+        proxyTimeout: 15000, // abort if backend doesn't respond within 15s
+        timeout: 15000       // abort if the underlying socket stalls
       });
 
       proxy.on('error', (err, req, res) => {
@@ -66,7 +69,9 @@ class LoadBalancer {
     this.queue = new LoadBalancerQueue(
       this.healthManager,
       this.proxies,
-      maxRetries
+      maxRetries,
+      20000,
+      maxConcurrent
     );
 
     this.port = port;
@@ -125,6 +130,7 @@ class LoadBalancer {
       res.json({
         loadBalancer: 'healthy',
         backendServers: this.healthManager.getStatus(),
+        activeRequests: this.queue.getActiveCount(),
         queueLength: this.queue.getQueueLength()
       });
     });
@@ -138,7 +144,18 @@ class LoadBalancer {
           return res.status(502).json({ error: 'No healthy backend servers available' });
         }
         const proxy = this.proxies.get(target);
-        return proxy.web(req, res);
+        return proxy.web(req, res, {}, (err) => {
+          console.error(
+            `[${new Date().toISOString()}] [LB] Socket.IO proxy error (${target}):`,
+            err.message
+          );
+          this.healthManager.markUnhealthy(target);
+          if (!res.headersSent) {
+            res.status(502).json({ error: 'Backend unavailable' });
+          } else if (res.destroy) {
+            res.destroy();
+          }
+        });
       }
 
       this.queue.enqueue(req, res);
