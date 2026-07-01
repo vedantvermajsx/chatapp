@@ -1,8 +1,8 @@
-import subscribeToChannel from "../events/subscribeToChannel";
-import unsubscribeFromChannel from "../events/unsubscribeFromChannel";
-import publishToChannel from "../events/publishToChannel";
-import { verifyWsMessage } from "./hmacVerify";
-import { subscribers} from "../index.js";
+import subscribeToChannel from "../events/subscribeToChannel.js";
+import unsubscribeFromChannel from "../events/unsubscribeFromChannel.js";
+import publishToChannel from "../events/publishToChannel.js";
+import { verifyWsMessage } from "./hmacVerify.js";
+import { subscribers } from "../index.js";
 
 const MAX_SUBSCRIPTIONS_PER_CONNECTION = 1000;
 
