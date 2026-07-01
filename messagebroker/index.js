@@ -1,11 +1,10 @@
+import http from 'http';
 import { WebSocketServer } from 'ws';
 import dotenv from 'dotenv';
-import subscribeToChannel from './events/subscribeToChannel.js';
-import unsubscribeFromChannel from './events/unsubscribeFromChannel.js';
-import publishToChannel from './events/publishToChannel.js';
 import removeSubscriberFromAllChannels from './events/removeSubscriberFromAllChannels.js';
-import { verifyWsMessage } from './utils/hmacVerify.js';
+import processMessage from "./utils/processMessage.js";
 import { InboundQueue } from './utils/MessageQueue.js';
+import getClientIp from './utils/getClientIp.js';
 
 dotenv.config();
 
@@ -15,63 +14,39 @@ const INBOUND_TOKENS_PER_INTERVAL = parseInt(process.env.INBOUND_TOKENS_PER_INTE
 const INBOUND_INTERVAL_MS = parseInt(process.env.INBOUND_INTERVAL_MS, 10) || 1000;
 const INBOUND_MAX_QUEUE_SIZE = process.env.INBOUND_MAX_QUEUE_SIZE
   ? parseInt(process.env.INBOUND_MAX_QUEUE_SIZE, 10)
-  : Infinity;
+  : 10000;
 const MAX_PAYLOAD_BYTES = parseInt(process.env.MAX_PAYLOAD_BYTES, 10) || 2 * 1024 * 1024; 
 const MAX_BUFFER_SIZE = parseInt(process.env.MAX_BUFFER_SIZE, 10) || 4 * 1024 * 1024;
-const MAX_SUBSCRIPTIONS_PER_CONNECTION =
-  parseInt(process.env.MAX_SUBSCRIPTIONS_PER_CONNECTION, 10) || 1000;
+
+const subscribers = new Map();
+const ipConnectionCount = new Map();
+
+
+const server = http.createServer((req, res) => {
+  if (req.method === 'GET' && req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'healthy',
+      connections: wss.clients.size,
+      subscribedChannels: subscribers.size
+    }));
+    return;
+  }
+
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
+});
 
 const wss = new WebSocketServer({
-  port: PORT,
+  server,
   maxPayload: MAX_PAYLOAD_BYTES
 });
 
-const subscribers = new Map();
 
 
-const ipConnectionCount = new Map();
-
-function getClientIp(req) {
-  return (
-    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-    req.socket?.remoteAddress ||
-    '0.0.0.0'
-  );
-}
-
-function processMessage(ws, message) {
-  let data;
-  try {
-    data = JSON.parse(message);
-  } catch (error) {
-    console.error('Error parsing message:', error);
-    return;
-  }
-
-  const { valid, reason } = verifyWsMessage(data);
-  if (!valid) {
-    console.warn(`[MessageBroker] Invalid message from [${ws.clientIp}]: ${reason}. Discarding.`);
-    return;
-  }
-
-  switch (data.type) {
-    case 'SUBSCRIBE':
-      subscribeToChannel(subscribers, data.channel, ws, {
-        maxSubscriptions: MAX_SUBSCRIPTIONS_PER_CONNECTION
-      });
-      break;
-    case 'UNSUBSCRIBE':
-      unsubscribeFromChannel(subscribers, data.channel, ws);
-      break;
-    case 'PUBLISH':
-      publishToChannel(subscribers, data.channel, data.payload, ws);
-      break;
-    default:
-      console.log('Unknown message type:', data.type);
-  }
-}
-
-console.log(`Message Broker Service started on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Message Broker Service started on port ${PORT} (HTTP /health + WS)`);
+});
 
 wss.on('connection', (ws, req) => {
   const clientIp = getClientIp(req);
@@ -161,6 +136,5 @@ process.on('SIGTERM', () => {
     ws.close(1001, 'Server shutting down');
   }
 
-  wss.close(() => process.exit(0));
+  wss.close(() => server.close(() => process.exit(0)));
 });
-
