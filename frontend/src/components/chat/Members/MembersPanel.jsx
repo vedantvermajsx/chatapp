@@ -14,12 +14,17 @@ const MembersPanel = memo(function MembersPanel({
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    if (show) {
-      const timer = setTimeout(() => {
-        loadRoomMembers(searchQuery);
-      }, 300);
-      return () => clearTimeout(timer);
+    if (!show) return;
+
+    if (!searchQuery) {
+      loadRoomMembers('');
+      return;
     }
+
+    const timer = setTimeout(() => {
+      loadRoomMembers(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [searchQuery, show, loadRoomMembers]);
 
   const handleScroll = useCallback(() => {

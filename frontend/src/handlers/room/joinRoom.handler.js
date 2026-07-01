@@ -18,21 +18,27 @@ export const joinRoomHandler = async (
 ) => {
   if (currentRoom && currentRoom._id === roomId) return;
 
+  let room = roomObject || joinedRooms.find(r => r._id === roomId) || null;
+  const alreadyJoined = !!room;
+
+  if (room) setCurrentRoom(room);
+  setCurrentPrivateChat(null);
+
+  const cacheKey = `room_${roomId}`;
+  const inMemory = messageCache.current[cacheKey];
+  if (!inMemory?.messages?.length) {
+    setMessages([]);
+    setLoadingMessages(true);
+  }
+
+  // Already a member of this room (just switching between joined rooms) -
+  // don't hit the join API or re-broadcast a "joined the room" system message.
+  if (alreadyJoined) {
+    return;
+  }
+
   setLoadingJoinRoom(true);
   try {
-    
-    let room = roomObject || joinedRooms.find(r => r._id === roomId) || null;
-    if (room) setCurrentRoom(room);
-
-    setCurrentPrivateChat(null);
-
-    const cacheKey = `room_${roomId}`;
-    const inMemory = messageCache.current[cacheKey];
-    if (!inMemory?.messages?.length) {
-      setMessages([]);
-      setLoadingMessages(true);
-    }
-
     const data = {
       roomId,
       message: `${user.username} joined the room`,

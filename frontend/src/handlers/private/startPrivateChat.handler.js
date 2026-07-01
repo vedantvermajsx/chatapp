@@ -29,7 +29,9 @@ export const startPrivateChatHandler = async (
     setMessages(inMemory.messages);
     setHasMoreMessages(inMemory.hasMore);
     setLoadingMessages(false);
-    _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+    if (unreadCount > 0) {
+      _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+    }
     return;
   }
 
@@ -43,7 +45,9 @@ export const startPrivateChatHandler = async (
       hasMore: idbData.hasMore,
       timestamp: Date.now(),
     };
-    _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+    if (unreadCount > 0) {
+      _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+    }
     return;
   }
 

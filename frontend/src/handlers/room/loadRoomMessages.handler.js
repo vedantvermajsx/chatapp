@@ -20,7 +20,9 @@ export const loadRoomMessagesHandler = async (
   if (inMemory?.messages?.length && Date.now() - inMemory.timestamp < CACHE_TTL) {
     setMessages(inMemory.messages);
     setHasMoreMessages(inMemory.hasMore);
-    _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+    if (unreadCount > 0) {
+      _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+    }
     return;
   }
 
@@ -35,7 +37,9 @@ export const loadRoomMessagesHandler = async (
     };
     setLoadingMessages(false);
 
-    _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+    if (unreadCount > 0) {
+      _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+    }
     return;
   }
 

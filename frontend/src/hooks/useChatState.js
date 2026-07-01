@@ -59,6 +59,7 @@ export const useChatState = (user) => {
   }, [unreadCounts]);
 
   const messageCache = useRef({});
+  const roomMembersCache = useRef({});
   const loadingMoreMessages = useRef(false);
   const loadingNewerMessagesRef = useRef(false);
   const loadingMoreMembersRef = useRef(false);
@@ -116,15 +117,36 @@ export const useChatState = (user) => {
     return privateChats;
   }, []);
 
-  const loadRoomMembers = useCallback(async (search = '') => {
+  const loadRoomMembers = useCallback(async (search = '', forceRefresh = false) => {
     if (!currentRoom) return;
-    
+
+    const cacheKey = currentRoom._id;
+
+    if (!search && !forceRefresh) {
+      const cached = roomMembersCache.current[cacheKey];
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        setRoomMembers(cached.members);
+        setHasMoreMembers(cached.hasMore);
+        return;
+      }
+    }
+
     setLoadingRoomMembers(true);
-    
+
     try {
       const res = await roomService.getRoomMembers(currentRoom._id, 0, search);
-      setRoomMembers(res?.members || []);
-      setHasMoreMembers(res?.hasMore || false);
+      const members = res?.members || [];
+      const hasMore = res?.hasMore || false;
+      setRoomMembers(members);
+      setHasMoreMembers(hasMore);
+
+      if (!search) {
+        roomMembersCache.current[cacheKey] = {
+          members,
+          hasMore,
+          timestamp: Date.now(),
+        };
+      }
     } catch (error) {
       toast.error('Failed to load room members');
     } finally {
@@ -139,8 +161,20 @@ export const useChatState = (user) => {
     
     try {
       const res = await roomService.getRoomMembers(currentRoom._id, roomMembers.length, search);
-      setRoomMembers(prev => [...prev, ...(res?.members || [])]);
-      setHasMoreMembers(res?.hasMore || false);
+      const newMembers = res?.members || [];
+      const hasMore = res?.hasMore || false;
+      setRoomMembers(prev => {
+        const merged = [...prev, ...newMembers];
+        if (!search) {
+          roomMembersCache.current[currentRoom._id] = {
+            members: merged,
+            hasMore,
+            timestamp: Date.now(),
+          };
+        }
+        return merged;
+      });
+      setHasMoreMembers(hasMore);
     } catch (error) {
       toast.error('Failed to load more members');
     } finally {
