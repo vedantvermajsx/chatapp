@@ -109,16 +109,8 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
           <button onClick={onClose} className="p-2 rounded-full transition-all" style={{
             backgroundColor: theme.background,
             boxShadow: isLight
-              ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-              : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)'
-          }} onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = isLight
-              ? 'inset 1px 1px 3px rgba(0,0,0,0.1), inset -1px -1px 3px rgba(255,255,255,0.8)'
-              : 'inset 1px 1px 3px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.05)';
-          }} onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = isLight
-              ? '1px 1px 3px rgba(0,0,0,0.1), -1px -1px 3px rgba(255,255,255,0.8)'
-              : '1px 1px 3px rgba(0,0,0,0.4), -1px -1px 3px rgba(255,255,255,0.05)';
+              ? '0px 1px 1px rgba(0,0,0,0.1), -1px -1px 1px rgba(255,255,255,0.8)'
+              : '0px 1px 1px rgba(0,0,0,0.4), -1px -1px 1px rgba(255,255,255,0.05)'
           }}>
             <X className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
           </button>
@@ -128,7 +120,7 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
           <form id="profile-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
-                <Avatar url={avatarUrl} name={username} gender={user.gender} size={24} className="w-24 h-24 text-3xl" style={{
+                <Avatar url={avatarUrl.replace("w_50,h_50,c_fill", "w_100,h_100,c_fill")} name={username} gender={user.gender} size={24} className="w-24 h-24 text-3xl" style={{
                   boxShadow: isLight
                     ? 'inset 1px 1px 3px rgba(0,0,0,0.1), inset -1px -1px 3px rgba(255,255,255,0.8)'
                     : 'inset 1px 1px 3px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.05)'
@@ -159,13 +151,13 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border-none rounded-xl focus:outline-none transition-all"
+                className="w-full px-4 py-3 border-none rounded-xl  transition-all"
                 style={{
                   backgroundColor: theme.background,
                   color: theme.otherMessageText,
                   boxShadow: isLight
-                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)'
-                    : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)'
+                    ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
+                    : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'
                 }}
                 required
               />
@@ -181,20 +173,17 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-3 border-none rounded-xl focus:outline-none transition-all resize-none"
+                className="w-full px-4 py-3 border-none rounded-xl transition-all resize-none"
                 style={{
                   backgroundColor: theme.background,
                   color: theme.otherMessageText,
                   boxShadow: isLight
-                    ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)'
-                    : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)'
+                    ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
+                    : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'
                 }}
                 placeholder="Tell us about yourself..."
               />
             </div>
-
-
-
 
           </form>
         </div>
@@ -209,16 +198,9 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
               backgroundColor: theme.background,
               color: theme.myMessageBubble,
               boxShadow: isLight
-                ? 'inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8)'
-                : 'inset 2px 2px 4px rgba(0,0,0,0.4), inset -2px -2px 4px rgba(255,255,255,0.05)'
-            }}
-            onMouseEnter={(e) => {
-              if (!isSaving && !isUploading) {
-                e.currentTarget.style.backgroundColor = isLight ? '#d4d4d4' : '#3f3f46';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = theme.background;
+                ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
+                : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'
+
             }}
           >
             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Changes'}

@@ -226,8 +226,8 @@ function RoomSidebar({
           <button
             onClick={() => setShowCreateForm(f => !f)}
             className="w-full py-3 rounded-2xl flex items-center gap-3 px-4"
-            {...getNeumorphicProps(1, 3, 2, 5)}
-            style={{ ...getNeumorphicProps(1, 3, 2, 5).style }}
+            {...getNeumorphicProps(1, 1, 1, 1)}
+            style={{ ...getNeumorphicProps(1, 1, 1, 1).style }}
           >
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"

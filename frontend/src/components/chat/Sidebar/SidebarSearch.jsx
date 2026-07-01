@@ -17,9 +17,9 @@ const SidebarSearch = ({ searchQuery, setSearchQuery }) => {
           placeholder="Search..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-8 py-2.5 rounded-xl border-none focus:outline-none text-sm transition-all"
-          {...getInputProps(1, 3, 2, 4)}
-          style={{ ...getInputProps(1, 3, 2, 4).style, color: theme.otherMessageText }}
+          className="w-full pl-10 pr-8 py-2.5 rounded-xl border-none text-sm transition-all"
+          {...getInputProps(1, 3, 2, 2)}
+          style={{ ...getInputProps(1, 3, 2, 2).style, color: theme.otherMessageText }}
         />
         {searchQuery && (
           <button

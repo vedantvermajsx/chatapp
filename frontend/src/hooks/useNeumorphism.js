@@ -7,7 +7,7 @@ export const useNeumorphism = () => {
     const c1 = isLight ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.4)';
     const c2 = isLight ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.05)';
     const prefix = inset ? 'inset ' : '';
-    return `${prefix}${size}px ${size}px ${blur}px ${c1}, ${prefix}-${size}px -${size}px ${blur}px ${c2}`;
+    return `${prefix}${size}px ${size}px ${blur}px ${c1}, ${prefix} -${size}px -${size}px ${blur}px ${c2}`;
   };
 
   const getNeumorphicProps = (baseSize, baseBlur, hoverSize, hoverBlur, isInsetBase = false, isInsetHover = true) => ({

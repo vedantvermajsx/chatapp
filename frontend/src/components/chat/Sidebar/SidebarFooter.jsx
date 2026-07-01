@@ -11,7 +11,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
       className="px-3 md:px-4 py-3 border-t flex-shrink-0 flex items-center gap-2"
       style={{ borderColor: border, backgroundColor: theme.background }}
     >
-      {}
+      { }
       <div className="flex items-center gap-2 flex-1 min-w-0 mr-1">
         <Avatar url={user.avatar} name={user.username} gender={user.gender} size={8} />
         <span className="text-xs font-semibold truncate" style={{ color: theme.otherMessageText }}>
@@ -19,33 +19,33 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
         </span>
       </div>
 
-      {}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      { }
+      <div className="flex items-center gap-2 flex-shrink-0">
         {user.role !== 'guest' && (
           <button
             onClick={onShowSettings}
-            className="p-2 rounded-xl transition-all"
+            className="p-1 rounded-xl transition-all"
             title="Settings"
-            {...getNeumorphicProps(1, 2, 2, 4)}
+            {...getNeumorphicProps(1, 4, 0, 0)}
           >
-            <Settings className="w-3.5 h-3.5" style={{ color: theme.otherUsernameColor }} />
+            <Settings className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
           </button>
         )}
         <button
           onClick={onToggleThemePicker}
-          className="p-2 rounded-xl transition-all"
+          className="p-1 rounded-xl transition-all"
           title="Theme"
-          {...getNeumorphicProps(1, 2, 2, 4)}
+          {...getNeumorphicProps(1, 4, 0, 0)}
         >
-          <Palette className="w-3.5 h-3.5" style={{ color: theme.otherUsernameColor }} />
+          <Palette className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
         </button>
         <button
           onClick={onLogout}
-          className="p-2 rounded-xl transition-all"
+          className="p-1 rounded-xl transition-all"
           title="Logout"
-          {...getNeumorphicProps(1, 2, 2, 4)}
+          {...getNeumorphicProps(1, 4, 0, 0)}
         >
-          <LogOut className="w-3.5 h-3.5" style={{ color: theme.otherUsernameColor }} />
+          <LogOut className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
         </button>
       </div>
     </div>

@@ -51,7 +51,7 @@ const ChatHeader = memo(function ChatHeader({
         <button
           onClick={onToggleSidebar}
           className="p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30"
-          {...getNeumorphicProps(2, 4, 3, 6)}
+          {...getNeumorphicProps(1, 1, 1, 2)}
           aria-label="Open sidebar"
         >
           <Menu className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
@@ -75,7 +75,7 @@ const ChatHeader = memo(function ChatHeader({
                 <button
                   onClick={() => setShowGroupSettings(true)}
                   className="p-2 sm:p-3 rounded-full transition-all"
-                  {...getNeumorphicProps(1, 3, 3, 6)}
+                  {...getNeumorphicProps(1, 2, 2, 3)}
                   title="Group Settings"
                 >
                   <Settings className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.otherUsernameColor }} />
@@ -84,7 +84,7 @@ const ChatHeader = memo(function ChatHeader({
               <button
                 onClick={() => { loadRoomMembers(); setShowMembersModal(true); }}
                 className="p-2 sm:p-3 rounded-full transition-all"
-                {...getNeumorphicProps(1, 3, 3, 6)}
+                {...getNeumorphicProps(1, 2, 2, 3)}
                 title="Room Members"
               >
                 <Users className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.otherUsernameColor }} />
@@ -94,7 +94,7 @@ const ChatHeader = memo(function ChatHeader({
                 onClick={handleLeaveRoom}
                 disabled={leaveRoomMutation.isPending}
                 className="p-2 sm:p-3 rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50"
-                {...getNeumorphicProps(1, 3, 3, 6)}
+                {...getNeumorphicProps(1, 2, 2, 3)}
                 title="Leave Room"
               >
                 <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -122,7 +122,7 @@ const ChatHeader = memo(function ChatHeader({
                 <button
                   onClick={() => startCall && startCall(currentPrivateChat.id, false, currentPrivateChat)}
                   className="p-2 sm:p-3 rounded-full transition-all text-green-500 hover:text-green-600"
-                  {...getNeumorphicProps(1, 3, 3, 6)}
+                  {...getNeumorphicProps(1, 2, 2, 3)}
                   title="Voice Call"
                 >
                   <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -130,7 +130,7 @@ const ChatHeader = memo(function ChatHeader({
                 <button
                   onClick={() => startCall && startCall(currentPrivateChat.id, true, currentPrivateChat)}
                   className="p-2 sm:p-3 rounded-full transition-all text-blue-500 hover:text-blue-600"
-                  {...getNeumorphicProps(1, 3, 3, 6)}
+                  {...getNeumorphicProps(1, 2, 2, 3)}
                   title="Video Call"
                 >
                   <Video className="w-5 h-5 sm:w-6 sm:h-6" />

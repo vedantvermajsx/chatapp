@@ -53,7 +53,7 @@ function Member({
                 <button
                     onClick={() => onStartPrivateChat({ ...member, id: member.id || member._id })}
                     className="p-2 rounded-full transition-all"
-                    {...getNeumorphicProps(3, 6, 2, 4)}
+                    {...getNeumorphicProps(1, 1, 1, 2)}
                     title="Private Chat"
                 >
                     <MessageSquare

@@ -17,8 +17,8 @@ const PrivateChat = memo(function PrivateChat({
   return (
     <div
       onClick={() => handleStartPrivateChat({ ...chat.otherUser, id: chat.otherUser.id || chat.otherUser._id })}
-      className="p-3 md:p-5 rounded-2xl cursor-pointer transition-all"
-      {...getNeumorphicProps(2, 4, 3, 6, currentPrivateChat?.id === (chat.otherUser.id || chat.otherUser._id), true)}
+      className="p-3 rounded-2xl cursor-pointer transition-all"
+      {...getNeumorphicProps(1, 1, 1, 2, currentPrivateChat?.id === (chat.otherUser.id || chat.otherUser._id), true)}
     >
       <div className="flex items-start gap-3 md:gap-4">
         <div className="flex-shrink-0">
@@ -26,20 +26,20 @@ const PrivateChat = memo(function PrivateChat({
             url={chat.otherUser.avatar}
             name={chat.otherUser.username}
             gender={chat.otherUser.gender}
-            size={8}
-            mdSize={12}
+            size={10}
+            mdSize={10}
             isOnline={chat.otherUser.isOnline}
             lastSeen={chat.otherUser.lastSeen}
           />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-bold text-xs md:text-sm truncate" style={{ color: theme.otherMessageText }}>
+            <h3 className="font-bold text-sm truncate" style={{ color: theme.otherMessageText }}>
               {chat.otherUser.username}
             </h3>
 
           </div>
-          <p className="text-xs md:text-sm truncate mt-1 md:mt-2 font-medium" style={{
+          <p className="text-xs truncate mt-1  font-medium" style={{
             color: unread > 0 ? (theme.primary || '#6366f1') : theme.otherMessageText,
             opacity: unread > 0 ? 1 : 0.8,
           }}>
