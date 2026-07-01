@@ -1,8 +1,9 @@
 const services = [
   "https://gatherup-now-messagebroker-service.onrender.com",
+  "https://gatherup-now-backend-service.onrender.com",
   "https://gatherup-now-loadbalancer-service.onrender.com",
   "https://gatherup-now-cache-service.onrender.com",
-  "https://gatherup-now-queue-service.onrender.com"
+  "https://gatherup-now-queue-service-new.onrender.com"
 ];
 
 async function checkService(url) {
