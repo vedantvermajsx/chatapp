@@ -1,13 +1,15 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
 import { applyLastRead } from '../../utils/applyLastRead.js';
+import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 const fetchNewerMessagesPage = async (
   chatId,
   type,
   messages,
   setMessages,
-  messageCache
+  messageCache,
+  setUnreadCounts
 ) => {
   if (!messages || messages.length === 0) {
     return { messages: messages || [], hasMore: false };
@@ -29,6 +31,7 @@ const fetchNewerMessagesPage = async (
   }
 
   if (!res.messages || res.messages.length === 0) {
+    syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
     return { messages, hasMore: res.hasMore || false };
   }
 
@@ -54,6 +57,8 @@ const fetchNewerMessagesPage = async (
     await dbService.mergeNewMessages(cacheKey, reallyNew);
   }
 
+  syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
+
   return { messages: mergedMessages, hasMore: res.hasMore || false };
 };
 
@@ -64,12 +69,13 @@ export const loadNewerMessagesHandler = async (
   messages,
   setMessages,
   setHasMoreNewerMessages,
-  messageCache
+  messageCache,
+  setUnreadCounts = null
 ) => {
   if (!messages || messages.length === 0) return;
 
   try {
-    const { hasMore } = await fetchNewerMessagesPage(chatId, type, messages, setMessages, messageCache);
+    const { hasMore } = await fetchNewerMessagesPage(chatId, type, messages, setMessages, messageCache, setUnreadCounts);
     setHasMoreNewerMessages(hasMore);
   } catch (error) {
     console.error('Failed to load newer messages:', error);
@@ -82,7 +88,8 @@ export const catchUpNewerMessagesHandler = async (
   messages,
   setMessages,
   setHasMoreNewerMessages,
-  messageCache
+  messageCache,
+  setUnreadCounts = null
 ) => {
   if (!messages || messages.length === 0) return messages;
 
@@ -91,7 +98,7 @@ export const catchUpNewerMessagesHandler = async (
 
   try {
     while (hasMore) {
-      const result = await fetchNewerMessagesPage(chatId, type, currentMessages, setMessages, messageCache);
+      const result = await fetchNewerMessagesPage(chatId, type, currentMessages, setMessages, messageCache, setUnreadCounts);
       currentMessages = result.messages;
       hasMore = result.hasMore;
     }

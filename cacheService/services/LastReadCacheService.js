@@ -2,9 +2,9 @@ import { messageCache } from './CacheService.js';
 import ConversationRead from '../models/conversationRead.model.js';
 import RoomMessageRead from '../models/roomMessageRead.model.js';
 
-const TTL = 604800; 
+const TTL = null; 
 const EMPTY = Symbol('lastRead:empty');
-const NEGATIVE_TTL = 30; 
+const NEGATIVE_TTL = null; 
 
 function key(userId, chatKey) {
   return `lastRead:${userId}:${chatKey}`;

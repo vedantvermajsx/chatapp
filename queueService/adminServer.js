@@ -40,7 +40,7 @@ export function createAdminServer({ port, getStats }) {
   });
 
   app.get('/health', (req, res) => {
-    res.json({
+    res.status(200).json({
       status: 'ok',
       uptime: process.uptime(),
       timestamp: new Date().toISOString()

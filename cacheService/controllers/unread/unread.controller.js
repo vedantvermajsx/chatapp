@@ -173,8 +173,16 @@ export const resetUnread = (req, res) => {
   const { userId } = req.params;
   const { chatKey } = req.body;
   if (!chatKey) return res.status(400).json({ message: 'chatKey required' });
-  UnreadCacheService.reset(userId, chatKey);
-  res.json({ ok: true });
+  const count = UnreadCacheService.reset(userId, chatKey);
+  res.json({ ok: true, count });
+};
+
+export const decrementUnread = (req, res) => {
+  const { userId } = req.params;
+  const { chatKey, by } = req.body;
+  if (!chatKey) return res.status(400).json({ message: 'chatKey required' });
+  const count = UnreadCacheService.decrement(userId, chatKey, Number(by) || 1);
+  res.json({ ok: true, count });
 };
 
 export const seedUnread = (req, res) => {

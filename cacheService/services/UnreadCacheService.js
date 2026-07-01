@@ -1,7 +1,7 @@
 
 import { messageCache } from './CacheService.js';
 
-const TTL = 604800; 
+const TTL = null; 
 
 function key(userId) {
   return `unread:${userId}`;
@@ -26,9 +26,24 @@ const UnreadCacheService = {
 
     reset(userId, chatKey) {
     const existing = messageCache.get(key(userId));
-    if (!existing || !existing[chatKey]) return;
+    if (!existing || !existing[chatKey]) return 0;
     delete existing[chatKey];
     messageCache.set(key(userId), existing, TTL);
+    return 0;
+  },
+
+    decrement(userId, chatKey, by = 1) {
+    const existing = messageCache.get(key(userId)) ?? {};
+    const current = existing[chatKey] ?? 0;
+    const next = Math.max(0, current - Math.max(0, by));
+
+    if (next === 0) {
+      delete existing[chatKey];
+    } else {
+      existing[chatKey] = next;
+    }
+    messageCache.set(key(userId), existing, TTL);
+    return next;
   },
 
     incrementForMembers(memberIds, senderId, chatKey) {

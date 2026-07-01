@@ -2,9 +2,9 @@ import { paginateMessages, fetchMessagesAfter } from './MessagePaginationService
 import { messageCache } from './CacheService.js';
 import Message from '../models/message.model.js';
 
-const PAGE_TTL_SECONDS = 60;
-const CHAT_LIST_TTL_SECONDS = 60;
-const DIRECT_MESSAGE_TTL_SECONDS = 60 * 60 * 24; 
+const PAGE_TTL_SECONDS = null;
+const CHAT_LIST_TTL_SECONDS = null;
+const DIRECT_MESSAGE_TTL_SECONDS = null; 
 const COMMON_LIMITS = [10, 20, 25, 50];
 
 const inFlight = new Map();

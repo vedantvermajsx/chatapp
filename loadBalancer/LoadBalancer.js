@@ -127,7 +127,7 @@ class LoadBalancer {
 
   setupRoutes() {
     this.app.get('/health', (req, res) => {
-      res.json({
+      res.status(200).json({
         loadBalancer: 'healthy',
         backendServers: this.healthManager.getStatus(),
         activeRequests: this.queue.getActiveCount(),

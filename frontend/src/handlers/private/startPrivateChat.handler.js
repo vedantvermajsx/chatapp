@@ -1,6 +1,7 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
 import { applyLastRead } from '../../utils/applyLastRead.js';
+import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 export const startPrivateChatHandler = async (
   otherUser,
@@ -14,7 +15,8 @@ export const startPrivateChatHandler = async (
   setHasMoreNewerMessages,
   messageCache,
   CACHE_TTL,
-  unreadCount = 0
+  unreadCount = 0,
+  setUnreadCounts = null
 ) => {
   setCurrentPrivateChat(otherUser);
   setCurrentRoom(null);
@@ -27,7 +29,7 @@ export const startPrivateChatHandler = async (
     setMessages(inMemory.messages);
     setHasMoreMessages(inMemory.hasMore);
     setLoadingMessages(false);
-    _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount);
+    _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
     return;
   }
 
@@ -41,7 +43,7 @@ export const startPrivateChatHandler = async (
       hasMore: idbData.hasMore,
       timestamp: Date.now(),
     };
-    _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount);
+    _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
     return;
   }
 
@@ -58,6 +60,7 @@ export const startPrivateChatHandler = async (
     setMessages(messagesWithRead);
     setHasMoreMessages(res.hasMore);
     await dbService.saveMessages(cacheKey, messagesWithRead, res.hasMore);
+    syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
   } catch (error) {
     const idbFallback = await dbService.getMessages(cacheKey);
     if (idbFallback.messages.length > 0) {
@@ -70,7 +73,7 @@ export const startPrivateChatHandler = async (
   }
 };
 
-async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount) {
+async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts) {
   try {
     let latestTimestamp = currentCache.messages?.[currentCache.messages.length - 1]?.timestamp;
     if (!latestTimestamp) return;
@@ -101,6 +104,7 @@ async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, set
     };
     setMessages(mergedMessages);
     if (setHasMoreNewerMessages) setHasMoreNewerMessages(res.hasMore || false);
+    syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
   } catch {
   }
 }

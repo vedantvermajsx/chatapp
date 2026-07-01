@@ -25,10 +25,10 @@ async function resolveMembers(ids) {
   return results.filter(Boolean);
 }
 
-const MEMBERS_PAGE_TTL_SECONDS = 300;
-const NAME_LOOKUP_TTL_SECONDS = 300;
-const USER_ROOMLIST_TTL_SECONDS = 300;
-const ALL_ROOMS_TTL_SECONDS = 60;
+const MEMBERS_PAGE_TTL_SECONDS = null;
+const NAME_LOOKUP_TTL_SECONDS = null;
+const USER_ROOMLIST_TTL_SECONDS = null;
+const ALL_ROOMS_TTL_SECONDS = null;
 
 const inFlight = new Map();
 
@@ -44,7 +44,7 @@ async function dedupe(key, fetcher) {
 class RoomCacheService {
   async addRoomToCache(id, data) {
     const resolvedData = await data;
-    roomCache.set(`room:${id}`, resolvedData, 3600); 
+    roomCache.set(`room:${id}`, resolvedData, null); 
   }
 
   async getRoomById(id) {
@@ -243,7 +243,7 @@ class RoomCacheService {
       if (!room) return null;
 
       const ids = (room.groupMembers || []).map(String);
-      roomCache.set(key, ids, 3600);
+      roomCache.set(key, ids, null);
       return ids;
     });
   }
@@ -256,12 +256,12 @@ class RoomCacheService {
     const userStr = String(userId);
     if (!ids.includes(userStr)) {
       ids.push(userStr);
-      roomCache.set(key, ids, 3600);
+      roomCache.set(key, ids, null);
 
       const room = roomCache.get(`room:${roomId}`);
       if (room) {
         room.groupMembers = ids;
-        roomCache.set(`room:${roomId}`, room, 3600);
+        roomCache.set(`room:${roomId}`, room, null);
       }
 
       await this.invalidateRoomMembers(roomId);
@@ -274,19 +274,19 @@ class RoomCacheService {
     if (!ids) return;
 
     const filtered = ids.filter(id => id !== String(userId));
-    roomCache.set(key, filtered, 3600);
+    roomCache.set(key, filtered, null);
 
     const room = roomCache.get(`room:${roomId}`);
     if (room) {
       room.groupMembers = filtered;
-      roomCache.set(`room:${roomId}`, room, 3600);
+      roomCache.set(`room:${roomId}`, room, null);
     }
 
     await this.invalidateRoomMembers(roomId);
   }
 
   async setRoomMemberIds(roomId, memberIds) {
-    roomCache.set(this._memberIdsKey(roomId), memberIds.map(String), 3600);
+    roomCache.set(this._memberIdsKey(roomId), memberIds.map(String), null);
   }
 
   
@@ -319,7 +319,7 @@ class RoomCacheService {
       const userRoom = await UserRoom.findOne({ userId }).lean();
       const roomIds = userRoom?.roomIds ?? [];
       if (roomIds.length === 0) {
-        roomCache.set(key, [], 3600);
+        roomCache.set(key, [], null);
         return [];
       }
 
@@ -339,7 +339,7 @@ class RoomCacheService {
         }
       ]);
 
-      roomCache.set(key, rooms, 3600);
+      roomCache.set(key, rooms, null);
       return rooms;
     });
   }
@@ -353,7 +353,7 @@ class RoomCacheService {
 
     if (!rooms) {
       
-      roomCache.set(key, [formatted], 3600);
+      roomCache.set(key, [formatted], null);
       return formatted;
     }
 
@@ -361,7 +361,7 @@ class RoomCacheService {
     const exists = rooms.some(r => r._id?.toString() === formatted._id?.toString());
     if (!exists) {
       rooms = [formatted, ...rooms];
-      roomCache.set(key, rooms, 3600);
+      roomCache.set(key, rooms, null);
     }
     return formatted;
   }
@@ -371,7 +371,7 @@ class RoomCacheService {
     const rooms = roomCache.get(key);
     if (!rooms) return;
     const filtered = rooms.filter(r => r._id?.toString() !== String(roomId));
-    roomCache.set(key, filtered, 3600);
+    roomCache.set(key, filtered, null);
   }
 
   invalidateUserRooms(userId) {
@@ -390,5 +390,5 @@ RoomCacheService.prototype.markRoomDeleted = async function(id) {
     room = await Room.findById(id).lean();
     if (!room) return;
   }
-  roomCache.set(`room:${id}`, { ...room, isDeleted: true }, 3600);
+  roomCache.set(`room:${id}`, { ...room, isDeleted: true }, null);
 };

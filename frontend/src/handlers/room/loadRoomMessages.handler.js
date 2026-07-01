@@ -1,5 +1,6 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
+import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 export const loadRoomMessagesHandler = async (
   roomId,
@@ -10,7 +11,8 @@ export const loadRoomMessagesHandler = async (
   setHasMoreNewerMessages,
   messageCache,
   CACHE_TTL,
-  unreadCount = 0
+  unreadCount = 0,
+  setUnreadCounts = null
 ) => {
   const cacheKey = `room_${roomId}`;
 
@@ -18,7 +20,7 @@ export const loadRoomMessagesHandler = async (
   if (inMemory?.messages?.length && Date.now() - inMemory.timestamp < CACHE_TTL) {
     setMessages(inMemory.messages);
     setHasMoreMessages(inMemory.hasMore);
-    _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount);
+    _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
     return;
   }
 
@@ -33,7 +35,7 @@ export const loadRoomMessagesHandler = async (
     };
     setLoadingMessages(false);
 
-    _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount);
+    _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
     return;
   }
 
@@ -48,6 +50,7 @@ export const loadRoomMessagesHandler = async (
     setMessages(res.messages);
     setHasMoreMessages(res.hasMore);
     await dbService.saveMessages(cacheKey, res.messages, res.hasMore);
+    syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
   } catch (error) {
     console.error('Failed to load room messages:', error);
   } finally {
@@ -55,7 +58,7 @@ export const loadRoomMessagesHandler = async (
   }
 };
 
-async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount) {
+async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts) {
   try {
     let latestTimestamp = currentCache.messages?.[currentCache.messages.length - 1]?.timestamp;
     if (!latestTimestamp) return;
@@ -66,6 +69,7 @@ async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages
     const res = await messageService.getRoomMessages(roomId, fetchLimit, null, latestTimestamp);
     if (!res.messages?.length) {
       if (setHasMoreNewerMessages) setHasMoreNewerMessages(res.hasMore || false);
+      syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
       return;
     }
 
@@ -83,6 +87,7 @@ async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages
       await dbService.mergeNewMessages(cacheKey, reallyNew);
     }
     if (setHasMoreNewerMessages) setHasMoreNewerMessages(res.hasMore || false);
+    syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
   } catch {
   }
 }

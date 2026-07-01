@@ -9,7 +9,6 @@ import {
   loadMoreMessagesHandler,
   loadRoomMessagesHandler,
   loadMoreRoomMessagesHandler,
-  prefetchAllMessagesHandler,
   loadNewerMessagesHandler,
   catchUpNewerMessagesHandler
 } from '../handlers/chat.handlers';
@@ -165,7 +164,8 @@ export const useChatState = (user) => {
             messages,
             setMessages,
             setHasMoreNewerMessages,
-            messageCache
+            messageCache,
+            setUnreadCounts
           );
         } else if (currentRoom) {
           await catchUpNewerMessagesHandler(
@@ -174,7 +174,8 @@ export const useChatState = (user) => {
             messages,
             setMessages,
             setHasMoreNewerMessages,
-            messageCache
+            messageCache,
+            setUnreadCounts
           );
         }
       } finally {
@@ -212,7 +213,8 @@ export const useChatState = (user) => {
             messages,
             setMessages,
             setHasMoreNewerMessages,
-            messageCache
+            messageCache,
+            setUnreadCounts
           );
         } else if (currentRoom) {
           await catchUpNewerMessagesHandler(
@@ -221,7 +223,8 @@ export const useChatState = (user) => {
             messages,
             setMessages,
             setHasMoreNewerMessages,
-            messageCache
+            messageCache,
+            setUnreadCounts
           );
         }
       } finally {
@@ -288,7 +291,8 @@ export const useChatState = (user) => {
       (val) => { if (currentSwitchId.current === switchId) setHasMoreNewerMessages(val); },
       messageCache,
       CACHE_TTL,
-      unreadCounts[`room_${roomId}`] || 0
+      unreadCounts[`room_${roomId}`] || 0,
+      setUnreadCounts
     );
     setShowSidebar(false);
   }, [joinedRooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread, setJoinedRooms, loadJoinedRooms]);
@@ -309,7 +313,8 @@ export const useChatState = (user) => {
       (val) => { if (currentSwitchId.current === switchId) setHasMoreNewerMessages(val); },
       messageCache,
       CACHE_TTL,
-      unreadCounts[`private_${otherUser.id}`] || 0
+      unreadCounts[`private_${otherUser.id}`] || 0,
+      setUnreadCounts
     );
     setShowSidebar(false);
   }, [user, CACHE_TTL, clearUnread]);
@@ -323,7 +328,8 @@ export const useChatState = (user) => {
         setMessages,
         setHasMoreMessages,
         loadingMoreMessages,
-        messageCache
+        messageCache,
+        setUnreadCounts
       );
     } else if (currentRoom) {
       await loadMoreRoomMessagesHandler(
@@ -332,7 +338,8 @@ export const useChatState = (user) => {
         setMessages,
         setHasMoreMessages,
         loadingMoreMessages,
-        messageCache
+        messageCache,
+        setUnreadCounts
       );
     }
   }, [currentPrivateChat, currentRoom, user, messages]);
@@ -350,7 +357,8 @@ export const useChatState = (user) => {
           messages,
           setMessages,
           setHasMoreNewerMessages,
-          messageCache
+          messageCache,
+          setUnreadCounts
         );
       } else if (currentRoom) {
         await loadNewerMessagesHandler(
@@ -360,7 +368,8 @@ export const useChatState = (user) => {
           messages,
           setMessages,
           setHasMoreNewerMessages,
-          messageCache
+          messageCache,
+          setUnreadCounts
         );
       }
     } finally {

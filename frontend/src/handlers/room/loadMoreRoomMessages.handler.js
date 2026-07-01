@@ -1,4 +1,5 @@
 import messageService from '../../services/message.service.js';
+import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 export const loadMoreRoomMessagesHandler = async (
   roomId,
@@ -6,7 +7,8 @@ export const loadMoreRoomMessagesHandler = async (
   setMessages,
   setHasMoreMessages,
   loadingMoreMessages,
-  messageCache
+  messageCache,
+  setUnreadCounts = null
 ) => {
   if (!messages || messages.length === 0 || loadingMoreMessages.current) return;
   loadingMoreMessages.current = true;
@@ -18,6 +20,7 @@ export const loadMoreRoomMessagesHandler = async (
     const merged = [...res.messages, ...messages];
     setMessages(merged);
     setHasMoreMessages(res.hasMore);
+    syncUnreadFromResponse(setUnreadCounts, `room_${roomId}`, res.unreadCount);
   } catch (error) {
     console.error('Failed to load more room messages:', error);
   } finally {

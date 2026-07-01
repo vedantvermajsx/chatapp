@@ -51,7 +51,8 @@ function RoomSidebar({
   showSidebar,
   onCloseSidebar,
   setPrivateChats,
-  unreadCounts = {}
+  unreadCounts = {},
+  socket = null
 }) {
   const { updateUser } = useAuth();
   const { theme } = useTheme();
@@ -205,13 +206,18 @@ function RoomSidebar({
 
       {renderTabBar()}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-4 py-3">
-        {activeTab === 'Chats' ? renderMyChats() : (
+        <div style={{ display: activeTab === 'Chats' ? 'block' : 'none' }}>
+          {renderMyChats()}
+        </div>
+        <div style={{ display: activeTab === 'Explore' ? 'block' : 'none' }}>
           <GlobalRoomList
             currentRoom={currentRoom}
             handleJoinRoom={handleJoinRoom}
             searchQuery={searchQuery}
+            socket={socket}
+            isActive={activeTab === 'Explore'}
           />
-        )}
+        </div>
       </div>
 
       { }

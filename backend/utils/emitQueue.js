@@ -3,7 +3,6 @@ import { activeRooms } from '../socket.js';
 import { publish } from './messageBroker.js';
 import roomCacheClient from '../database/roomCacheClient.js';
 import unreadCacheClient from '../database/unreadCacheClient.js';
-import lastReadCacheClient from '../database/lastReadCacheClient.js';
 import messageCountCacheClient from '../database/messageCountCacheClient.js';
 
 const queue = [];

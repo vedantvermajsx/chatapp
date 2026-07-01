@@ -8,7 +8,6 @@ import { useChatState } from '../hooks/useChatState';
 import { useChatSocket } from '../hooks/useChatSocket';
 import { CallProvider } from '../contexts/CallContext';
 import CallOverlay from './chat/Call/CallOverlay';
-import { prefetchAllMessagesHandler } from '../handlers/chat.handlers';
 
 function Chat() {
   const { user, logout } = useAuth();
@@ -80,7 +79,9 @@ function Chat() {
     roomMembers,
     setRoomMembers,
     loadRoomMembers,
-    setUnreadCounts
+    setUnreadCounts,
+    setJoinedRooms,
+    setCurrentRoom
   });
 
   useEffect(() => {
@@ -89,16 +90,7 @@ function Chat() {
       return;
     }
 
-    Promise.all([loadJoinedRooms(), loadPrivateChats()]).then(
-      ([joinedRooms, privateChats]) => {
-
-        prefetchAllMessagesHandler(
-          joinedRooms ?? [],
-          privateChats ?? [],
-          messageCache
-        );
-      }
-    );
+    Promise.all([loadJoinedRooms(), loadPrivateChats()]);
   }, [user, navigate]);
 
   const handleLeaveRoom = useCallback((roomId) => {
@@ -198,6 +190,7 @@ function Chat() {
         showSidebar={showSidebar}
         onCloseSidebar={() => setShowSidebar(false)}
         unreadCounts={unreadCounts}
+        socket={socket}
       />
 
       <CallProvider socket={socket}>

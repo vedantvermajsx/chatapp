@@ -1,5 +1,6 @@
 import messageService from '../../services/message.service.js';
 import { applyLastRead } from '../../utils/applyLastRead.js';
+import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 export const loadMoreMessagesHandler = async (
   otherUser,
@@ -8,7 +9,8 @@ export const loadMoreMessagesHandler = async (
   setMessages,
   setHasMoreMessages,
   loadingMoreMessages,
-  messageCache
+  messageCache,
+  setUnreadCounts = null
 ) => {
   if (!messages || messages.length === 0 || loadingMoreMessages.current) return;
   loadingMoreMessages.current = true;
@@ -20,6 +22,7 @@ export const loadMoreMessagesHandler = async (
     const merged = applyLastRead([...res.messages, ...messages], res.lastRead);
     setMessages(merged);
     setHasMoreMessages(res.hasMore);
+    syncUnreadFromResponse(setUnreadCounts, `private_${otherUser.id}`, res.unreadCount);
   } catch (error) {
     console.error('Failed to load more messages:', error);
   } finally {

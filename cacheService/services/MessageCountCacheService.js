@@ -2,7 +2,7 @@
 import { messageCache } from './CacheService.js';
 import Message from '../models/message.model.js';
 
-const TTL = 3600;
+const TTL = null;
 
 function roomKey(roomId)             { return `msgCount:room_${roomId}`; }
 function privateKey(a, b)            { return `msgCount:private_${[a, b].sort().join(':')}`; }

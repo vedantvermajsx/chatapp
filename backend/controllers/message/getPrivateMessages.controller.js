@@ -3,6 +3,7 @@ import lastReadCacheClient from '../../database/lastReadCacheClient.js';
 import userCacheClient from '../../database/userCacheClient.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
+import { applyUnreadOnFetch } from '../../utils/applyUnreadOnFetch.js';
 
 function deletedUserFallback(msg) {
   const gender = msg.gender ?? null;
@@ -41,7 +42,13 @@ export const getPrivateMessages = async (req, res) => {
     };
 
     if (!messages || !messages.length) {
-      return res.status(200).json({ messages: [], hasMore: false, lastRead });
+      const unreadCount = await applyUnreadOnFetch({
+        userId,
+        chatKey: `private_${otherUserId}`,
+        hasMore: false,
+        messages: [],
+      });
+      return res.status(200).json({ messages: [], hasMore: false, lastRead, unreadCount });
     }
 
     const participantIds = [...new Set([userId, otherUserId])];
@@ -68,7 +75,14 @@ export const getPrivateMessages = async (req, res) => {
       };
     });
 
-    res.status(200).json({ messages: formattedMessages, hasMore, lastRead });
+    const unreadCount = await applyUnreadOnFetch({
+      userId,
+      chatKey: `private_${otherUserId}`,
+      hasMore,
+      messages,
+    });
+
+    res.status(200).json({ messages: formattedMessages, hasMore, lastRead, unreadCount });
   } catch (error) {
     console.error('Error getting private messages:', error);
     res.status(500).json({ message: 'Failed to get messages', error: error.message });

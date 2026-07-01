@@ -29,7 +29,7 @@ app.use(cors({
 
 
 app.get("/health", (req, res) => {
-  res.json({
+  res.status(200).json({
     status: "healthy",
     service: "Cache & Bloom",
     timestamp: new Date().toISOString()

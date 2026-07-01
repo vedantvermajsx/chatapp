@@ -2,6 +2,7 @@ import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
 import { _addQualities } from '../../utils/addQualities.js';
+import { applyUnreadOnFetch } from '../../utils/applyUnreadOnFetch.js';
 
 function deletedUserFallback() {
   return {
@@ -26,7 +27,13 @@ export const getRoomMessages = async (req, res) => {
 
 
     if (!messages.length) {
-      return res.status(200).json({ messages: [], hasMore: false });
+      const unreadCount = await applyUnreadOnFetch({
+        userId,
+        chatKey: `room_${roomId}`,
+        hasMore: false,
+        messages: [],
+      });
+      return res.status(200).json({ messages: [], hasMore: false, unreadCount });
     }
 
     const nonSystemMessages = messages.filter((m) => !m.isSystemMessage);
@@ -61,8 +68,14 @@ export const getRoomMessages = async (req, res) => {
   };
 });
 
-    
-    res.status(200).json({ messages: formattedMessages, hasMore });
+    const unreadCount = await applyUnreadOnFetch({
+      userId,
+      chatKey: `room_${roomId}`,
+      hasMore,
+      messages,
+    });
+
+    res.status(200).json({ messages: formattedMessages, hasMore, unreadCount });
   } catch (error) {
     console.error('Error getting room messages:', error);
     res.status(500).json({ message: 'Failed to get messages', error: error.message });

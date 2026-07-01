@@ -4,6 +4,7 @@ import {
   incrementUnread,
   incrementUnreadForMembers,
   resetUnread,
+  decrementUnread,
   seedUnread,
   invalidateUnread
 } from '../controllers/unread/unread.controller.js';
@@ -14,6 +15,7 @@ router.get('/:userId', getUnread);
 router.post('/members/increment', incrementUnreadForMembers);
 router.post('/:userId/increment', incrementUnread);
 router.post('/:userId/reset', resetUnread);
+router.post('/:userId/decrement', decrementUnread);
 router.post('/:userId/seed', seedUnread);
 router.delete('/:userId', invalidateUnread);
 

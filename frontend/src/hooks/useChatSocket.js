@@ -17,7 +17,9 @@ export const useChatSocket = (user, {
   roomMembers,
   setRoomMembers,
   loadRoomMembers,
-  setUnreadCounts
+  setUnreadCounts,
+  setJoinedRooms,
+  setCurrentRoom
 }) => {
   const socketRef = useRef(null);
   const userRef = useRef(user);
@@ -341,6 +343,29 @@ export const useChatSocket = (user, {
 
     const handleNewRoom = () => { loadRoomsRef.current?.(); if (loadJoinedRoomsRef.current) loadJoinedRoomsRef.current(); };
 
+    const handleRoomUpdated = (updatedRoom) => {
+      const id = updatedRoom?._id || updatedRoom?.id;
+      if (!id) return;
+
+      if (setJoinedRooms) {
+        setJoinedRooms(prev => prev.map(r => (String(r._id) === String(id) ? { ...r, ...updatedRoom } : r)));
+      }
+      if (setCurrentRoom && String(currentRoomRef.current?._id) === String(id)) {
+        setCurrentRoom(prev => (prev ? { ...prev, ...updatedRoom } : prev));
+      }
+    };
+
+    const handleRoomDeleted = ({ roomId } = {}) => {
+      if (!roomId) return;
+
+      if (setJoinedRooms) {
+        setJoinedRooms(prev => prev.filter(r => String(r._id) !== String(roomId)));
+      }
+      if (setCurrentRoom && String(currentRoomRef.current?._id) === String(roomId)) {
+        setCurrentRoom(null);
+      }
+    };
+
     const handleUserOnline = ({ userId }) => {
       const roomMembers = roomMembersRef.current;
       const privateChats = privateChatsRef.current;
@@ -442,6 +467,8 @@ export const useChatSocket = (user, {
     socket.on('newMessage', handleNewMessage);
     socket.on('newPrivateMessage', handleNewPrivateMessage);
     socket.on('newRoom', handleNewRoom);
+    socket.on('roomUpdated', handleRoomUpdated);
+    socket.on('roomDeleted', handleRoomDeleted);
     socket.on('userOnline', handleUserOnline);
     socket.on('userOffline', handleUserOffline);
     socket.on('readReceipt', handleReadReceipt);
@@ -461,6 +488,8 @@ export const useChatSocket = (user, {
       socket.off('newMessage', handleNewMessage);
       socket.off('newPrivateMessage', handleNewPrivateMessage);
       socket.off('newRoom', handleNewRoom);
+      socket.off('roomUpdated', handleRoomUpdated);
+      socket.off('roomDeleted', handleRoomDeleted);
       socket.off('userOnline', handleUserOnline);
       socket.off('userOffline', handleUserOffline);
       socket.off('readReceipt', handleReadReceipt);
@@ -471,7 +500,7 @@ export const useChatSocket = (user, {
       socket.off('typingRoom', handleTypingRoom);
       socket.off('stopTypingRoom', handleStopTypingRoom);
     };
-  }, [setMessages, setPrivateChats, setRoomMembers, setUnreadCounts]);
+  }, [setMessages, setPrivateChats, setRoomMembers, setUnreadCounts, setJoinedRooms, setCurrentRoom]);
 
   return { socket: socketRef.current, typingUsers };
 };

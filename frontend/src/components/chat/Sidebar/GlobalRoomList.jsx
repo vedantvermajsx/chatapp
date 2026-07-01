@@ -7,7 +7,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 
 const PAGE_SIZE = 20;
 
-const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '' }) => {
+const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '', socket = null, isActive = true }) => {
   const { theme } = useTheme();
   const [rooms, setRooms] = useState([]);
   const [page, setPage] = useState(0);
@@ -16,6 +16,8 @@ const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '' }) => {
   const [initialLoaded, setInitialLoaded] = useState(false);
   const loaderRef = useRef(null);
   const fetchingRef = useRef(false);
+  const hasFetchedRef = useRef(false);
+  const lastSearchQueryRef = useRef(searchQuery);
 
   const fetchPage = useCallback(async (pageNum, query, reset = false) => {
     if (fetchingRef.current) return;
@@ -38,12 +40,51 @@ const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '' }) => {
 
 
   useEffect(() => {
+    if (!isActive) return;
+
+    const searchChanged = lastSearchQueryRef.current !== searchQuery;
+    if (hasFetchedRef.current && !searchChanged) return;
+
+    lastSearchQueryRef.current = searchQuery;
+    hasFetchedRef.current = true;
+
     setRooms([]);
     setPage(0);
     setHasMore(true);
     setInitialLoaded(false);
     fetchPage(0, searchQuery, true).then(() => setInitialLoaded(true));
-  }, [searchQuery, fetchPage]);
+  }, [isActive, searchQuery, fetchPage]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleRoomUpdated = (updatedRoom) => {
+      const id = updatedRoom?._id || updatedRoom?.id;
+      if (!id) return;
+      setRooms(prev => prev.map(r => (r._id === id ? { ...r, ...updatedRoom } : r)));
+    };
+
+    const handleRoomDeleted = ({ roomId } = {}) => {
+      if (!roomId) return;
+      setRooms(prev => prev.filter(r => r._id !== roomId));
+    };
+
+    const handleNewRoom = (room) => {
+      const id = room?._id || room?.id;
+      if (!id) return;
+      setRooms(prev => (prev.some(r => r._id === id) ? prev : [room, ...prev]));
+    };
+
+    socket.on('roomUpdated', handleRoomUpdated);
+    socket.on('roomDeleted', handleRoomDeleted);
+    socket.on('newRoom', handleNewRoom);
+
+    return () => {
+      socket.off('roomUpdated', handleRoomUpdated);
+      socket.off('roomDeleted', handleRoomDeleted);
+      socket.off('newRoom', handleNewRoom);
+    };
+  }, [socket]);
 
 
   useEffect(() => {
@@ -51,7 +92,7 @@ const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '' }) => {
     if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading && initialLoaded) {
+        if (entries[0].isIntersecting && hasMore && !loading && initialLoaded && isActive) {
           fetchPage(page, searchQuery);
         }
       },
@@ -59,7 +100,7 @@ const GlobalRoomList = ({ currentRoom, handleJoinRoom, searchQuery = '' }) => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasMore, loading, page, searchQuery, fetchPage, initialLoaded]);
+  }, [hasMore, loading, page, searchQuery, fetchPage, initialLoaded, isActive]);
 
   return (
     <div className="flex flex-col h-full">

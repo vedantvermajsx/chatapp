@@ -64,9 +64,21 @@ class UnreadCacheClient {
   
   async reset(userId, chatKey) {
     try {
-      await this.client.post(`/unread/${userId}/reset`, { chatKey });
+      const res = await this.client.post(`/unread/${userId}/reset`, { chatKey });
+      return res.data?.count ?? 0;
     } catch (err) {
       console.error('[UnreadCacheClient] reset error:', err.message);
+      return null;
+    }
+  }
+
+  async decrement(userId, chatKey, by = 1) {
+    try {
+      const res = await this.client.post(`/unread/${userId}/decrement`, { chatKey, by });
+      return res.data?.count ?? null;
+    } catch (err) {
+      console.error('[UnreadCacheClient] decrement error:', err.message);
+      return null;
     }
   }
 
