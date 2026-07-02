@@ -8,7 +8,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
 
   return (
     <div
-      className="px-3 md:px-4 py-3 border-t flex-shrink-0 flex items-center gap-2"
+      className="px-3 md:px-4 py- flex-shrink-0 flex items-center gap-2"
       style={{ borderColor: border, backgroundColor: theme.background }}
     >
       { }

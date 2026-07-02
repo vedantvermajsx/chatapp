@@ -7,7 +7,7 @@ const SidebarHeader = ({ showMobileClose, onCloseSidebar }) => {
 
   return (
     <div
-      className="px-4 md:px-6 py-4 md:py-5 flex items-center justify-between border-b flex-shrink-0"
+      className="px-4 md:px-6 py-4 md:py-5 flex items-center justify-between  flex-shrink-0"
       style={{ borderColor: border }}
     >
       { }

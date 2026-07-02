@@ -4,12 +4,12 @@ import { UserPlus, UserMinus, Phone, PhoneMissed, MessageSquare, Edit3 } from "l
 import { formatSeenAt } from "../../../utils/dateUtils";
 
 const SYSTEM_ICONS = {
-  'member-joined': UserPlus,
-  'member-left': UserMinus,
-  'call': Phone,
-  'missed-call': PhoneMissed,
-  'room-created': MessageSquare,
-  'room-renamed': Edit3,
+    'member-joined': UserPlus,
+    'member-left': UserMinus,
+    'call': Phone,
+    'missed-call': PhoneMissed,
+    'room-created': MessageSquare,
+    'room-renamed': Edit3,
 };
 
 const SystemMessage = ({ msg, isPrivateChat = false }) => {
@@ -21,12 +21,11 @@ const SystemMessage = ({ msg, isPrivateChat = false }) => {
     return (
         <div className="flex flex-col items-center my-6">
             <span
-                className="text-xs px-6 py-3 rounded-2xl font-semibold flex items-center gap-2 border"
+                className="text-xs px-6 py-3 rounded-2xl font-semibold flex items-center gap-2"
                 style={{
-                    backgroundColor: theme.background,
-                    borderColor: theme.isLight ? '#e2e8f0' : '#4a5568',
+                    border: `2px solid ${theme.otherMessageBubble}`,
                     color: theme.otherMessageText,
-                    boxShadow: getShadow(theme.isLight, false, 2, 5)
+                    boxShadow: getShadow(theme.isLight, true, 0.5, 1)
                 }}
             >
                 {Icon && <Icon className="w-3.5 h-3.5 flex-shrink-0" />}

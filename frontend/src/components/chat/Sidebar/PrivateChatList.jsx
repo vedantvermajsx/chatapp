@@ -9,7 +9,7 @@ const PrivateChatList = memo(function PrivateChatList({ privateChats, currentPri
   const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
   return (
     <div className="pt-4">
-      {privateChats.length > 0 && <div className="border-t mb-4" style={{ borderColor: isLight ? '#cbd5e0' : '#4a5568' }} />}
+      {privateChats.length > 0 && <div className="mb-4" style={{ borderColor: isLight ? '#cbd5e0' : '#4a5568' }} />}
       <div className="flex items-center gap-2 font-bold text-xs md:text-sm mb-3 px-2" style={{ color: theme.otherUsernameColor }}>
         <MessageCircle className="w-3 h-3 md:w-4 md:h-4" /> Private Chats
       </div>

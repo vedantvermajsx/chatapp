@@ -6,7 +6,7 @@ const SidebarSearch = ({ searchQuery, setSearchQuery }) => {
   const border = theme.isLight ? '#cbd5e0' : '#4a5568';
 
   return (
-    <div className="px-4 md:px-5 py-3 border-b flex-shrink-0" style={{ borderColor: border }}>
+    <div className="px-4 md:px-5 py-3 flex-shrink-0" style={{ borderColor: border }}>
       <div className="relative flex items-center">
         <Search
           className="absolute left-4 w-3.5 h-3.5 pointer-events-none"

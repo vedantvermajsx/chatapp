@@ -199,7 +199,7 @@ function RoomSidebar({
   );
 
   const renderSidebarContent = (showMobileClose) => (
-    <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: theme.background }}>
+    <div className="flex flex-col h-full overflow-hidden py-2" style={{ backgroundColor: theme.background }}>
       <SidebarHeader showMobileClose={showMobileClose} onCloseSidebar={onCloseSidebar} />
 
       <SidebarSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
@@ -222,7 +222,7 @@ function RoomSidebar({
 
       { }
       {activeTab === 'Chats' && user.role !== 'guest' && (
-        <div className="px-3 md:px-4 py-3 flex-shrink-0" style={{ borderTop: `1px solid ${border}` }}>
+        <div className="px-3  py-3 flex-shrink-0" style={{ borderTop: `1px solid ${border}` }}>
           <button
             onClick={() => setShowCreateForm(f => !f)}
             className="w-full py-3 rounded-2xl flex items-center gap-3 px-4"

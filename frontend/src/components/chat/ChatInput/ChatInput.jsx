@@ -34,7 +34,7 @@ const ChatInput = memo(forwardRef(({
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [mentionQuery, setMentionQuery] = useState(null); 
+  const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [mentionSuggestions, setMentionSuggestions] = useState([]);
   const [isMentionLoading, setIsMentionLoading] = useState(false);
@@ -374,7 +374,7 @@ const ChatInput = memo(forwardRef(({
   }, [inputMessage]);
 
   return (
-    <div className="p-2 sm:p-6 border-t relative" style={{ backgroundColor: theme.background, borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
+    <div className="p-2 sm:p-6  border-t mb-1 relative" style={{ backgroundColor: theme.background, borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
       {disabled && (
         <div className="absolute inset-0 z-20 cursor-not-allowed" style={{ backgroundColor: theme.background, opacity: 0.6 }} />
       )}
@@ -412,7 +412,7 @@ const ChatInput = memo(forwardRef(({
         )}
         <div className="w-full sm:w-4/5 lg:w-3/4 flex items-center gap-2 sm:gap-3 rounded-2xl px-4 sm:px-6 py-2 sm:py-1 relative" style={{
           backgroundColor: theme.background,
-          boxShadow: getShadow(theme.isLight, false, 2, 5)
+          boxShadow: getShadow(theme.isLight, false, 0.5, 4)
         }}>
           <input
             ref={fileInputRef}
