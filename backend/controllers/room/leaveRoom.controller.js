@@ -11,7 +11,10 @@ export async function leaveRoom(req, res) {
     const username = req.user.username;
 
     const validCheck = await roomCacheClient.isValidRoomId(roomId);
-    if (!validCheck || !validCheck.isValid) {
+   
+    console.log(validCheck);
+
+    if (!validCheck) {
       return res.status(404).json({ message: 'Room not found' });
     }
 

@@ -32,8 +32,8 @@ export async function createRoom(req, res) {
 
     enqueueRoomCreation({ room: roomData, creatorId: groupAdmin });
 
-    await roomCacheClient.addRoomToCache(roomId, Promise.resolve(roomData));
-    roomCacheClient.addRoomMember(roomId, groupAdmin).catch(() => {});
+    await roomCacheClient.addRoomToCache(roomId, roomData);
+    roomCacheClient.addRoomMember(roomId, groupAdmin);
 
     const io = req.app.get('io');
     const { onlineUsers } = await import('../../socket.js');

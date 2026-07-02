@@ -91,7 +91,6 @@ function RoomSidebar({
     try {
       const data = await roomService.createRoom(newRoomName, newRoomDesc);
       const newRoom = data.room;
-      toast.success('Room created');
       setNewRoomName('');
       setNewRoomDesc('');
       setShowCreateRoom(false);

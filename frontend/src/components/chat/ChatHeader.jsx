@@ -1,11 +1,11 @@
-import { Users, Menu, Settings, LogOut, Phone, Video } from 'lucide-react';
+import { Users, Menu, Settings, Phone, Video } from 'lucide-react';
 import { isDesktop } from 'react-device-detect';
 import Avatar from '../common/Avatar';
 import GroupSettingsModal from './Modals/GroupSettingsModal';
 import { useState, memo } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatLastSeen } from '../../utils/dateUtils';
-import { useLeaveRoom } from '../../hooks/useChat';
+import { useLeaveRoom, useDeleteRoom } from '../../hooks/useChat';
 import { useCall } from '../../contexts/CallContext';
 import { useNeumorphism } from '../../hooks/useNeumorphism';
 
@@ -23,8 +23,24 @@ const ChatHeader = memo(function ChatHeader({
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const { theme } = useTheme();
   const leaveRoomMutation = useLeaveRoom();
+  const deleteRoomMutation = useDeleteRoom();
   const { startCall } = useCall() || {};
   const { getNeumorphicProps } = useNeumorphism();
+
+  const handleDeleteRoom = async () => {
+    if (window.confirm(`Are you sure you want to delete ${currentRoom.groupName}?`)) {
+      try {
+        await deleteRoomMutation.mutateAsync(currentRoom._id);
+        if (leaveRoomSocket) {
+          leaveRoomSocket(currentRoom._id);
+        }
+        if (onLeaveRoom) onLeaveRoom(currentRoom._id);
+        setCurrentRoom(null);
+      } catch (err) {
+        console.error('Failed to delete room:', err);
+      }
+    }
+  };
 
   const handleLeaveRoom = async () => {
     if (window.confirm(`Are you sure you want to leave ${currentRoom.groupName}?`)) {
@@ -37,7 +53,6 @@ const ChatHeader = memo(function ChatHeader({
         setCurrentRoom(null);
       } catch (err) {
         console.error('Failed to leave room:', err);
-        alert('Failed to leave room');
       }
     }
   };
@@ -91,15 +106,18 @@ const ChatHeader = memo(function ChatHeader({
               </button>
 
               <button
-                onClick={handleLeaveRoom}
-                disabled={leaveRoomMutation.isPending}
-                className="p-2 sm:p-3 rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50"
-                {...getNeumorphicProps(1, 2, 2, 3)}
-                title="Leave Room"
+                onClick={currentRoom.groupAdmin === user._id ? handleDeleteRoom : handleLeaveRoom}
+                disabled={leaveRoomMutation.isPending || deleteRoomMutation.isPending}
+                className="p-2  rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50"
+                {...getNeumorphicProps(1, 1, 1, 1)}
+                title={currentRoom?.groupAdmin === user?._id ? 'Delete room' : 'Leave Room'}
               >
-                <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className='w-8 h-4 text-xs'>{currentRoom?.groupAdmin === user?._id ? 'Delete room' : 'Leave Room'}</span>
               </button>
+
+
             </div>
+
           </>
         ) : currentPrivateChat ? (
           <>

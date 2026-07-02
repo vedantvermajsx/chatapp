@@ -54,13 +54,18 @@ export const sendPendingMessages = async () => {
         }
 
         if (response) {
+          const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+
           const finalMessage = {
             id: response._id || tempId,
             text: pendingMsg.text,
             isOwn: true,
             timestamp: response.timestamp || pendingMsg.timestamp,
             media: finalMedia,
-            isPending: false
+            isPending: false,
+            username: pendingMsg.username || currentUser?.username,
+            avatar: pendingMsg.avatar || currentUser?.avatar || null,
+            gender: pendingMsg.gender || currentUser?.gender
           };
 
           await dbService.addMessage(cacheKey, finalMessage);

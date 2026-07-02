@@ -7,10 +7,13 @@ export async function deleteRoom(req, res) {
     const { roomId } = req.params;
 
     const room = await roomCacheClient.getRoomById(roomId);
+    
+    console.log(room);
+
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
-    if (room.groupAdmin !== req.user._id && req.user.role !== 'admin') {
+    if (room.groupAdmin !== req.user._id) {
       return res.status(403).json({ message: 'Only admin can delete room' });
     }
 

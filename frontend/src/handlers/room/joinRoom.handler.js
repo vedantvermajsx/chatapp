@@ -18,8 +18,10 @@ export const joinRoomHandler = async (
 ) => {
   if (currentRoom && currentRoom._id === roomId) return;
 
-  let room = roomObject || joinedRooms.find(r => r._id === roomId) || null;
-  const alreadyJoined = !!room;
+  
+  const alreadyJoined = joinedRooms.some(r => r._id === roomId);
+let room = joinedRooms.find(r => r._id === roomId) || roomObject || null;
+
 
   if (room) setCurrentRoom(room);
   setCurrentPrivateChat(null);

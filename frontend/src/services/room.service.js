@@ -49,6 +49,7 @@ class RoomService {
   }
 
   async leaveRoom(roomId) {
+    if(!roomId) return;
     const response = await api.post(`${this.basePath}/leave`, { roomId });
     return response.data;
   }

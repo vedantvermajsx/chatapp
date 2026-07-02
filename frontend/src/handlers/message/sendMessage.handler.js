@@ -84,7 +84,10 @@ export const sendMessageHandler = async (
         media: pendingMedia,
         mediaType: pendingMedia?.type || null,
         mediaId: selectedFile ? tempId : null,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        username: user.username,
+        avatar: user.avatar || null,
+        gender: user.gender
       };
 
       if (currentRoom) {

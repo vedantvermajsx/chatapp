@@ -13,6 +13,7 @@ export async function joinRoom(req, res) {
     const username = req.user.username;
 
     const validCheck = await roomCacheClient.isValidRoomId(roomId);
+    
     if (!validCheck || !validCheck.isValid) {
       return res.status(404).json({ message: 'Room not found' });
     }

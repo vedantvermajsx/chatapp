@@ -25,7 +25,7 @@ async function resolveMembers(ids) {
 const MEMBERS_PAGE_TTL_SECONDS = null;
 const NAME_LOOKUP_TTL_SECONDS = null;
 const USER_ROOMLIST_TTL_SECONDS = null;
-const ALL_ROOMS_TTL_SECONDS = null;
+const ALL_ROOMS_TTL_SECONDS = 300;
 
 const inFlight = new Map();
 
@@ -40,8 +40,9 @@ async function dedupe(key, fetcher) {
 
 class RoomCacheService {
   async addRoomToCache(id, data) {
-    const resolvedData = await data;
-    roomCache.set(`room:${id}`, resolvedData, null); 
+    data.isDeleted=false;
+    data.groupMembers=new Set(data.groupMembers);
+    roomCache.set(`room:${id}`, data, null); 
   }
 
   async getRoomById(id) {
