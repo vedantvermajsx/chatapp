@@ -12,8 +12,7 @@ export async function leaveRoom(req, res) {
 
     const validCheck = await roomCacheClient.isValidRoomId(roomId);
    
-    console.log(validCheck);
-
+    
     if (!validCheck) {
       return res.status(404).json({ message: 'Room not found' });
     }
@@ -25,8 +24,7 @@ export async function leaveRoom(req, res) {
     }
 
     const hasMember = await roomCacheClient.hasMember(roomId, userId);
-
-
+    
     if (hasMember) {
       roomCacheClient.removeRoomMember(roomId, userId).catch(() => {});
       enqueueRoomMemberLeft(roomId, userId);
