@@ -15,7 +15,14 @@ export async function leaveRoom(req, res) {
       return res.status(404).json({ message: 'Room not found' });
     }
 
+    const room = await roomCacheClient.getRoomById(roomId);
+
+    if (room.groupAdmin === userId) {
+      return res.status(403).json({ message: "admin cannot leave the group.", success: true });
+    }
+
     const hasMember = await roomCacheClient.hasMember(roomId, userId);
+
 
     if (hasMember) {
       roomCacheClient.removeRoomMember(roomId, userId).catch(() => {});
