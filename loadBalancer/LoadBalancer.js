@@ -33,8 +33,8 @@ class LoadBalancer {
         changeOrigin: true,
         ws: true,
         xfwd: true,
-        proxyTimeout: 15000, // abort if backend doesn't respond within 15s
-        timeout: 15000       // abort if the underlying socket stalls
+        proxyTimeout: 15000, 
+        timeout: 15000       
       });
 
       proxy.on('error', (err, req, res) => {

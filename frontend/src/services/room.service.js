@@ -32,7 +32,7 @@ class RoomService {
   async getUnreadCounts() {
     try {
       const response = await api.get(`${this.basePath}/unread`);
-      return response.data; // { 'room_{id}': number, 'private_{userId}': number }
+      return response.data;
     } catch {
       return {};
     }

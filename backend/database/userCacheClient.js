@@ -75,14 +75,15 @@ class UserCacheClient {
   }
 
   async getUsersByIds(userIds) {
-    const map = new Map();
-    await Promise.all(
-      userIds.map(async (id) => {
-        const user = await this.getUserById(id);
-        if (user) map.set(String(id), user);
-      })
-    );
-    return map;
+    const uniqueIds = [...new Set((userIds || []).filter(Boolean).map(String))];
+    if (uniqueIds.length === 0) return new Map();
+    try {
+      const res = await this.client.post('/users/batch', { ids: uniqueIds });
+      return new Map(Object.entries(res.data || {}));
+    } catch (err) {
+      console.error('[UserCacheClient] getUsersByIds error:', err.message);
+      return new Map();
+    }
   }
 
   async updateUserById(userId, patch) {

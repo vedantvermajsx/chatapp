@@ -82,6 +82,34 @@ const UserCacheService = {
     return this._seed(user);
   },
 
+  async getUsersByIds(userIds) {
+    const uniqueIds = [...new Set((userIds || []).map(String))];
+    const result = new Map();
+    const missing = [];
+
+    for (const id of uniqueIds) {
+      const cached = userCache.get(userKey(id));
+      if (cached) result.set(id, cached);
+      else missing.push(id);
+    }
+
+    if (missing.length > 0) {
+      const guestIds = missing.filter(isGuestId);
+      const realUserIds = missing.filter((id) => !isGuestId(id));
+
+      const [users, guests] = await Promise.all([
+        realUserIds.length ? User.find({ _id: { $in: realUserIds } }).lean() : [],
+        guestIds.length ? Guest.find({ _id: { $in: guestIds } }).lean() : [],
+      ]);
+
+      for (const doc of [...users, ...guests]) {
+        result.set(String(doc._id), this._seed(doc));
+      }
+    }
+
+    return result;
+  },
+
   async getUserByUsername(username) {
     const cachedId = userCache.get(usernameKey(username));
     if (cachedId) {

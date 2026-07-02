@@ -70,8 +70,6 @@ class LoadBalancerQueue {
         this.activeCount--;
 
         if (retries < this.maxRetries) {
-          // Requeue at the front so a retry doesn't lose its place to
-          // requests that arrived later.
           this.pendingRequests.unshift({ req, res, retries: retries + 1 });
         } else if (!res.headersSent) {
           res.status(502).json({ error: 'All retries exhausted' });

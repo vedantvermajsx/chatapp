@@ -5,7 +5,8 @@ const roomMessageReadSchema = new mongoose.Schema(
     userId:            { type: String, required: true },
     roomId:            { type: String, required: true },
     lastReadMessageId: { type: String, default: null },
-    lastReadAt:        { type: Date,   default: null }
+    lastReadAt:        { type: Date,   default: null },
+    readCount:         { type: Number, default: 0 }
   },
   { timestamps: true, versionKey: false }
 );

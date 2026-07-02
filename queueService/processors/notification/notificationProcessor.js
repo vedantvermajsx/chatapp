@@ -1,12 +1,8 @@
-import { handleRoomUnread } from './handleRoomUnread.js';
 import { handlePrivateUnread } from './handlePrivateUnread.js';
 import { handleRoomLastRead } from './handleRoomLastRead.js';
 import { handlePrivateLastRead } from './handlePrivateLastRead.js';
 
 export function registerNotificationHandlers(subscribe, on) {
-  subscribe('notification.unread.room');
-  on('notification.unread.room', handleRoomUnread);
-
   subscribe('notification.unread.private');
   on('notification.unread.private', handlePrivateUnread);
 

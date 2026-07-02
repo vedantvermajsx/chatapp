@@ -1,12 +1,10 @@
 import express from 'express';
-import {
-  getRoomCount,
-  getPrivateCount,
-  incrementRoomCount,
-  incrementPrivateCount,
-  invalidateRoomCount,
-  invalidatePrivateCount
-} from '../controllers/messageCount/messageCount.controller.js';
+import { getRoomCount } from '../controllers/messageCount/getRoomCount.controller.js';
+import { getPrivateCount } from '../controllers/messageCount/getPrivateCount.controller.js';
+import { incrementRoomCount } from '../controllers/messageCount/incrementRoomCount.controller.js';
+import { incrementPrivateCount } from '../controllers/messageCount/incrementPrivateCount.controller.js';
+import { invalidateRoomCount } from '../controllers/messageCount/invalidateRoomCount.controller.js';
+import { invalidatePrivateCount } from '../controllers/messageCount/invalidatePrivateCount.controller.js';
 
 const router = express.Router();
 

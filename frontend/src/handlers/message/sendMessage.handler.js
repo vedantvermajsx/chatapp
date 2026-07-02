@@ -102,7 +102,6 @@ export const sendMessageHandler = async (
       }
 
       if (!navigator.onLine) {
-        // Stay pending; offlineMessageHandler will pick this up once back online.
         return;
       }
 

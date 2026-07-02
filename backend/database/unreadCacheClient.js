@@ -34,19 +34,11 @@ class UnreadCacheClient {
     }
   }
 
-  
-  async incrementForRoom(memberIds, senderId, activeViewerIds, chatKey) {
+  async seedRoomOnJoin(userId, roomId) {
     try {
-      const skip = new Set([String(senderId), ...activeViewerIds.map(String)]);
-      const targets = memberIds.map(String).filter(id => !skip.has(id));
-      if (targets.length === 0) return;
-      await this.client.post(`/unread/members/increment`, {
-        memberIds: targets,
-        senderId,
-        chatKey,
-      });
+      await this.client.post(`/unread/${userId}/room/${roomId}/join-seed`);
     } catch (err) {
-      console.error('[UnreadCacheClient] incrementForRoom error:', err.message);
+      console.error('[UnreadCacheClient] seedRoomOnJoin error:', err.message);
     }
   }
 

@@ -1,7 +1,6 @@
 import { getIO } from '../socket.js';
 import { activeRooms } from '../socket.js';
 import { publish } from './messageBroker.js';
-import roomCacheClient from '../database/roomCacheClient.js';
 import unreadCacheClient from '../database/unreadCacheClient.js';
 import messageCountCacheClient from '../database/messageCountCacheClient.js';
 
@@ -108,28 +107,20 @@ export function enqueueEmit(type, data) {
 async function _warmCacheForRoomMessage(roomId, senderId, isSystemMessage) {
   if (isSystemMessage) return;
 
-  const memberIds = await roomCacheClient.getRoomMemberIds(roomId)
-    ?? (await roomCacheClient.getRoomById(roomId))?.groupMembers
-    ?? [];
+  const chatKey = `room_${roomId}`;
 
-  if (!memberIds.length) return;
+  const bumpTotal = messageCountCacheClient.incrementRoom(roomId);
 
   const activeViewerIds = [];
   for (const [userId, viewingRoomId] of activeRooms.entries()) {
     if (viewingRoomId === String(roomId)) activeViewerIds.push(userId);
   }
+  const caughtUpIds = new Set([String(senderId), ...activeViewerIds.map(String)]);
 
-  const skip = new Set([String(senderId), ...activeViewerIds.map(String)]);
-  const targets = memberIds.map(String).filter((id) => !skip.has(id));
-  const chatKey = `room_${roomId}`;
-
-  await Promise.all([
-    targets.length > 0
-      ? unreadCacheClient.incrementForRoom(memberIds, senderId, activeViewerIds, chatKey)
-      : Promise.resolve(),
-    messageCountCacheClient.incrementRoom(roomId),
-    publish('notification.unread.room', { roomId, memberIds, senderId, activeViewerIds }),
-  ]);
+  await bumpTotal;
+  await Promise.all(
+    [...caughtUpIds].map((id) => unreadCacheClient.reset(id, chatKey))
+  );
 }
 
 async function _warmCacheForPrivateMessage(senderId, receiverId) {

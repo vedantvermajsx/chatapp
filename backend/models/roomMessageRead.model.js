@@ -17,6 +17,10 @@ const roomMessageReadSchema = new mongoose.Schema(
     lastReadAt: {
       type: Date,
       default: null
+    },
+    readCount: {
+      type: Number,
+      default: 0
     }
   },
   {

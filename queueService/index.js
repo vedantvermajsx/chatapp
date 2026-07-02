@@ -8,7 +8,6 @@ import { handleRoomCreated } from './processors/room/handleRoomCreated.js';
 import { handleMemberJoined } from './processors/room/handleMemberJoined.js';
 import { handleMemberLeft } from './processors/room/handleMemberLeft.js';
 import { handleRoomDeleted } from './processors/room/handleRoomDeleted.js';
-import { handleRoomUnread } from './processors/notification/handleRoomUnread.js';
 import { handlePrivateUnread } from './processors/notification/handlePrivateUnread.js';
 import { handleRoomLastRead } from './processors/notification/handleRoomLastRead.js';
 import { handlePrivateLastRead } from './processors/notification/handlePrivateLastRead.js';
@@ -69,7 +68,6 @@ const notificationQueue = new BatchQueue({
   maxSize: 10000,
   processBatch: async ([item]) => {
     const { _eventType, ...payload } = item;
-    if (_eventType === 'notification.unread.room') return handleRoomUnread(payload);
     if (_eventType === 'notification.unread.private') return handlePrivateUnread(payload);
     if (_eventType === 'notification.lastread.room') return handleRoomLastRead(payload);
     if (_eventType === 'notification.lastread.private') return handlePrivateLastRead(payload);
@@ -111,9 +109,6 @@ async function start() {
   on('room.deleted', (data) => roomQueue.add({ _eventType: 'room.deleted', ...data }));
 
   console.log('[RoomProcessor] subscribed to room.created, room.member.joined, room.member.left, room.deleted');
-
-  subscribe('notification.unread.room');
-  on('notification.unread.room', (data) => notificationQueue.add({ _eventType: 'notification.unread.room', ...data }));
 
   subscribe('notification.unread.private');
   on('notification.unread.private', (data) => notificationQueue.add({ _eventType: 'notification.unread.private', ...data }));

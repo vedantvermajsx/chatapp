@@ -11,7 +11,7 @@ function requireSecret() {
   return secret;
 }
 
-// ── HTTP signing ─────────────────────────────────────────────────────────────
+// ── HTTP signing ─────────
 
 export function buildSignatureHeaders(method, fullPath, body = '') {
   const HMAC_SECRET = requireSecret();
@@ -45,7 +45,7 @@ export function attachHmacInterceptor(axiosInstance) {
       const resolved = new URL(fullPath.startsWith('/') ? fullPath : '/' + fullPath, base);
       fullPath = resolved.pathname;
     } catch {
-      // Fallback: use config.url as-is
+      throw 'error';
     }
 
     let bodyStr = '';
@@ -59,7 +59,7 @@ export function attachHmacInterceptor(axiosInstance) {
   });
 }
 
-// ── WebSocket signing ────────────────────────────────────────────────────────
+// ── WebSocket signing ─────
 
 export function signWsMessage(msgObj) {
   const HMAC_SECRET = requireSecret();

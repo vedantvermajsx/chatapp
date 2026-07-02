@@ -68,8 +68,6 @@ export const sendPendingMessages = async () => {
             await dbService.removeMessage(cacheKey, tempId);
           }
 
-          // Let any mounted UI update the message it has in memory, since this
-          // can complete long after the original tab/component sent it.
           window.dispatchEvent(new CustomEvent('pending-message-sent', {
             detail: { cacheKey, tempId, message: finalMessage }
           }));
@@ -79,7 +77,6 @@ export const sendPendingMessages = async () => {
         if (pendingMsg.mediaId) await dbService.removeFile(pendingMsg.mediaId);
       } catch (error) {
         console.error('Failed to send pending message:', error);
-        // Leave it in the pending store so it is retried on the next reconnect.
       }
     }
   } catch (error) {

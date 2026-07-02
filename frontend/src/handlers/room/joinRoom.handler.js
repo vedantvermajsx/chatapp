@@ -31,8 +31,6 @@ export const joinRoomHandler = async (
     setLoadingMessages(true);
   }
 
-  // Already a member of this room (just switching between joined rooms) -
-  // don't hit the join API or re-broadcast a "joined the room" system message.
   if (alreadyJoined) {
     return;
   }

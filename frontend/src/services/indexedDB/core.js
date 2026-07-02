@@ -102,6 +102,6 @@ export const deleteDB = () => {
     const request = indexedDB.deleteDatabase(DB_NAME);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
-    request.onblocked = () => resolve(); // Sometimes it gets blocked if multiple tabs are open
+    request.onblocked = () => resolve(); 
   });
 };

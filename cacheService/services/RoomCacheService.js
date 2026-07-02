@@ -5,23 +5,20 @@ import { roomCache } from './CacheService.js';
 import { invalidateRoomMessages } from './MessageCacheService.js';
 import UserCacheService from './UserCacheService.js';
 
-const MEMBER_PROJECTION = ({ _id, username, gender, isOnline, role, avatar, bio }) => ({
+const MEMBER_PROJECTION = ({ _id, username, gender, isOnline, avatar }) => ({
   _id,
   username,
   gender,
   isOnline,
-  role: role ?? 'guest',
   avatar: avatar ?? '',
-  bio: bio ?? '',
 });
 
 async function resolveMembers(ids) {
-  const results = await Promise.all(
-    ids.map(async (id) => {
-      const user = await UserCacheService.getUserById(id);
-      return user ? MEMBER_PROJECTION(user) : null;
-    })
-  );
+  const usersById = await UserCacheService.getUsersByIds(ids);
+  const results = ids.map((id) => {
+    const user = usersById.get(String(id));
+    return user ? MEMBER_PROJECTION(user) : null;
+  });
   return results.filter(Boolean);
 }
 
