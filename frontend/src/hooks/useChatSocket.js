@@ -351,16 +351,19 @@ export const useChatSocket = (user, {
       }
     };
 
-    const handleRoomDeleted = ({ roomId } = {}) => {
-      if (!roomId) return;
+  const handleRoomDeleted = ({ roomId } = {}) => {
+  if (!roomId) return;
 
-      if (setJoinedRooms) {
-        setJoinedRooms(prev => prev.filter(r => String(r._id) !== String(roomId)));
-      }
-      if (setCurrentRoom && String(currentRoomRef.current?._id) === String(roomId)) {
-        setCurrentRoom(null);
-      }
-    };
+  if (setJoinedRooms) {
+    setJoinedRooms(prev =>
+      prev.map(room =>
+        String(room._id) === String(roomId)
+          ? { ...room, isDeleted: true }
+          : room
+      )
+    );
+  }
+};
 
     const handleUserOnline = ({ userId }) => {
       const roomMembers = roomMembersRef.current;

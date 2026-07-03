@@ -20,8 +20,8 @@ export async function deleteRoom(req, res) {
     }
 
     if(room.isDeleted){
-      return res.status(301).json({
-        mesage:'room is already deleted!'
+      return res.status(410).json({
+        message:'room is already deleted!'
       })
     }
 
