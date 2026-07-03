@@ -51,7 +51,7 @@ class RoomCacheService {
     for (const room of rooms) {
       const id = room._id.toString();
       this.roomsById.set(id, room);
-      this.roomOrder.push(id); 
+      this.roomOrder.push(id);
       if (!room.isDeleted) {
         this.trie.insert(room.groupName, id);
       }
@@ -68,7 +68,7 @@ class RoomCacheService {
     const id = room._id.toString();
     const isNew = !this.roomsById.has(id);
     this.roomsById.set(id, room);
-    if (isNew) this.roomOrder.unshift(id); 
+    if (isNew) this.roomOrder.unshift(id);
     if (!room.isDeleted) {
       this.trie.insert(room.groupName, id);
     }
@@ -451,5 +451,11 @@ RoomCacheService.prototype.markRoomDeleted = async function (id) {
   }
   roomCache.set(`room:${id}`, { ...room, isDeleted: true }, null);
   this.markRoomDeletedInIndex(String(id));
+
+  const memberIds = (room.groupMembers || []).map(String);
+  for (const memberId of memberIds) {
+    this.invalidateUserRooms(memberId);
+  }
+
   return { success: true, message: 'Room has been deleted' };
 };
