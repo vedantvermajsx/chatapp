@@ -39,9 +39,9 @@ async function dedupe(key, fetcher) {
 
 class RoomCacheService {
   constructor() {
-    this.roomsById = new Map();   
-    this.trie = new RoomTrie();   
-    this.sortedRoomIds = [];      
+    this.roomsById = new Map();
+    this.roomOrder = [];          
+    this.trie = new RoomTrie();
     this.ready = false;
   }
 
@@ -51,21 +51,26 @@ class RoomCacheService {
     for (const room of rooms) {
       const id = room._id.toString();
       this.roomsById.set(id, room);
+      this.roomOrder.push(id); 
       if (!room.isDeleted) {
         this.trie.insert(room.groupName, id);
-        this.sortedRoomIds.push(id);
       }
     }
     this.ready = true;
-    console.log(`[RoomCacheService] preloaded ${rooms.length} rooms (${this.sortedRoomIds.length} active)`);
+    console.log(`[RoomCacheService] preloaded ${rooms.length} rooms)`);
+  }
+
+  get sortedRoomIds() {
+    return this.roomOrder;
   }
 
   addRoomToIndex(room) {
     const id = room._id.toString();
+    const isNew = !this.roomsById.has(id);
     this.roomsById.set(id, room);
+    if (isNew) this.roomOrder.unshift(id); 
     if (!room.isDeleted) {
       this.trie.insert(room.groupName, id);
-      this.sortedRoomIds.unshift(id);
     }
   }
 
@@ -74,7 +79,7 @@ class RoomCacheService {
     if (!room) return;
     this.trie.remove(room.groupName, id);
     this.roomsById.delete(id);
-    this.sortedRoomIds = this.sortedRoomIds.filter(rid => rid !== id);
+    this.roomOrder = this.roomOrder.filter(rid => rid !== id);
   }
 
   markRoomDeletedInIndex(id) {
@@ -82,7 +87,8 @@ class RoomCacheService {
     if (!room) return;
     this.trie.remove(room.groupName, id);
     room.isDeleted = true;
-    this.sortedRoomIds = this.sortedRoomIds.filter(rid => rid !== id);
+    this.roomsById.set(id, room);
+    this.roomOrder = this.roomOrder.filter(rid => rid !== id);
   }
 
   updateRoomNameInIndex(id, oldName, newName) {
@@ -93,11 +99,14 @@ class RoomCacheService {
       this.trie.insert(newName, id);
     }
     room.groupName = newName;
+    this.roomsById.set(id,room);
   }
 
   syncMemberIdsInIndex(roomId, memberIds) {
     const room = this.roomsById.get(roomId);
-    if (room) room.groupMembers = memberIds;
+    if (!room) return;
+    room.groupMembers = memberIds;
+    this.roomsById.set(roomId, room);
   }
 
   async addRoomToCache(id, data) {
@@ -438,8 +447,9 @@ RoomCacheService.prototype.markRoomDeleted = async function (id) {
   let room = roomCache.get(`room:${id}`);
   if (!room) {
     room = await Room.findById(id).lean();
-    if (!room) return;
+    if (!room) return { message: 'Room not found' };
   }
   roomCache.set(`room:${id}`, { ...room, isDeleted: true }, null);
   this.markRoomDeletedInIndex(String(id));
+  return { success: true, message: 'Room has been deleted' };
 };

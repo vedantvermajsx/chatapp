@@ -11,6 +11,7 @@ class RoomTrie {
   }
 
   insert(text, roomId) {
+    text=text?.trim();
     if (!text) return;
     let node = this.root;
     const normalized = text.toLowerCase();
@@ -22,6 +23,7 @@ class RoomTrie {
   }
 
   remove(text, roomId) {
+    text=text?.trim();
     if (!text) return;
     let node = this.root;
     const normalized = text.toLowerCase();
@@ -33,6 +35,8 @@ class RoomTrie {
   }
 
   search(prefix) {
+    prefix=prefix?.trim();
+    
     let node = this.root;
     const normalized = prefix.toLowerCase();
     for (const ch of normalized) {

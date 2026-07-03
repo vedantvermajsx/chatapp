@@ -11,14 +11,11 @@ export async function leaveRoom(req, res) {
     const userId = req.user._id;
     const username = req.user.username;
 
-    const validCheck = await roomCacheClient.isValidRoomId(roomId);
-   
-    
-    if (!validCheck) {
+    const room = await roomCacheClient.getRoomById(roomId);
+
+    if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
-
-    const room = await roomCacheClient.getRoomById(roomId);
 
     if (room.groupAdmin === userId && !room.isDeleted) {
       return res.status(403).json({ message: "admin cannot leave the group.", success: true });
