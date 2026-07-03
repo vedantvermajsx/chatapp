@@ -25,15 +25,15 @@ function Login() {
 
   return (
     <div className="min-h-screen w-full flex bg-white">
-      <div className="hidden lg:flex lg:w-[44%] xl:w-[40%] relative flex-col justify-between bg-[#0B1120] text-white p-12 xl:p-14 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(0,128,128,0.25),transparent_55%)]" />
+      <div className="hidden lg:flex lg:w-[44%] xl:w-[40%] relative flex-col justify-between bg-[#060a04] text-white p-12 xl:p-14 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(0,128,128,0.5),transparent_55%)]" />
 
         <div className="relative flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#008080] flex items-center justify-center shrink-0">
-            <MessageCircle className="w-4.5 h-4.5 text-white" />
+          <div className="w-8 h-8 rounded-lg bg-[#6d5c5c] flex items-center justify-center shrink-0">
+            <MessageCircle className="w-4.5 h-4.5 text-white/40" />
           </div>
           <span
-            className="text-lg font-semibold tracking-tight"
+            className="text-lg font-semibold tracking-tight text-white/40"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             GatherUp
@@ -42,7 +42,7 @@ function Login() {
 
         <div className="relative">
           <h1
-            className="text-[2.35rem] leading-[1.12] font-semibold tracking-tight mb-4 max-w-sm"
+            className="text-[2.35rem] leading-[1.12] text-white/80 font-semibold tracking-tight mb-4 max-w-sm"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             Quick and reliable, messaging app.
