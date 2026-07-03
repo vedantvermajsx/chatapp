@@ -14,7 +14,7 @@ function Login() {
           <div className="w-12 h-12 rounded-full bg-[#e6e6e6] flex items-center justify-center mr-3 shadow-[1px_1px_3px_#c9c9c9,-1px_-1px_3px_#ffffff]">
             <MessageCircle className="w-6 h-6 text-gray-700" />
           </div>
-          <h1 className="text-xl font-bold text-gray-800">hushline</h1>
+          <h1 className="text-xl font-bold text-gray-800">GatherUp</h1>
         </div>
 
         {currForm === 0 && <LoginForm setCurrForm={setCurrForm} />}

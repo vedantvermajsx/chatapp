@@ -1,4 +1,4 @@
-export const DB_NAME = 'hushlineDB';
+export const DB_NAME = 'GatherUpDB';
 export const DB_VERSION = 5; 
 export const MAX_MESSAGES_PER_CHAT = 100;
 

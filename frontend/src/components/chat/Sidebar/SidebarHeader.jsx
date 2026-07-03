@@ -19,7 +19,7 @@ const SidebarHeader = ({ showMobileClose, onCloseSidebar }) => {
           <MessageSquare className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
         </div>
         <span className="text-base font-bold tracking-tight" style={{ color: theme.otherMessageText }}>
-          HushLine
+          GatherUp
         </span>
       </div>
 
