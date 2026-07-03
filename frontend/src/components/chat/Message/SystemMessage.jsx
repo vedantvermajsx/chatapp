@@ -24,7 +24,7 @@ const SystemMessage = ({ msg, isPrivateChat = false }) => {
             <span
                 className="text-xs px-6 py-3 rounded-2xl font-semibold flex items-center gap-2"
                 style={{
-                    border: `2px solid ${theme.otherMessageBubble}`,
+                    border: `px solid ${theme.otherMessageBubble}`,
                     color: theme.otherMessageText,
                     boxShadow: getShadow(theme.isLight, true, 0.5, 1)
                 }}

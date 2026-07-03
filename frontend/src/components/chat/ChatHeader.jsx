@@ -102,7 +102,7 @@ const ChatHeader = memo(function ChatHeader({
                 {...getNeumorphicProps(1, 2, 2, 3)}
                 title="Room Members"
               >
-                <Users className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.otherUsernameColor }} />
+                <Users className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
               </button>
 
               <button

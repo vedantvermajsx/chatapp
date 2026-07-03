@@ -72,10 +72,10 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
         onClick={onClose}
       />
 
-      <div className="relative bg-[#e6e6e6] rounded-3xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-[2px_2px_4px_#c9c9c9,-2px_-2px_4px_#ffffff] flex flex-col">
+      <div className="relative bg-white border border-gray-200 rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-lg flex flex-col">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">Group Settings</h2>
-          <button onClick={onClose} className="p-2 rounded-full bg-[#e6e6e6] shadow-[1px_1px_3px_#c9c9c9,-1px_-1px_3px_#ffffff] hover:bg-[#c0b6b6] transition-all">
+          <button onClick={onClose} className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
             <X className="w-5 h-5 text-gray-700" />
           </button>
         </div>
@@ -84,12 +84,12 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
           <form id="group-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
-                <Avatar url={groupPic} name={groupName} size={24} className="w-24 h-24 text-3xl shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff]" isGroup />
+                <Avatar url={groupPic} name={groupName} size={24} className="w-24 h-24 text-3xl border border-gray-200" isGroup />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="absolute bottom-0 right-0 p-2 rounded-full bg-[#e6e6e6] shadow-[1px_1px_3px_#c9c9c9,-1px_-1px_3px_#ffffff] text-gray-700 hover:text-blue-600 transition-all border border-gray-100 disabled:opacity-50"
+                  className="absolute bottom-0 right-0 p-2 rounded-full bg-white border border-gray-200 text-gray-700 hover:text-[#008080] transition-colors disabled:opacity-50"
                   title="Upload group picture"
                 >
                   {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
@@ -104,7 +104,7 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
                 type="text"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                className="w-full px-4 py-3 bg-[#e6e6e6] border-none rounded-xl focus:outline-none shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 placeholder:text-gray-400"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 placeholder:text-gray-400 transition-colors"
                 required
               />
             </div>
@@ -115,7 +115,7 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-3 bg-[#e6e6e6] border-none rounded-xl focus:outline-none shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 placeholder:text-gray-400 resize-none"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 placeholder:text-gray-400 transition-colors resize-none"
                 placeholder="Group description..."
                 required
               />
@@ -127,7 +127,7 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
                 type="text"
                 value={groupPic}
                 onChange={(e) => setGroupPic(e.target.value)}
-                className="w-full px-4 py-3 bg-[#e6e6e6] border-none rounded-xl focus:outline-none shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 text-sm placeholder:text-gray-400"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 text-sm placeholder:text-gray-400 transition-colors"
                 placeholder="https://..."
               />
             </div>
@@ -141,8 +141,8 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
             form="group-form"
             disabled={isSaving || isUploading || !hasChanges}
             className={`w-full py-4 font-bold rounded-2xl transition-all flex justify-center items-center gap-2 ${hasChanges && !isSaving && !isUploading
-              ? "bg-[#e6e6e6] text-[#008080] shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] hover:bg-[#d9d9d9]"
-              : "bg-[#e6e6e6] text-gray-400 shadow-[inset_2px_2px_4px_#d4d4d4,inset_-2px_-2px_4px_#ffffff] opacity-60 cursor-not-allowed"
+              ? "bg-[#008080] text-white hover:bg-[#046d6d]"
+              : "bg-gray-100 text-gray-400 opacity-70 cursor-not-allowed"
               }`}
           >
             {isSaving ? (

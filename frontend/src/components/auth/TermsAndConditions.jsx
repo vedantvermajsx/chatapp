@@ -50,34 +50,22 @@ const sections = [
 
 export default function TermsAndConditions() {
   return (
-    <div className="min-h-screen  py-10 px-4 overflow-auto">
-      <div className="max-w-4xl overflow-auto  mx-auto">
+    <div className="min-h-screen bg-white py-10 px-4 overflow-auto">
+      <div className="max-w-3xl mx-auto">
 
-        <div className="mb-8 overflow-auto flex justify-between items-center">
-
-          <div className="flex overflow-auto items-center gap-4">
-
-            <div
-              className="
-              h-10
-              w-10
-              rounded-xl
-              flex
-              items-center
-              justify-center
-              bg-[#ececec]
-              shadow-[2px_2px_2px_#c8c8c8,-2px_-2px_2px_#ffffff]
-            "
-            >
-              <FileText className="w-4 h-4 text-gray-700" />
+        <div className="mb-10 flex justify-between items-center">
+          <div className="flex items-center gap-3.5">
+            <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-[#008080]/10">
+              <FileText className="w-4.5 h-4.5 text-[#008080]" />
             </div>
-
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">
+              <h1
+                className="text-2xl font-semibold text-gray-900 tracking-tight"
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              >
                 Terms & Conditions
               </h1>
-
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 text-sm mt-0.5">
                 Effective Date: July 3, 2026
               </p>
             </div>
@@ -85,113 +73,49 @@ export default function TermsAndConditions() {
 
           <Link
             to="/login"
-            className="
-            flex
-            items-center
-            gap-2
-            px-5
-            py-3
-            rounded-xl
-            bg-[#ececec]
-            shadow-[2px_2px_4px_#c8c8c8,-2px_-2px_4px_#ffffff]
-            hover:shadow-[inset_1px_1px_4px_#c8c8c8,inset_-1px_-1px_4px_#ffffff]
-            transition
-          "
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={16} />
             Back
           </Link>
         </div>
 
-        <div
-          className="
-          bg-[#ececec]
-          rounded-3xl
-          p-8
-          shadow-[2px_2px_3px_#c8c8c8,-2px_-2px_3px_#ffffff]
-        "
-        >
-          <p className="text-gray-600 leading-7 mb-10">
-            Welcome to <strong>GatherUp</strong>. These Terms and Conditions
-            govern your access to and use of our services. Please read them
-            carefully before using the application.
+        <p className="text-gray-600 leading-7 mb-8">
+          Welcome to <strong className="text-gray-900">GatherUp</strong>. These
+          Terms and Conditions govern your access to and use of our services.
+          Please read them carefully before using the application.
+        </p>
+
+        <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
+          {sections.map((item, index) => (
+            <div key={item.title} className="flex items-start gap-4 py-6">
+              <span className="text-xs font-semibold text-[#008080] tabular-nums pt-0.5 w-6 shrink-0">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <div>
+                <h2 className="font-semibold text-[15px] text-gray-900 mb-1.5">
+                  {item.title}
+                </h2>
+                <p className="leading-7 text-gray-600 text-[14.5px]">
+                  {item.body}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <p className="text-gray-500 leading-7 text-sm">
+            By continuing to use GatherUp, you acknowledge that you have read,
+            understood, and agreed to these Terms and Conditions.
           </p>
 
-          <div className="space-y-6">
-
-            {sections.map((item, index) => (
-              <div
-                key={item.title}
-                className="
-                rounded-2xl
-                p-6
-                bg-[#ececec]
-                shadow-[1px_1px_2px_#d0d0d0,-1px_-1px_2px_#ffffff]
-              "
-              >
-                <div className="flex items-start gap-4">
-
-                  <div
-                    className="
-                    flex
-                    items-center
-                    justify-center
-                    w-10
-                    h-10
-                    p-2
-                    bg-[#ececec]
-                    font-bold
-                    text-gray-700
-                    shadow-[1px_1px_2px_#c8c8c8,-1px_-1px_2px_#ffffff]
-                  "
-                  >
-                    {index < 9 ? '0' : ''}{index + 1}
-                  </div>
-
-                  <div>
-
-                    <h2 className="font-semibold text-lg text-gray-800 mb-2">
-                      {item.title}
-                    </h2>
-
-                    <p className="leading-7 text-gray-600">
-                      {item.body}
-                    </p>
-
-                  </div>
-
-                </div>
-              </div>
-            ))}
-
-          </div>
-
-          <div className="mt-12 border-t border-gray-300 pt-8 text-center">
-
-            <p className="text-gray-500 leading-7">
-              By continuing to use GatherUp, you acknowledge that you have read,
-              understood, and agreed to these Terms and Conditions.
-            </p>
-
-            <Link
-              to="/login"
-              className="
-              inline-block
-              mt-8
-              px-8
-              py-4
-              rounded-2xl
-              font-semibold
-              bg-[#ececec]
-              shadow-[1px_1px_2px_#c8c8c8,-1px_-1px_2px_#ffffff]
-              hover:shadow-[inset_1px_1px_2px_#c8c8c8,inset_-1px_-1px_2px_#ffffff]
-              transition
-            "
-            >
-              Back to Sign In
-            </Link>
-
-          </div>
+          <Link
+            to="/login"
+            className="inline-block mt-6 px-6 py-2.5 rounded-lg font-semibold text-[14.5px] bg-[#008080] text-white hover:bg-[#046d6d] transition-colors"
+          >
+            Back to sign in
+          </Link>
         </div>
       </div>
     </div>

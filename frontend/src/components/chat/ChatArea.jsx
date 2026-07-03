@@ -457,7 +457,7 @@ const ChatArea = memo(function ChatArea({
         transform: offsetTop ? `translateY(${offsetTop}px)` : undefined,
       }}
     >
-      <div ref={chatHeaderRef} className="absolute top-0 left-0 right-0 z-30" style={{ borderBottom: `1px solid` }}>
+      <div ref={chatHeaderRef} className="absolute top-0 left-0 right-0 z-30">
         <ChatHeader
           user={user}
           currentRoom={currentRoom}
@@ -555,7 +555,7 @@ const ChatArea = memo(function ChatArea({
         mediaType={zoomMediaType}
         onClose={() => { setZoomImageUrl(null); setZoomMedia(null); setZoomMediaType(null); }}
       />
-    </div>
+    </div >
   );
 });
 

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+const inputClass =
+  'w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14.5px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 transition-colors disabled:opacity-50 disabled:bg-gray-50';
 
 function LoginForm({ setCurrForm }) {
   const navigate = useNavigate();
@@ -32,13 +34,13 @@ function LoginForm({ setCurrForm }) {
   return (
     <>
       {error && (
-        <p className="text-red-500 text-sm text-center mb-3 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+        <p className="text-red-600 text-sm text-center mb-4 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
-      <form onSubmit={handleLogin} className="flex flex-col gap-4">
+      <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
         <div className="relative">
-          <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             id="login-username"
             name="username"
@@ -48,11 +50,11 @@ function LoginForm({ setCurrForm }) {
             onChange={(e) => setUsername(e.target.value)}
             disabled={isLoading}
             required
-            className="w-full pl-12 pr-4 py-3 bg-[#e6e6e6] border-none rounded-2xl focus:outline-none shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff] focus:shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 placeholder:text-gray-400 disabled:opacity-50"
+            className={inputClass}
           />
         </div>
         <div className="relative">
-          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             id="login-password"
             name="password"
@@ -62,49 +64,41 @@ function LoginForm({ setCurrForm }) {
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
             required
-            className="w-full pl-12 pr-4 py-3 bg-[#e6e6e6] border-none rounded-2xl focus:outline-none shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff] focus:shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 placeholder:text-gray-400 disabled:opacity-50"
+            className={inputClass}
           />
         </div>
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 bg-[#e6e6e6] text-gray-800 font-bold rounded-2xl shadow-[2px_2px_4px_#c9c9c9,-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_6px_#c9c9c9,inset_-3px_-3px_6px_#ffffff] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-2.5 mt-1 bg-[#008080] hover:bg-[#046d6d] text-white text-[14.5px] font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Signing In...
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Signing in...
             </>
           ) : (
             <>
-              <LogIn className="w-5 h-5" />
-              Sign In
+              <LogIn className="w-4 h-4" />
+              Sign in
             </>
           )}
         </button>
       </form>
 
-      <div className="flex items-center my-4">
-        <div className="flex-1 h-px bg-gray-300" />
-        <span className="px-3 text-sm text-gray-500">or</span>
-        <div className="flex-1 h-px bg-gray-300" />
+      <div className="flex items-center my-5">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="px-3 text-xs text-gray-400 uppercase tracking-wide">or</span>
+        <div className="flex-1 h-px bg-gray-200" />
       </div>
-
 
       <button
         onClick={() => setCurrForm(1)}
-        className="w-full py-3 bg-[#e6e6e6] text-gray-800 font-bold rounded-2xl shadow-[2px_2px_4px_#c9c9c9,-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_6px_#c9c9c9,inset_-3px_-3px_6px_#ffffff] transition-all flex items-center justify-center gap-2"
+        className="w-full py-2.5 bg-white text-gray-700 text-[14.5px] font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
       >
         <User className="w-4 h-4" />
-        Continue as Guest
+        Continue as guest
       </button>
-
-      <p className="text-center text-gray-700 mt-6">
-        Don't have an account?{' '}
-        <button onClick={() => setCurrForm(2)}>
-          Register
-        </button>
-      </p>
     </>
   );
 }
