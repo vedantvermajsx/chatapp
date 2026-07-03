@@ -1,6 +1,6 @@
-import { User, Lock, UserPlus, Calendar, Loader2 } from 'lucide-react';
+import { User, Lock, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import authService from '../../services/auth.service';
 
@@ -12,7 +12,7 @@ function RegisterForm({ setCurrForm }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [gender, setGender] = useState(0);
-  const [dob, setDob] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState(null);
@@ -43,13 +43,13 @@ function RegisterForm({ setCurrForm }) {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-    if (!dob) {
-      setError('Please enter your date of birth');
+    if (!agreedToTerms) {
+      setError('Please accept the Terms and Conditions to continue');
       return;
     }
     setIsLoading(true);
     try {
-      const result = await register(username, email, gender, password, dob);
+      const result = await register(username, email, gender, password);
       if (result.success) {
         navigate('/chat');
       } else {
@@ -120,20 +120,6 @@ function RegisterForm({ setCurrForm }) {
         </div>
 
         <div className="relative">
-          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-          <input
-            id="register-dob"
-            name="dob"
-            type="date"
-            value={dob}
-            onChange={(e) => setDob(e.target.value)}
-            disabled={isLoading}
-            required
-            className="w-full pl-12 pr-4 py-3 bg-[#e6e6e6] border-none rounded-2xl focus:outline-none shadow-[inset_1px_1px_3px_#c9c9c9,inset_-1px_-1px_3px_#ffffff] focus:shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] text-gray-800 disabled:opacity-50"
-          />
-        </div>
-
-        <div className="relative">
           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             id="register-password"
@@ -148,9 +134,33 @@ function RegisterForm({ setCurrForm }) {
           />
         </div>
 
+        <label className="flex items-start gap-2 px-1 text-sm text-gray-700 select-none cursor-pointer">
+          <input
+            id="register-terms"
+            name="agreedToTerms"
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            disabled={isLoading}
+            required
+            className="mt-0.5 w-4 h-4 accent-gray-700 shrink-0"
+          />
+          <span>
+            I agree to the{' '}
+            <Link
+              to="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-gray-800 underline hover:text-gray-900"
+            >
+              Terms and Conditions
+            </Link>
+          </span>
+        </label>
+
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !agreedToTerms}
           className="w-full py-3 bg-[#e6e6e6] text-gray-800 font-bold rounded-2xl shadow-[2px_2px_4px_#c9c9c9,-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_6px_#c9c9c9,inset_-3px_-3px_6px_#ffffff] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (

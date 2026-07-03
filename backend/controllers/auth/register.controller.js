@@ -12,16 +12,16 @@ const SALT_ROUNDS = 10;
 
 export async function register(req, res) {
   try {
-    const { username, email, password, gender, dob, avatar, bio } = req.body;
+    const { username, email, password, gender, avatar, bio } = req.body;
 
     if(gender==undefined || gender<0 || gender>2){
       return res.status(400).json({message:"Invalid gender !"});
     }
 
-    if (!username || !email || !password || gender === undefined || !dob) {
+    if (!username || !email || !password || gender === undefined) {
       return res
         .status(400)
-        .json({ message: 'username, email, password, gender and dob are required' });
+        .json({ message: 'username, email, password and gender are required' });
     }
 
     const trimmedEmail = email.trim().toLowerCase();
@@ -48,7 +48,6 @@ export async function register(req, res) {
       email: email.trim().toLowerCase(),
       password: hashedPassword,
       gender,
-      dob: new Date(dob),
       avatar: resolvedAvatar,
       bio: bio || '',
       role: 'user',

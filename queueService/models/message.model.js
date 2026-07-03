@@ -102,11 +102,5 @@ messageSchema.index({ systemType: 1, timestamp: -1 });
 messageSchema.index({ deletedFor: 1 });
 
 
-messageSchema.pre('save', function(next) {
-  this.timestamp = new Date();
-  next();
-});
-
-
 export default mongoose.models.Message ||
   mongoose.model('Message', messageSchema);

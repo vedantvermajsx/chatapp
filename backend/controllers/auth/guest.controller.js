@@ -6,7 +6,7 @@ import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
 
 export async function createGuest(req, res) {
   try {
-    const { username, gender, dob } = req.body;
+    const { username, gender } = req.body;
 
     const refactoredUsername = username?.trim().toLowerCase();
 
@@ -17,9 +17,6 @@ export async function createGuest(req, res) {
          return res.status(400).json({message:"Invalid gender !"});
     }
 
-    if (!dob) {
-      return res.status(400).json({ message: 'dob required' });
-    }
     if (refactoredUsername.length < 2 || refactoredUsername.length > 30) {
       return res.status(400).json({ message: 'Username must be 2–30 characters' });
     }
@@ -36,7 +33,6 @@ export async function createGuest(req, res) {
       _id: guestId,
       username: refactoredUsername,
       gender: Number(gender),
-      dob: new Date(dob),
       avatar: defaultAvatar,
       isOnline: true,
       lastSeen: new Date(),

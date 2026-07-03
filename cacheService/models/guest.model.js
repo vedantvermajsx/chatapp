@@ -13,10 +13,6 @@ const guestScheme = new mongoose.Schema({
         type:Number,
         required:true
     },
-    dob:{
-        type:Date,
-        required:true
-    },
     avatar:{
         type:String,
         required:false

@@ -8,6 +8,7 @@ import Spinner from './components/common/Spinner';
 
 const Login = lazy(() => import('./components/auth/Login'));
 const Chat = lazy(() => import('./components/Chat'));
+const TermsAndConditions = lazy(() => import('./components/auth/TermsAndConditions'));
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           }>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/terms" element={<TermsAndConditions />} />
               <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/" element={<Navigate to="/chat" />} />
             </Routes>
