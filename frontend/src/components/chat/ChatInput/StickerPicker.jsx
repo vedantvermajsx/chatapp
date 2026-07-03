@@ -125,7 +125,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
   return (
     <div
       ref={pickerRef}
-      className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-16 mb-5 rounded-2xl flex flex-col overflow-hidden"
+      className="absolute bottom-full left-1/2 -translate-x-1/2 z-[999] translate-y-16 rounded-2xl flex flex-col overflow-hidden"
       style={{
         width: 'min(320px, calc(100vw - 40px))',
         height: '420px',
