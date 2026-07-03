@@ -10,6 +10,7 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unread = 0 
         <div
             onClick={() => handleJoinRoom(room._id, room)}
             className={`p-3 rounded-2xl cursor-pointer transition-all`}
+            style={room.isDeleted ? { opacity: 0.45 } : undefined}
             {...getNeumorphicProps(1, 2, 2, 3, isActive, true)}
         >
             <div className="flex items-start gap-3 md:gap-4">

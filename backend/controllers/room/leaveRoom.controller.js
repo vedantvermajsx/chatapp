@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
+import emitUserLeftRoom from '../../emitters/userLeftRoom.emitter.js';
 import { enqueueMessage, enqueueRoomMemberLeft } from '../../utils/queueClient.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
@@ -30,41 +31,52 @@ export async function leaveRoom(req, res) {
       enqueueRoomMemberLeft(roomId, userId);
     }
 
-    const _id = new mongoose.Types.ObjectId();
-    const content = `${username} left the group`;
-    const timestamp = new Date();
+    if (!room.isDeleted) {
+      const _id = new mongoose.Types.ObjectId();
+      const content = `${username} left the group`;
+      const timestamp = new Date();
 
-    const messageData = {
-      _id,
-      content,
-      senderId: userId,
-      isSystemMessage: true,
-      systemType: 'member-left',
-      roomId,
-      receiverId: null,
-      media: null,
-      timestamp,
-    };
+      const messageData = {
+        _id,
+        content,
+        senderId: userId,
+        isSystemMessage: true,
+        systemType: 'member-left',
+        roomId,
+        receiverId: null,
+        media: null,
+        timestamp,
+      };
 
-    const payload = {
-      _id: _id.toString(),
+      const payload = {
+        _id: _id.toString(),
+        roomId,
+        userId,
+        username,
+        text: content,
+        isSystemMessage: true,
+        systemType: 'member-left',
+        timestamp,
+        gender: req.user.gender,
+        avatar: req.user.avatar,
+        media: null,
+      };
+
+      enqueueMessage(messageData);
+
+      await messageCacheClient.appendRoomMessage(roomId, messageData);
+
+      emitNewMessage(roomId, payload);
+    }
+
+    emitUserLeftRoom(roomId, {
       roomId,
       userId,
       username,
-      text: content,
-      isSystemMessage: true,
-      systemType: 'member-left',
-      timestamp,
-      gender: req.user.gender,
       avatar: req.user.avatar,
-      media: null,
-    };
-
-    enqueueMessage(messageData);
-
-    await messageCacheClient.appendRoomMessage(roomId, messageData);
-
-    emitNewMessage(roomId, payload);
+      gender: req.user.gender,
+      role: req.user.role,
+    });
 
     return res.json({ message: 'Left room successfully' });
   } catch (err) {

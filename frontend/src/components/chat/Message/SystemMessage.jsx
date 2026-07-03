@@ -1,6 +1,6 @@
 import { useTheme } from "../../../contexts/ThemeContext";
 import { useNeumorphism } from "../../../hooks/useNeumorphism";
-import { UserPlus, UserMinus, Phone, PhoneMissed, MessageSquare, Edit3 } from "lucide-react";
+import { UserPlus, UserMinus, Phone, PhoneMissed, MessageSquare, Edit3, XCircle } from "lucide-react";
 import { formatSeenAt } from "../../../utils/dateUtils";
 
 const SYSTEM_ICONS = {
@@ -10,6 +10,7 @@ const SYSTEM_ICONS = {
     'missed-call': PhoneMissed,
     'room-created': MessageSquare,
     'room-renamed': Edit3,
+    'room-deleted': XCircle,
 };
 
 const SystemMessage = ({ msg, isPrivateChat = false }) => {

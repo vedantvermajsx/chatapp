@@ -41,7 +41,7 @@ async function dedupe(key, fetcher) {
 class RoomCacheService {
   async addRoomToCache(id, data) {
     data.isDeleted=false;
-    data.groupMembers=new Set(data.groupMembers);
+    data.groupMembers=[...new Set((data.groupMembers || []).map(String))];
     roomCache.set(`room:${id}`, data, null); 
   }
 
@@ -178,8 +178,8 @@ class RoomCacheService {
 
     return dedupe(cacheKey, async () => {
       const matchStage = search
-        ? { groupName: { $regex: search, $options: 'i' } }
-        : {};
+        ? { groupName: { $regex: search, $options: 'i' }, isDeleted: { $ne: true } }
+        : { isDeleted: { $ne: true } };
 
       const [result] = await Room.aggregate([
         { $match: matchStage },
@@ -304,6 +304,7 @@ class RoomCacheService {
       groupPic: room.groupPic,
       createdAt: room.createdAt,
       updatedAt: room.updatedAt,
+      isDeleted: !!room.isDeleted,
       memberCount: Array.isArray(room.groupMembers) ? room.groupMembers.length : (room.memberCount ?? 0),
     };
   }
@@ -332,6 +333,7 @@ class RoomCacheService {
           $project: {
             _id: 1, groupName: 1, groupDescription: 1,
             groupAdmin: 1, groupPic: 1, createdAt: 1, updatedAt: 1,
+            isDeleted: 1,
             memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
           }
         }
@@ -346,16 +348,12 @@ class RoomCacheService {
     const key = this._userRoomsKey(userId);
     let rooms = roomCache.get(key);
 
-    
     const formatted = this._formatRoom(roomData);
 
     if (!rooms) {
-      
-      roomCache.set(key, [formatted], null);
-      return formatted;
+      rooms = await this.getUserJoinedRooms(userId);
     }
 
-    
     const exists = rooms.some(r => r._id?.toString() === formatted._id?.toString());
     if (!exists) {
       rooms = [formatted, ...rooms];
@@ -366,8 +364,10 @@ class RoomCacheService {
 
   async removeUserRoom(userId, roomId) {
     const key = this._userRoomsKey(userId);
-    const rooms = roomCache.get(key);
-    if (!rooms) return;
+    let rooms = roomCache.get(key);
+    if (!rooms) {
+      rooms = await this.getUserJoinedRooms(userId);
+    }
     const filtered = rooms.filter(r => r._id?.toString() !== String(roomId));
     roomCache.set(key, filtered, null);
   }

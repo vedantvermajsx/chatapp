@@ -50,7 +50,8 @@ const messageSchema = new mongoose.Schema(
         'member-joined',
         'member-left',
         'room-created',
-        'room-renamed'
+        'room-renamed',
+        'room-deleted'
       ],
       default: null,
       immutable: true,
@@ -99,6 +100,12 @@ messageSchema.index({ isSystemMessage: 1, timestamp: -1 });
 messageSchema.index({ systemType: 1, timestamp: -1 });
 
 messageSchema.index({ deletedFor: 1 });
+
+
+messageSchema.pre('save', function(next) {
+  this.timestamp = new Date();
+  next();
+});
 
 
 export default mongoose.models.Message ||

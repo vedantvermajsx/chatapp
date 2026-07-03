@@ -60,6 +60,7 @@ export async function joinRoom(req, res) {
     emitNewMessage(roomId, payload);
 
     emitUserJoinedRoom(roomId, {
+      roomId,
       userId,
       username,
       avatar: req.user.avatar,

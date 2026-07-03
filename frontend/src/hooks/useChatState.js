@@ -125,7 +125,10 @@ export const useChatState = (user) => {
     if (!search && !forceRefresh) {
       const cached = roomMembersCache.current[cacheKey];
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        setRoomMembers(cached.members);
+        setRoomMembers(prev => cached.members.map(m => {
+          const live = (prev || []).find(p => String(p._id || p.id) === String(m._id || m.id));
+          return live ? { ...m, isOnline: live.isOnline } : m;
+        }));
         setHasMoreMembers(cached.hasMore);
         return;
       }

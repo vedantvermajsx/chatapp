@@ -277,16 +277,12 @@ function RoomSidebar({
 
   if (isMobile) {
     return (
-      <>
-        {showSidebar && (
-          <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/50" onClick={onCloseSidebar} />
-            <div className="absolute left-0 top-0 h-full w-72" style={{ backgroundColor: theme.background }}>
-              {renderSidebarContent(true)}
-            </div>
-          </div>
-        )}
-      </>
+      <div className="fixed inset-0 z-50" style={{ display: showSidebar ? 'block' : 'none' }}>
+        <div className="absolute inset-0 bg-black/50" onClick={onCloseSidebar} />
+        <div className="absolute left-0 top-0 h-full w-72" style={{ backgroundColor: theme.background }}>
+          {renderSidebarContent(true)}
+        </div>
+      </div>
     );
   }
 

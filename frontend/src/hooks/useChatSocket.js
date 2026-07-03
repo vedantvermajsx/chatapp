@@ -82,19 +82,15 @@ export const useChatSocket = (user, {
       const socket = socketRef.current;
       if (!socket) return;
 
-      if (document.visibilityState === 'hidden') {
-        socket.disconnect();
-      } else if (document.visibilityState === 'visible' && !socket.connected) {
+      if (document.visibilityState === 'visible' && !socket.connected) {
         socket.connect();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', handleVisibilityChange);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', handleVisibilityChange);
     };
   }, []);
 
@@ -410,6 +406,32 @@ export const useChatSocket = (user, {
       }
     };
 
+    const handleUserJoinedRoom = (eventData = {}) => {
+      if (String(currentRoomRef.current?._id) !== String(eventData.roomId)) return;
+      const roomMembers = roomMembersRef.current;
+      if (!roomMembers) return;
+      const exists = roomMembers.some(m => String(m._id || m.id) === String(eventData.userId));
+      if (exists) return;
+      setRoomMembers(prev => ([
+        ...(prev || []),
+        {
+          _id: eventData.userId,
+          username: eventData.username,
+          avatar: eventData.avatar,
+          gender: eventData.gender,
+          role: eventData.role,
+          isOnline: true
+        }
+      ]));
+    };
+
+    const handleUserLeftRoom = (eventData = {}) => {
+      if (String(currentRoomRef.current?._id) !== String(eventData.roomId)) return;
+      const roomMembers = roomMembersRef.current;
+      if (!roomMembers) return;
+      setRoomMembers(prev => (prev || []).filter(m => String(m._id || m.id) !== String(eventData.userId)));
+    };
+
     const handleRoomReadAck = ({ roomId }) => {
       
       setUnreadCounts(prev => {
@@ -471,6 +493,8 @@ export const useChatSocket = (user, {
     socket.on('roomDeleted', handleRoomDeleted);
     socket.on('userOnline', handleUserOnline);
     socket.on('userOffline', handleUserOffline);
+    socket.on('userJoinedRoom', handleUserJoinedRoom);
+    socket.on('userLeftRoom', handleUserLeftRoom);
     socket.on('readReceipt', handleReadReceipt);
     socket.on('roomReadAck', handleRoomReadAck);
     socket.on('unreadUpdate', handleUnreadUpdate);
@@ -492,6 +516,8 @@ export const useChatSocket = (user, {
       socket.off('roomDeleted', handleRoomDeleted);
       socket.off('userOnline', handleUserOnline);
       socket.off('userOffline', handleUserOffline);
+      socket.off('userJoinedRoom', handleUserJoinedRoom);
+      socket.off('userLeftRoom', handleUserLeftRoom);
       socket.off('readReceipt', handleReadReceipt);
       socket.off('roomReadAck', handleRoomReadAck);
       socket.off('unreadUpdate', handleUnreadUpdate);

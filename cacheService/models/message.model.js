@@ -50,7 +50,8 @@ const messageSchema = new mongoose.Schema(
         'member-joined',
         'member-left',
         'room-created',
-        'room-renamed'
+        'room-renamed',
+        'room-deleted'
       ],
       default: null,
       immutable: true,
