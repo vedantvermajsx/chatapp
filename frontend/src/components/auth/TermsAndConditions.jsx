@@ -1,94 +1,199 @@
-import { Link } from 'react-router-dom';
-import { ArrowLeft, MessageCircle } from 'lucide-react';
+import { Link } from "react-router-dom";
+import { ArrowLeft, FileText } from "lucide-react";
 
-const SECTIONS = [
+const sections = [
   {
-    title: '1. Acceptance of Terms',
-    body: 'By creating an account, using a guest session, or otherwise accessing GatherUp, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the service.',
+    title: "Acceptance of Terms",
+    body: "By accessing or using GatherUp, whether through a registered account or guest session, you agree to comply with these Terms and Conditions. If you disagree with any part of these terms, you must discontinue use of the service.",
   },
   {
-    title: '2. Eligibility',
-    body: 'You must be legally able to enter into these terms in your jurisdiction to use GatherUp, whether as a registered user or as a guest.',
+    title: "Eligibility",
+    body: "You must be legally capable of entering into a binding agreement under the laws applicable in your jurisdiction to use GatherUp.",
   },
   {
-    title: '3. Accounts and Guest Sessions',
-    body: 'You are responsible for keeping your password confidential and for all activity under your account. Guest sessions are temporary and may be removed after a period of inactivity.',
+    title: "Accounts & Guest Access",
+    body: "You are responsible for maintaining the confidentiality of your account credentials. Guest accounts are temporary and may be removed after prolonged inactivity without prior notice.",
   },
   {
-    title: '4. Acceptable Use',
-    body: 'You agree not to use GatherUp to harass, abuse, or harm others, to send unlawful or infringing content, or to attempt to disrupt or compromise the service.',
+    title: "Acceptable Use",
+    body: "You agree not to misuse GatherUp by transmitting unlawful content, harassing other users, distributing malware, attempting unauthorized access, or interfering with the operation of the platform.",
   },
   {
-    title: '5. Content',
-    body: 'You retain ownership of the messages and content you send. You are solely responsible for the content you share and its consequences.',
+    title: "User Content",
+    body: "You retain ownership of the content you submit. By using GatherUp, you grant us permission to process and store your content solely for providing and improving the service.",
   },
   {
-    title: '6. Privacy',
-    body: 'We collect only the information needed to operate the service, such as your username, email, and profile details you choose to provide. We do not sell your personal data.',
+    title: "Privacy",
+    body: "We collect only the information necessary to operate GatherUp, including account details you voluntarily provide. We never sell your personal information to third parties.",
   },
   {
-    title: '7. Termination',
-    body: 'We may suspend or terminate access to accounts or guest sessions that violate these terms or that pose a risk to the service or other users.',
+    title: "Termination",
+    body: "We reserve the right to suspend or terminate accounts that violate these Terms or threaten the security, stability, or integrity of the platform.",
   },
   {
-    title: '8. Changes to These Terms',
-    body: 'We may update these Terms and Conditions from time to time. Continued use of GatherUp after changes take effect constitutes acceptance of the revised terms.',
+    title: "Service Availability",
+    body: "While we strive for uninterrupted service, GatherUp may occasionally become unavailable due to maintenance, upgrades, or unforeseen technical issues.",
   },
   {
-    title: '9. Disclaimer',
-    body: 'GatherUp is provided "as is" without warranties of any kind. We are not liable for any indirect or consequential damages arising from your use of the service.',
+    title: "Changes to Terms",
+    body: "These Terms may be updated periodically. Continued use of GatherUp after revisions become effective constitutes acceptance of the updated Terms.",
   },
   {
-    title: '10. Contact',
-    body: 'If you have questions about these Terms and Conditions, please reach out through the support channels listed within the app.',
+    title: "Limitation of Liability",
+    body: "GatherUp is provided on an 'as is' and 'as available' basis. We are not responsible for indirect, incidental, or consequential damages resulting from your use of the platform.",
+  },
+  {
+    title: "Contact",
+    body: "Questions regarding these Terms may be directed to support@gatherup.app.",
   },
 ];
 
-function TermsAndConditions() {
+export default function TermsAndConditions() {
   return (
-    <div className="min-h-screen bg-[#e6e6e6] flex items-center justify-center p-4">
-      <div className="bg-[#e6e6e6] rounded-3xl shadow-[10px_10px_20px_#c9c9c9,-10px_-10px_20px_#ffffff] max-w-2xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
-            <div className="w-12 h-12 rounded-full bg-[#e6e6e6] flex items-center justify-center mr-3 shadow-[1px_1px_3px_#c9c9c9,-1px_-1px_3px_#ffffff]">
-              <MessageCircle className="w-6 h-6 text-gray-700" />
+    <div className="min-h-screen  py-10 px-4 overflow-auto">
+      <div className="max-w-4xl overflow-auto  mx-auto">
+
+        <div className="mb-8 overflow-auto flex justify-between items-center">
+
+          <div className="flex overflow-auto items-center gap-4">
+
+            <div
+              className="
+              h-10
+              w-10
+              rounded-xl
+              flex
+              items-center
+              justify-center
+              bg-[#ececec]
+              shadow-[2px_2px_2px_#c8c8c8,-2px_-2px_2px_#ffffff]
+            "
+            >
+              <FileText className="w-4 h-4 text-gray-700" />
             </div>
+
             <div>
-              <h1 className="text-xl font-bold text-gray-800">GatherUp</h1>
-              <p className="text-sm text-gray-500">Terms and Conditions</p>
+              <h1 className="text-3xl font-bold text-gray-800">
+                Terms & Conditions
+              </h1>
+
+              <p className="text-gray-500 mt-1">
+                Effective Date: July 3, 2026
+              </p>
             </div>
           </div>
+
           <Link
             to="/login"
-            className="flex items-center gap-1 text-sm font-semibold text-gray-700 bg-[#e6e6e6] px-3 py-2 rounded-xl shadow-[2px_2px_4px_#c9c9c9,-2px_-2px_4px_#ffffff] hover:shadow-[inset_2px_2px_4px_#c9c9c9,inset_-2px_-2px_4px_#ffffff] transition-all"
+            className="
+            flex
+            items-center
+            gap-2
+            px-5
+            py-3
+            rounded-xl
+            bg-[#ececec]
+            shadow-[2px_2px_4px_#c8c8c8,-2px_-2px_4px_#ffffff]
+            hover:shadow-[inset_1px_1px_4px_#c8c8c8,inset_-1px_-1px_4px_#ffffff]
+            transition
+          "
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={18} />
             Back
           </Link>
         </div>
 
-        <p className="text-sm text-gray-500 mb-6">Last updated: July 3, 2026</p>
+        <div
+          className="
+          bg-[#ececec]
+          rounded-3xl
+          p-8
+          shadow-[2px_2px_3px_#c8c8c8,-2px_-2px_3px_#ffffff]
+        "
+        >
+          <p className="text-gray-600 leading-7 mb-10">
+            Welcome to <strong>GatherUp</strong>. These Terms and Conditions
+            govern your access to and use of our services. Please read them
+            carefully before using the application.
+          </p>
 
-        <div className="flex flex-col gap-5">
-          {SECTIONS.map((section) => (
-            <div key={section.title}>
-              <h2 className="text-base font-bold text-gray-800 mb-1">{section.title}</h2>
-              <p className="text-sm text-gray-600 leading-relaxed">{section.body}</p>
-            </div>
-          ))}
-        </div>
+          <div className="space-y-6">
 
-        <div className="mt-8 pt-4 border-t border-gray-300 text-center">
-          <Link
-            to="/login"
-            className="inline-block py-3 px-6 bg-[#e6e6e6] text-gray-800 font-bold rounded-2xl shadow-[2px_2px_4px_#c9c9c9,-2px_-2px_4px_#ffffff] hover:shadow-[inset_3px_3px_6px_#c9c9c9,inset_-3px_-3px_6px_#ffffff] transition-all"
-          >
-            Back to Sign In
-          </Link>
+            {sections.map((item, index) => (
+              <div
+                key={item.title}
+                className="
+                rounded-2xl
+                p-6
+                bg-[#ececec]
+                shadow-[1px_1px_2px_#d0d0d0,-1px_-1px_2px_#ffffff]
+              "
+              >
+                <div className="flex items-start gap-4">
+
+                  <div
+                    className="
+                    flex
+                    items-center
+                    justify-center
+                    w-10
+                    h-10
+                    p-2
+                    bg-[#ececec]
+                    font-bold
+                    text-gray-700
+                    shadow-[1px_1px_2px_#c8c8c8,-1px_-1px_2px_#ffffff]
+                  "
+                  >
+                    {index < 9 ? '0' : ''}{index + 1}
+                  </div>
+
+                  <div>
+
+                    <h2 className="font-semibold text-lg text-gray-800 mb-2">
+                      {item.title}
+                    </h2>
+
+                    <p className="leading-7 text-gray-600">
+                      {item.body}
+                    </p>
+
+                  </div>
+
+                </div>
+              </div>
+            ))}
+
+          </div>
+
+          <div className="mt-12 border-t border-gray-300 pt-8 text-center">
+
+            <p className="text-gray-500 leading-7">
+              By continuing to use GatherUp, you acknowledge that you have read,
+              understood, and agreed to these Terms and Conditions.
+            </p>
+
+            <Link
+              to="/login"
+              className="
+              inline-block
+              mt-8
+              px-8
+              py-4
+              rounded-2xl
+              font-semibold
+              bg-[#ececec]
+              shadow-[1px_1px_2px_#c8c8c8,-1px_-1px_2px_#ffffff]
+              hover:shadow-[inset_1px_1px_2px_#c8c8c8,inset_-1px_-1px_2px_#ffffff]
+              transition
+            "
+            >
+              Back to Sign In
+            </Link>
+
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-export default TermsAndConditions;

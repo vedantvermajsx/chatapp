@@ -22,7 +22,7 @@ function App() {
             duration={3000}
           />
           <Suspense fallback={
-            <div className="h-screen w-screen flex items-center justify-center bg-gray-900">
+            <div className="min-h-screen w-screen flex items-center justify-center bg-gray-900">
               <Spinner />
             </div>
           }>
