@@ -106,13 +106,13 @@ const ChatHeader = memo(function ChatHeader({
               </button>
 
               <button
-                onClick={currentRoom.groupAdmin === user._id ? handleDeleteRoom : handleLeaveRoom}
+                onClick={(currentRoom.groupAdmin === user._id && !currentRoom?.isDeleted) ? handleDeleteRoom : handleLeaveRoom}
                 disabled={leaveRoomMutation.isPending || deleteRoomMutation.isPending}
                 className="p-2  rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50"
                 {...getNeumorphicProps(1, 1, 1, 1)}
-                title={currentRoom?.groupAdmin === user?._id ? 'Delete room' : 'Leave Room'}
+                title={(currentRoom?.groupAdmin === user?._id && !currentRoom?.isDeleted) ? 'Delete room' : 'Leave Room'}
               >
-                <span className='w-8 h-4 text-xs'>{currentRoom?.groupAdmin === user?._id ? 'Delete room' : 'Leave Room'}</span>
+                <span className='w-8 h-4 text-xs'>{(currentRoom?.groupAdmin === user?._id && !currentRoom?.isDeleted) ? 'Delete room' : 'Leave Room'}</span>
               </button>
 
 

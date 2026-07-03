@@ -14,8 +14,15 @@ export async function deleteRoom(req, res) {
     if (!room) {
       return res.status(404).json({ message: 'Room not found' });
     }
+
     if (room.groupAdmin !== req.user._id) {
       return res.status(403).json({ message: 'Only admin can delete room' });
+    }
+
+    if(room.isDeleted){
+      return res.status(301).json({
+        mesage:'room is already deleted!'
+      })
     }
 
     const _id = new mongoose.Types.ObjectId();

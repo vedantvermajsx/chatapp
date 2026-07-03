@@ -20,7 +20,7 @@ export async function leaveRoom(req, res) {
 
     const room = await roomCacheClient.getRoomById(roomId);
 
-    if (room.groupAdmin === userId) {
+    if (room.groupAdmin === userId && !room.isDeleted) {
       return res.status(403).json({ message: "admin cannot leave the group.", success: true });
     }
 
