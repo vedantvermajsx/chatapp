@@ -104,7 +104,7 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
                 type="text"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 placeholder:text-gray-400 transition-colors"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 placeholder:text-gray-400 transition-colors"
                 required
               />
             </div>
@@ -115,7 +115,7 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 placeholder:text-gray-400 transition-colors resize-none"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 placeholder:text-gray-400 transition-colors resize-none"
                 placeholder="Group description..."
                 required
               />
@@ -127,7 +127,7 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
                 type="text"
                 value={groupPic}
                 onChange={(e) => setGroupPic(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 text-sm placeholder:text-gray-400 transition-colors"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 text-sm placeholder:text-gray-400 transition-colors"
                 placeholder="https://..."
               />
             </div>

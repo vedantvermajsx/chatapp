@@ -25,7 +25,7 @@ export async function joinRoom(req, res) {
 
     const roomData = await roomCacheClient.addRoomMember(roomId, userId);
 
-    unreadCacheClient.seedRoomOnJoin(userId, roomId).catch(() => {});
+    unreadCacheClient.seedRoomOnJoin(userId, roomId);
     enqueueRoomMemberJoined(roomId, userId);
 
 

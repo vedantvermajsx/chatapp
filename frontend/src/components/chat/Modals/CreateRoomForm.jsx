@@ -18,7 +18,7 @@ const CreateRoomForm = ({
         placeholder="Room name"
         value={newRoomName}
         onChange={(e) => setNewRoomName(e.target.value)}
-        className="w-full py-4 px-6 border-none rounded-2xl focus:outline-none transition-all"
+        className="w-full py-4 px-6 border-none rounded-2xl transition-all"
         style={{
           backgroundColor: theme.background,
           color: theme.otherMessageText,
@@ -46,7 +46,7 @@ const CreateRoomForm = ({
         placeholder="Description"
         value={newRoomDesc}
         onChange={(e) => setNewRoomDesc(e.target.value)}
-        className="w-full py-4 px-6 border-none rounded-2xl focus:outline-none transition-all"
+        className="w-full py-4 px-6 border-none rounded-2xl transition-all"
         style={{
           backgroundColor: theme.background,
           color: theme.otherMessageText,

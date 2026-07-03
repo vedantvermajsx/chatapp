@@ -5,7 +5,7 @@ import { User, Tag, Loader2, Check, X } from 'lucide-react';
 import authService from '../../services/auth.service';
 
 const inputClass =
-  'w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14.5px] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 transition-colors disabled:opacity-50 disabled:bg-gray-50';
+    'w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14.5px] text-gray-900 placeholder:text-gray-400 focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 transition-colors disabled:opacity-50 disabled:bg-gray-50';
 
 function GuestForm({ setCurrForm }) {
     const navigate = useNavigate();
@@ -144,7 +144,7 @@ function GuestForm({ setCurrForm }) {
                         onChange={(e) => setAgreedToTerms(e.target.checked)}
                         disabled={isLoading}
                         required
-                        className="mt-0.5 w-4 h-4 rounded accent-[#008080] shrink-0"
+                        className="mt-0.5 w-4 h-4 rounded accent-[#008080] shrink-0 cursor-pointer"
                     />
                     <span>
                         I agree to the{' '}

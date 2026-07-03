@@ -17,8 +17,13 @@ export async function sendRoomMessage(req, res) {
     }
 
     const room = await roomCacheClient.isValidRoomId(roomId);
-    if (!room || !room.isValid) {
+    if (!room) {
       return res.status(404).json({ message: 'Room not found' });
+    }
+
+    if(!room.isValid){
+      return res.status(403).json({message:'sending messages is not allowed!'
+      });
     }
 
     const sender = req.user;

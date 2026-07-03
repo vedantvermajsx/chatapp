@@ -111,14 +111,6 @@ class RoomCacheClient {
     }
   }
 
-  async invalidateRoomMembers(roomId, { maxMembers = 500, pageSize = 20 } = {}) {
-    try {
-      await this.client.post(`/rooms/${roomId}/invalidate-members`, { maxMembers, pageSize });
-    } catch (err) {
-      console.error(`[RoomCacheClient] Error in invalidateRoomMembers for room ${roomId}:`, err.message);
-    }
-  }
-
   async getAllRooms(search = '', { skip = 0, limit = 20 } = {}) {
     try {
       const response = await this.client.get('/rooms', { params: { search, skip, limit } });

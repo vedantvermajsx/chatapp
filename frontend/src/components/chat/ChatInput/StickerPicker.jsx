@@ -125,10 +125,11 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
   return (
     <div
       ref={pickerRef}
-      className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-16 mb-5 z-50 rounded-2xl flex flex-col overflow-hidden"
+      className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-16 mb-5 rounded-2xl flex flex-col overflow-hidden"
       style={{
         width: 'min(320px, calc(100vw - 40px))',
         height: '420px',
+        zIndex: 100,
         backgroundColor: theme.background,
         boxShadow: getShadow(theme.isLight, false, 4, 12),
         border: `1px solid ${border}`,
@@ -225,7 +226,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             onMouseDown={(e) => e.stopPropagation()}
-            className="flex-1 bg-transparent text-xs outline-none"
+            className="flex-1 bg-transparent text-xs"
             style={{ color: theme.otherMessageText }}
           />
           {searchQuery && (

@@ -94,7 +94,7 @@ const MembersPanel = memo(function MembersPanel({
               placeholder="Search members..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent border-none focus:outline-none text-sm"
+              className="w-full bg-transparent border-none text-sm"
               style={{ color: theme.otherMessageText }}
             />
           </div>

@@ -1,6 +1,4 @@
-import mongoose from 'mongoose';
 import Room from '../models/room.model.js';
-import UserRoom from '../models/userRoom.model.js';
 import { roomCache } from './CacheService.js';
 import UserCacheService from './UserCacheService.js';
 import RoomTrie from './RoomTrie.js';
@@ -24,7 +22,6 @@ async function resolveMembers(ids) {
 
 const MEMBERS_PAGE_TTL_SECONDS = null;
 const NAME_LOOKUP_TTL_SECONDS = null;
-const USER_ROOMLIST_TTL_SECONDS = null;
 
 const inFlight = new Map();
 
@@ -40,7 +37,8 @@ async function dedupe(key, fetcher) {
 class RoomCacheService {
   constructor() {
     this.roomsById = new Map();
-    this.roomOrder = [];          
+    this.roomsByUser = new Map();
+    this.roomOrder = [];
     this.trie = new RoomTrie();
     this.ready = false;
   }
@@ -49,13 +47,25 @@ class RoomCacheService {
     const rooms = await Room.find({}).sort({ createdAt: -1 }).lean();
 
     for (const room of rooms) {
-      const id = room._id.toString();
-      this.roomsById.set(id, room);
-      this.roomOrder.push(id); 
+      const roomId = String(room._id);
+
+      room.groupMembers = [...new Set((room.groupMembers || []).map(String))];
+
+      this.roomsById.set(roomId, room);
+      this.roomOrder.push(roomId);
+
       if (!room.isDeleted) {
-        this.trie.insert(room.groupName, id);
+        this.trie.insert(room.groupName, roomId);
+      }
+
+      for (const userId of room.groupMembers) {
+        if (!this.roomsByUser.has(userId)) {
+          this.roomsByUser.set(userId, new Set());
+        }
+        this.roomsByUser.get(userId).add(roomId);
       }
     }
+
     this.ready = true;
     console.log(`[RoomCacheService] preloaded ${rooms.length} rooms)`);
   }
@@ -64,14 +74,117 @@ class RoomCacheService {
     return this.roomOrder;
   }
 
-  addRoomToIndex(room) {
-    const id = room._id.toString();
-    const isNew = !this.roomsById.has(id);
-    this.roomsById.set(id, room);
-    if (isNew) this.roomOrder.unshift(id); 
+  async addRoomToCache(id, room) {
+    const roomId = String(id);
+
+    room.groupMembers = [...new Set((room.groupMembers || []).map(String))];
+
+    this.roomsById.set(roomId, room);
+
+    for (const memberId of room.groupMembers) {
+      if (!this.roomsByUser.has(memberId)) {
+        this.roomsByUser.set(memberId, new Set());
+      }
+      this.roomsByUser.get(memberId).add(roomId);
+    }
+
+    if (!this.roomOrder.includes(roomId)) {
+      this.roomOrder.unshift(roomId);
+    }
+
     if (!room.isDeleted) {
+      this.trie.insert(room.groupName, roomId);
+    }
+  }
+
+  async getRoomById(id) {
+    id = String(id);
+
+    const room = this.roomsById.get(id);
+    if (room) return room;
+
+    return dedupe(`room:id:${id}`, async () => {
+      const existing = this.roomsById.get(id);
+      if (existing) return existing;
+
+      const fetched = await Room.findById(id).lean();
+      if (!fetched) return null;
+
+      await this.addRoomToCache(id, fetched);
+      return this.roomsById.get(id);
+    });
+  }
+
+  async getRoomsByUserId(userId) {
+    const rooms = this.roomsByUser.get(String(userId));
+
+    if (!rooms) return [];
+
+    return [...rooms];
+  }
+
+  async getUserJoinedRooms(userId) {
+    const roomIds = await this.getRoomsByUserId(userId);
+
+    const rooms = [];
+
+    for (const roomId of roomIds) {
+      const room = await this.getRoomById(roomId);
+
+      if (!room) continue;
+
+      rooms.push({
+        _id: room._id,
+        groupName: room.groupName,
+        groupDescription: room.groupDescription,
+        groupAdmin: room.groupAdmin,
+        groupPic: room.groupPic,
+        createdAt: room.createdAt,
+        updatedAt: room.updatedAt,
+        isDeleted: room.isDeleted,
+        memberCount: room.groupMembers.length
+      });
+    }
+
+    rooms.sort(
+      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+    );
+
+    return rooms;
+  }
+
+  syncMemberIds(roomId, memberIds) {
+    const room = this.roomsById.get(String(roomId));
+
+    if (!room) return;
+
+    room.groupMembers = [...memberIds];
+
+    this.roomsById.set(String(roomId), room);
+  }
+
+  async refreshRoom(roomId) {
+    const id = String(roomId);
+    const room = await Room.findById(id).lean();
+
+    if (!room) {
+      this.removeRoomFromIndex(id);
+      return null;
+    }
+
+    room.groupMembers = [...new Set(room.groupMembers.map(String))];
+
+    const old = this.roomsById.get(id);
+    if (old && !old.isDeleted && old.groupName !== room.groupName) {
+      this.trie.remove(old.groupName, id);
+      if (!room.isDeleted) this.trie.insert(room.groupName, id);
+    } else if (!old && !room.isDeleted) {
       this.trie.insert(room.groupName, id);
     }
+
+    this.roomsById.set(id, room);
+
+    return room;
   }
 
   removeRoomFromIndex(id) {
@@ -99,38 +212,7 @@ class RoomCacheService {
       this.trie.insert(newName, id);
     }
     room.groupName = newName;
-    this.roomsById.set(id,room);
-  }
-
-  syncMemberIdsInIndex(roomId, memberIds) {
-    const room = this.roomsById.get(roomId);
-    if (!room) return;
-    room.groupMembers = memberIds;
-    this.roomsById.set(roomId, room);
-  }
-
-  async addRoomToCache(id, data) {
-    data.isDeleted = false;
-    data.groupMembers = [...new Set((data.groupMembers || []).map(String))];
-    roomCache.set(`room:${id}`, data, null);
-    this.addRoomToIndex(data);
-  }
-
-  async getRoomById(id) {
-    const fromIndex = this.roomsById.get(String(id));
-    if (fromIndex) return fromIndex;
-
-    const cacheKey = `room:${id}`;
-    const cached = roomCache.get(cacheKey);
-    if (cached) return cached;
-
-    return dedupe(cacheKey, async () => {
-      const room = await Room.findById(id);
-      if (room) {
-        await this.addRoomToCache(id, room);
-      }
-      return room;
-    });
+    this.roomsById.set(id, room);
   }
 
   async isValidRoomId(id) {
@@ -152,41 +234,17 @@ class RoomCacheService {
     return room ? room.groupAdmin : null;
   }
 
-  async refreshRoom(roomId) {
-    const room = await Room.findById(roomId);
-    if (room) {
-      await this.addRoomToCache(roomId, room);
-    } else {
-      roomCache.delete(`room:${roomId}`);
-      this.removeRoomFromIndex(String(roomId));
-    }
-    await this.invalidateRoomMembers(roomId);
-    return room;
-  }
-
   async getRoomByName(groupName) {
     const cacheKey = `room:name:${groupName}`;
     const cached = roomCache.get(cacheKey);
     if (cached) return cached;
 
     return dedupe(cacheKey, async () => {
-      const room = await Room.findOne({ groupName });
+      const room = await Room.findOne({ groupName }).lean();
       if (room) {
         roomCache.set(cacheKey, room, NAME_LOOKUP_TTL_SECONDS);
       }
       return room;
-    });
-  }
-
-  async getRoomsByUserId(userId) {
-    const cacheKey = `roomsByUser:${userId}`;
-    const cached = roomCache.get(cacheKey);
-    if (cached) return cached;
-
-    return dedupe(cacheKey, async () => {
-      const rooms = await Room.find({ groupMembers: userId }).select('_id').lean();
-      roomCache.set(cacheKey, rooms, USER_ROOMLIST_TTL_SECONDS);
-      return rooms;
     });
   }
 
@@ -276,180 +334,99 @@ class RoomCacheService {
     return { rooms: page, total };
   }
 
-  async deleteRoomCache(id) {
-    roomCache.delete(`room:${id}`);
-  }
-
-  _memberIdsKey(roomId) {
-    return `roomMemberIds:${roomId}`;
-  }
-
-  async getRoomMemberIds(roomId) {
-    const key = this._memberIdsKey(roomId);
-    const cached = roomCache.get(key);
-    if (cached) return cached;
-
-    return dedupe(key, async () => {
-      const room = await this.getRoomById(roomId);
-      if (!room) return null;
-
-      const ids = (room.groupMembers || []).map(String);
-      roomCache.set(key, ids, null);
-      return ids;
-    });
-  }
-
-  async addRoomMember(roomId, userId) {
-    const key = this._memberIdsKey(roomId);
-    const ids = await this.getRoomMemberIds(roomId);
-    if (!ids) return;
-
-    const userStr = String(userId);
-    if (!ids.includes(userStr)) {
-      ids.push(userStr);
-      roomCache.set(key, ids, null);
-
-      const room = roomCache.get(`room:${roomId}`);
-      if (room) {
-        room.groupMembers = ids;
-        roomCache.set(`room:${roomId}`, room, null);
-      }
-      this.syncMemberIdsInIndex(String(roomId), ids);
-
-      await this.invalidateRoomMembers(roomId);
-    }
-  }
-
-  async removeRoomMember(roomId, userId) {
-    const key = this._memberIdsKey(roomId);
-    const ids = await this.getRoomMemberIds(roomId);
-    if (!ids) return;
-
-    const filtered = ids.filter(id => id !== String(userId));
-    roomCache.set(key, filtered, null);
-
-    const room = roomCache.get(`room:${roomId}`);
-    if (room) {
-      room.groupMembers = filtered;
-      roomCache.set(`room:${roomId}`, room, null);
-    }
-    this.syncMemberIdsInIndex(String(roomId), filtered);
-
-    await this.invalidateRoomMembers(roomId);
-  }
-
-  async setRoomMemberIds(roomId, memberIds) {
-    const ids = memberIds.map(String);
-    roomCache.set(this._memberIdsKey(roomId), ids, null);
-    this.syncMemberIdsInIndex(String(roomId), ids);
-  }
-
-  _userRoomsKey(userId) {
-    return `userRooms:${userId}`;
-  }
-
-  _formatRoom(room) {
-    return {
-      _id: room._id?.toString?.() ?? room._id,
-      groupName: room.groupName,
-      groupDescription: room.groupDescription,
-      groupAdmin: room.groupAdmin,
-      groupPic: room.groupPic,
-      createdAt: room.createdAt,
-      updatedAt: room.updatedAt,
-      isDeleted: !!room.isDeleted,
-      memberCount: Array.isArray(room.groupMembers) ? room.groupMembers.length : (room.memberCount ?? 0),
-    };
-  }
-
-  async getUserJoinedRooms(userId) {
-    const key = this._userRoomsKey(userId);
-    const cached = roomCache.get(key);
-    if (cached) return cached;
-
-    return dedupe(key, async () => {
-      const userRoom = await UserRoom.findOne({ userId }).lean();
-      const roomIds = userRoom?.roomIds ?? [];
-      if (roomIds.length === 0) {
-        roomCache.set(key, [], null);
-        return [];
-      }
-
-      const objectIds = roomIds
-        .filter(id => mongoose.Types.ObjectId.isValid(id))
-        .map(id => new mongoose.Types.ObjectId(id));
-
-      const rooms = await Room.aggregate([
-        { $match: { _id: { $in: objectIds } } },
-        { $sort: { updatedAt: -1 } },
-        {
-          $project: {
-            _id: 1, groupName: 1, groupDescription: 1,
-            groupAdmin: 1, groupPic: 1, createdAt: 1, updatedAt: 1,
-            isDeleted: 1,
-            memberCount: { $size: { $ifNull: ['$groupMembers', []] } }
-          }
-        }
-      ]);
-
-      roomCache.set(key, rooms, null);
-      return rooms;
-    });
-  }
-
-  async addUserRoom(userId, roomId, roomData) {
-    const key = this._userRoomsKey(userId);
-    let rooms = roomCache.get(key);
-
-    const formatted = this._formatRoom(roomData);
-
-    if (!rooms) {
-      rooms = await this.getUserJoinedRooms(userId);
-    }
-
-    const exists = rooms.some(r => r._id?.toString() === formatted._id?.toString());
-    if (!exists) {
-      rooms = [formatted, ...rooms];
-      roomCache.set(key, rooms, null);
-    }
-    return formatted;
-  }
-
-  async removeUserRoom(userId, roomId) {
-    const key = this._userRoomsKey(userId);
-    let rooms = roomCache.get(key);
-    if (!rooms) {
-      rooms = await this.getUserJoinedRooms(userId);
-    }
-    const filtered = rooms.filter(r => r._id?.toString() !== String(roomId));
-    roomCache.set(key, filtered, null);
-  }
-
-  invalidateUserRooms(userId) {
-    roomCache.delete(this._userRoomsKey(userId));
-    roomCache.delete(`roomsByUser:${userId}`);
-  }
-
   async renameRoom(id, oldName, newName) {
     this.updateRoomNameInIndex(String(id), oldName, newName);
-    const cached = roomCache.get(`room:${id}`);
-    if (cached) {
-      cached.groupName = newName;
-      roomCache.set(`room:${id}`, cached, null);
-    }
     roomCache.delete(`room:name:${oldName}`);
   }
 }
 
 export default new RoomCacheService();
 
-RoomCacheService.prototype.markRoomDeleted = async function (id) {
-  let room = roomCache.get(`room:${id}`);
-  if (!room) {
-    room = await Room.findById(id).lean();
-    if (!room) return { message: 'Room not found' };
+RoomCacheService.prototype.addRoomMember = async function (roomId, userId) {
+  const id = String(roomId);
+  const uid = String(userId);
+
+  const room = await this.getRoomById(id);
+  if (!room) return null;
+
+  if (!room.groupMembers.includes(uid)) {
+    room.groupMembers = [...room.groupMembers, uid];
+    this.roomsById.set(id, room);
   }
-  roomCache.set(`room:${id}`, { ...room, isDeleted: true }, null);
+
+  this.invalidateRoomMembers(id);
+
+  return room;
+};
+
+RoomCacheService.prototype.addUserRoom = async function (userId, roomId, roomDoc) {
+  const id = String(roomId);
+  const uid = String(userId);
+
+  if (!this.roomsByUser.has(uid)) {
+    this.roomsByUser.set(uid, new Set());
+  }
+  this.roomsByUser.get(uid).add(id);
+
+  return {
+    _id: roomDoc._id,
+    groupName: roomDoc.groupName,
+    groupDescription: roomDoc.groupDescription,
+    groupAdmin: roomDoc.groupAdmin,
+    groupPic: roomDoc.groupPic,
+    createdAt: roomDoc.createdAt,
+    updatedAt: roomDoc.updatedAt,
+    isDeleted: roomDoc.isDeleted,
+    memberCount: (roomDoc.groupMembers || []).length,
+  };
+};
+
+RoomCacheService.prototype.removeRoomMember = async function (roomId, userId) {
+  const id = String(roomId);
+  const uid = String(userId);
+
+  const room = this.roomsById.get(id);
+  if (!room) return null;
+
+  room.groupMembers = (room.groupMembers || []).filter((m) => m !== uid);
+  this.roomsById.set(id, room);
+
+  this.invalidateRoomMembers(id);
+
+  if (room.isDeleted && room.groupMembers.length === 0) {
+    this.removeRoomFromIndex(id);
+    roomCache.delete(`room:name:${room.groupName}`);
+  }
+
+  return room;
+};
+
+RoomCacheService.prototype.removeUserRoom = async function (userId, roomId) {
+  const uid = String(userId);
+  const id = String(roomId);
+
+  const userSet = this.roomsByUser.get(uid);
+  if (userSet) {
+    userSet.delete(id);
+    if (userSet.size === 0) {
+      this.roomsByUser.delete(uid);
+    }
+  }
+};
+
+RoomCacheService.prototype.markRoomDeleted = async function (id) {
+  const room = await this.getRoomById(id);
+
+  if (!room) {
+    return { message: 'Room not found' };
+  }
+
+  room.isDeleted = true;
+
   this.markRoomDeletedInIndex(String(id));
-  return { success: true, message: 'Room has been deleted' };
+
+  return {
+    success: true,
+    message: 'Room has been deleted'
+  };
 };
