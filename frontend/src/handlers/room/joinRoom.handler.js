@@ -33,22 +33,23 @@ let room = joinedRooms.find(r => r._id === roomId) || roomObject || null;
     setLoadingMessages(true);
   }
 
+  const data = {
+    roomId,
+    message: `${user.username} joined the room`,
+    media: null,
+    isSystemMessage: true,
+    systemType: 'member-joined',
+    userId: user._id || user.id,
+    username: user.username,
+  };
+
   if (alreadyJoined) {
+    socket.emit('joinRoom', data);
     return;
   }
 
   setLoadingJoinRoom(true);
   try {
-    const data = {
-      roomId,
-      message: `${user.username} joined the room`,
-      media: null,
-      isSystemMessage: true,
-      systemType: 'member-joined',
-      userId: user._id || user.id,
-      username: user.username,
-    };
-
     const res = await roomService.joinRoom(roomId, data);
 
     

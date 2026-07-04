@@ -107,8 +107,8 @@ export const useChatState = (user) => {
     await loadRoomsHandler(searchQuery, setRooms, setLoadingRooms);
   }, [searchQuery]);
 
-  const loadJoinedRooms = useCallback(async () => {
-    const { joinedRooms } = await loadJoinedRoomsHandler(setJoinedRooms, setLoadingJoinedRooms, setUnreadCounts);
+  const loadJoinedRooms = useCallback(async (socket) => {
+    const { joinedRooms } = await loadJoinedRoomsHandler(setJoinedRooms, setLoadingJoinedRooms, setUnreadCounts, socket);
     return joinedRooms;
   }, []);
 

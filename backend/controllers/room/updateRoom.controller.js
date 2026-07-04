@@ -29,7 +29,14 @@ export async function updateRoom(req, res) {
     }
     
     if (groupDescription !== undefined) updates.groupDescription = groupDescription;
-    if (groupPic !== undefined) updates.groupPic = groupPic;
+    if (groupPic !== undefined) {
+      const isCloudinaryUrl = typeof groupPic === 'string' &&
+        /^https:\/\/res\.cloudinary\.com\//.test(groupPic);
+      if (groupPic && !isCloudinaryUrl) {
+        return res.status(400).json({ message: 'Invalid image URL' });
+      }
+      updates.groupPic = groupPic;
+    }
     
     const updatedRoom = await Room.findByIdAndUpdate(roomId, updates, { new: true }).select('-groupMembers');
     if (!updatedRoom) {

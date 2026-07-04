@@ -121,17 +121,6 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Or, Image URL</label>
-              <input
-                type="text"
-                value={groupPic}
-                onChange={(e) => setGroupPic(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 text-sm placeholder:text-gray-400 transition-colors"
-                placeholder="https://..."
-              />
-            </div>
-
           </form>
         </div>
 
