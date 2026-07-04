@@ -20,8 +20,6 @@ const ChatHeader = memo(function ChatHeader({
   onLeaveRoom,
   unreadCounts = {},
   showSidebar,
-  unreadCounts = {},
-  showSidebar
 }) {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const { theme } = useTheme();
