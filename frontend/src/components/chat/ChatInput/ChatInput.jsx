@@ -389,6 +389,7 @@ const ChatInput = memo(forwardRef(({
         <StickerPicker
           pickerRef={stickerPickerRef}
           onStickerSelect={handleStickerSelect}
+          onClose={() => setShowStickerPicker(false)}
         />
       )}
 

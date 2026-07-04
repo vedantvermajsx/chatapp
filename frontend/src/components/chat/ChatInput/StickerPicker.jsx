@@ -171,7 +171,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-4 sm:grid-cols-3 gap-1.5">
           {items.map((item, i) => {
             const url = getMediaUrl(item.file);
             if (!url) return null;
@@ -187,7 +187,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
                 <img
                   src={url}
                   alt={item.title || activeTab}
-                  className="w-full h-full object-contain p-1"
+                  className="w-full h-full object-contain p-1 sm:p-1"
                   loading="lazy"
                 />
               </button>

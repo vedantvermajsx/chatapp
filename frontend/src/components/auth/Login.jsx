@@ -66,20 +66,12 @@ function Login() {
         </p>
       </div>
 
-      <div className="flex-1 min-h-dvh overflow-y-auto flex items-start sm:items-center justify-center px-4 py-6 sm:p-10">
+      <div className="flex-1 min-h-dvh overflow-y-auto flex items-start sm:items-center justify-center px-4 pt-10 sm:pt-16 sm:p-10">
         <div
           className="w-full max-w-[380px] pb-4 sm:pb-0"
           style={{ animation: 'panelIn 0.4s ease both' }}
         >
-          <div className="flex items-center gap-3 mb-6 lg:hidden">
-            <div className="w-10 h-10 rounded-2xl bg-[#008080]/10 flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-[#008080]" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">GatherUp</p>
-              <p className="text-xs text-gray-500">Chat anywhere, comfortably.</p>
-            </div>
-          </div>
+
 
           {currForm === 1 ? (
             <button

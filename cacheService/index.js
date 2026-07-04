@@ -13,6 +13,7 @@ import cache from './services/CacheService.js';
 import { connectDB } from './database/db.js';
 import { internalLimiter } from './middleware/rateLimiter.js';
 import { hmacAuth } from './middleware/hmacAuth.js';
+import roomCacheService from './services/RoomCacheService.js';
 
 dotenv.config();
 
@@ -67,8 +68,10 @@ app.get('/stats', (req, res) => {
 });
 
 connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
+  .then(async () => {
+   await roomCacheService.initialize();
+  
+  app.listen(PORT, () => {
       console.log(`Cache and Bloom service running on http://localhost:${PORT}`);
     });
   })
