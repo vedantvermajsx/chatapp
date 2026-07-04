@@ -19,6 +19,9 @@ const ChatHeader = memo(function ChatHeader({
   leaveRoomSocket,
   onLeaveRoom,
   unreadCounts = {},
+  showSidebar,
+  onLeaveRoom,
+  unreadCounts = {},
   showSidebar
 }) {
   const [showGroupSettings, setShowGroupSettings] = useState(false);

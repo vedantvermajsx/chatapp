@@ -108,6 +108,7 @@ export const useChatSocket = (user, {
           gender: currentUser.gender
         });
       }
+      loadJoinedRoomsRef.current?.(socket);
     };
 
     const handleNewMessage = async (msg) => {
@@ -288,6 +289,15 @@ export const useChatSocket = (user, {
           if ((msg._id || msg.id) && prev.some(m => m.id === (msg._id || msg.id))) return prev;
           return [...prev, newMessageObj];
         });
+
+        if (!isOwnMessage && !newMessageObj.isSystemMessage) {
+          socket.emit('markRead', {
+            senderId: msg.senderId,
+            receiverId: currentUserId,
+            messageId: newMessageObj.id,
+            timestamp: newMessageObj.timestamp
+          });
+        }
       }
       
       await dbService.addMessage(cacheKey, newMessageObj);
@@ -448,6 +458,8 @@ export const useChatSocket = (user, {
 
     const handleUnreadUpdate = ({ chatKey }) => {
       if (!chatKey) return;
+      const activeKey = currentPrivateChatRef.current ? `private_${currentPrivateChatRef.current.id}` : null;
+      if (chatKey === activeKey) return;
       setUnreadCounts(prev => ({ ...prev, [chatKey]: (prev[chatKey] || 0) + 1 }));
     };
 

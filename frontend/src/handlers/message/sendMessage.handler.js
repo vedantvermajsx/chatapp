@@ -274,6 +274,7 @@ export const sendStickerHandler = async (
         messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
       };
     }
+    await dbService.addMessage(cacheKey, optimisticMessage);
   } else if (currentPrivateChat) {
     setMessages((prev) => [...prev, optimisticMessage]);
     const cacheKey = `private_${currentPrivateChat.id}`;
@@ -283,6 +284,7 @@ export const sendStickerHandler = async (
         messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
       };
     }
+    await dbService.addMessage(cacheKey, optimisticMessage);
   }
 
   (async () => {
@@ -335,6 +337,8 @@ export const sendStickerHandler = async (
             )
           };
         }
+        await dbService.addMessage(cacheKey, newMessageObj);
+        if (tempId !== newMessageObj.id) await dbService.removeMessage(cacheKey, tempId);
       } else if (currentPrivateChat) {
         const cacheKey = `private_${currentPrivateChat.id}`;
         if (messageCache.current[cacheKey]) {
@@ -345,6 +349,8 @@ export const sendStickerHandler = async (
             )
           };
         }
+        await dbService.addMessage(cacheKey, newMessageObj);
+        if (tempId !== newMessageObj.id) await dbService.removeMessage(cacheKey, tempId);
         updatePrivateChatOptimistically(privateChats, setPrivateChats, currentPrivateChat, '🎭');
       }
     } catch (error) {

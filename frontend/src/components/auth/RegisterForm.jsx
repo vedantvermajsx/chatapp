@@ -144,11 +144,13 @@ function RegisterForm({ setCurrForm }) {
             id="register-password"
             name="password"
             type="password"
-            placeholder="Password"
+            placeholder="Password (6-50 characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
             required
+            minLength={6}
+            maxLength={50}
             className={inputClass}
           />
         </div>

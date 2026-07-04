@@ -24,6 +24,10 @@ export async function register(req, res) {
         .json({ message: 'username, email, password and gender are required' });
     }
 
+    if (password.length < 6 || password.length > 50) {
+      return res.status(400).json({ message: 'Password must be between 6 and 50 characters' });
+    }
+
     const trimmedEmail = email.trim().toLowerCase();
     
     if (await bloomFilter.emailMightContain(trimmedEmail)) {
