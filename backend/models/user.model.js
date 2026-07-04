@@ -13,4 +13,7 @@ const userSchema = new mongoose.Schema({
   isOnline: { type: Boolean, default: false }
 }, { timestamps: true });
 
+userSchema.index({ isOnline: 1 });
+userSchema.index({ lastSeen: -1 });
+
 export default mongoose.models.User || mongoose.model('User', userSchema);

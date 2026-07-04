@@ -9,4 +9,8 @@ const roomSchema = new mongoose.Schema({
   isDeleted: { type: Boolean, default: false }
 }, { timestamps: true });
 
+roomSchema.index({ isDeleted: 1, createdAt: -1 });
+roomSchema.index({ groupAdmin: 1 });
+roomSchema.index({ groupMembers: 1 });
+
 export default mongoose.models.Room || mongoose.model('Room', roomSchema);

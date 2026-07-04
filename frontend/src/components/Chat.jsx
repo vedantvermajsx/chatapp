@@ -234,6 +234,7 @@ function Chat() {
           socket={socket}
           typingUsers={typingUsers}
           messageCache={messageCache}
+          showSidebar={showSidebar}
         />
       </CallProvider>
     </div>

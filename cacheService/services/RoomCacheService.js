@@ -354,6 +354,11 @@ RoomCacheService.prototype.addRoomMember = async function (roomId, userId) {
     this.roomsById.set(id, room);
   }
 
+  if (!this.roomsByUser.has(uid)) {
+    this.roomsByUser.set(uid, new Set());
+  }
+  this.roomsByUser.get(uid).add(id);
+
   this.invalidateRoomMembers(id);
 
   return room;
@@ -390,6 +395,14 @@ RoomCacheService.prototype.removeRoomMember = async function (roomId, userId) {
 
   room.groupMembers = (room.groupMembers || []).filter((m) => m !== uid);
   this.roomsById.set(id, room);
+
+  const userSet = this.roomsByUser.get(uid);
+  if (userSet) {
+    userSet.delete(id);
+    if (userSet.size === 0) {
+      this.roomsByUser.delete(uid);
+    }
+  }
 
   this.invalidateRoomMembers(id);
 

@@ -1,4 +1,4 @@
-import { Users, Menu, Settings, Phone, Video } from 'lucide-react';
+import { Users, Menu, Settings, Phone, Video, Bell } from 'lucide-react';
 import { isDesktop } from 'react-device-detect';
 import Avatar from '../common/Avatar';
 import GroupSettingsModal from './Modals/GroupSettingsModal';
@@ -18,7 +18,9 @@ const ChatHeader = memo(function ChatHeader({
   setShowMembersModal,
   setCurrentRoom,
   leaveRoomSocket,
-  onLeaveRoom
+  onLeaveRoom,
+  unreadCounts = {},
+  showSidebar
 }) {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const { theme } = useTheme();
@@ -86,7 +88,26 @@ const ChatHeader = memo(function ChatHeader({
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              {currentRoom.groupAdmin === user._id || user.id && (
+              {!isDesktop && !showSidebar && (() => {
+                const currentKey = currentRoom ? `room_${currentRoom._id}` : currentPrivateChat ? `private_${currentPrivateChat.id}` : null;
+                const totalUnread = Object.entries(unreadCounts)
+                  .filter(([key]) => key !== currentKey)
+                  .reduce((sum, [, count]) => sum + (count || 0), 0);
+                return totalUnread > 0 ? (
+                  <button
+                    onClick={onToggleSidebar}
+                    className="p-2 sm:p-3 rounded-full transition-all relative"
+                    {...getNeumorphicProps(1, 2, 2, 3)}
+                    title={`${totalUnread} unread message${totalUnread > 1 ? 's' : ''}`}
+                  >
+                    <Bell className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.otherUsernameColor }} />
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {totalUnread > 9 ? '9+' : totalUnread}
+                    </span>
+                  </button>
+                ) : null;
+              })()}
+              {(currentRoom.groupAdmin === user._id || currentRoom.groupAdmin === user.id) && (
                 <button
                   onClick={() => setShowGroupSettings(true)}
                   className="p-2 sm:p-3 rounded-full transition-all"
