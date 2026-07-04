@@ -20,7 +20,6 @@ const ChatHeader = memo(function ChatHeader({
   onLeaveRoom,
   unreadCounts = {},
   showSidebar,
-  onLeaveRoom,
   unreadCounts = {},
   showSidebar
 }) {
