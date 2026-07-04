@@ -18,7 +18,7 @@ const TABS = [
   { id: 'gifs', label: 'GIFs' },
 ];
 
-const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
+const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
 
@@ -125,16 +125,26 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef }) => {
   return (
     <div
       ref={pickerRef}
-      className="absolute bottom-full left-1/2 -translate-x-1/2 z-[999] translate-y-16 rounded-2xl flex flex-col overflow-hidden"
+      className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[999] rounded-2xl flex flex-col overflow-hidden sm:absolute sm:inset-x-auto sm:bottom-full sm:left-1/2 sm:translate-y-16 sm:-translate-x-1/2"
       style={{
-        width: 'min(320px, calc(100vw - 40px))',
-        height: '420px',
+        width: 'min(360px, calc(100vw - 24px))',
+        height: 'min(420px, 62dvh)',
+        maxHeight: '62dvh',
         zIndex: 100,
         backgroundColor: theme.background,
         boxShadow: getShadow(theme.isLight, false, 4, 12),
         border: `1px solid ${border}`,
       }}
     >
+      <div className="flex items-center justify-between px-3 py-2 border-b sm:hidden" style={{ borderColor: border }}>
+        <span className="text-xs font-semibold" style={{ color: theme.otherMessageText }}>
+          {activeTab === 'stickers' ? 'Stickers' : 'GIFs'}
+        </span>
+        <button type="button" onClick={onClose} className="p-1 rounded-full">
+          <X className="w-4 h-4" style={{ color: subText }} />
+        </button>
+      </div>
+
 
       { }
       <div className="px-3 pb-1 flex-shrink-0">

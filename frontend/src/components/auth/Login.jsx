@@ -24,7 +24,7 @@ function Login() {
   const { heading, sub } = COPY[currForm];
 
   return (
-    <div className="min-h-screen w-full flex bg-white">
+    <div className="min-h-dvh w-full flex bg-white">
       <div className="hidden lg:flex lg:w-[44%] xl:w-[40%] relative flex-col justify-between bg-[#060a04] text-white p-12 xl:p-14 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(0,128,128,0.5),transparent_55%)]" />
 
@@ -66,12 +66,20 @@ function Login() {
         </p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10">
+      <div className="flex-1 min-h-dvh overflow-y-auto flex items-start sm:items-center justify-center px-4 py-6 sm:p-10">
         <div
-          className="w-full max-w-[380px]"
+          className="w-full max-w-[380px] pb-4 sm:pb-0"
           style={{ animation: 'panelIn 0.4s ease both' }}
         >
-
+          <div className="flex items-center gap-3 mb-6 lg:hidden">
+            <div className="w-10 h-10 rounded-2xl bg-[#008080]/10 flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-[#008080]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">GatherUp</p>
+              <p className="text-xs text-gray-500">Chat anywhere, comfortably.</p>
+            </div>
+          </div>
 
           {currForm === 1 ? (
             <button

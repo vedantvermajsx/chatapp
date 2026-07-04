@@ -2,7 +2,6 @@ import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCallback, useState } from 'react';
 import roomService from '../../../services/room.service';
-import { isMobile } from 'react-device-detect';
 import RoomList from './RoomList';
 import GlobalRoomList from './GlobalRoomList';
 import PrivateChatList from './PrivateChatList';
@@ -275,24 +274,22 @@ function RoomSidebar({
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <div className="fixed inset-0 z-50" style={{ display: showSidebar ? 'block' : 'none' }}>
+  return (
+    <>
+      <div className="fixed inset-0 z-50 md:hidden" style={{ display: showSidebar ? 'block' : 'none' }}>
         <div className="absolute inset-0 bg-black/50" onClick={onCloseSidebar} />
-        <div className="absolute left-0 top-0 h-full w-72" style={{ backgroundColor: theme.background }}>
+        <div className="absolute left-0 top-0 h-full w-[85vw] max-w-72" style={{ backgroundColor: theme.background }}>
           {renderSidebarContent(true)}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div
-      className="w-72 flex-shrink-0 border-r hidden md:block"
-      style={{ backgroundColor: theme.background, borderColor: border }}
-    >
-      {renderSidebarContent(false)}
-    </div>
+      <div
+        className="hidden md:block w-72 lg:w-80 flex-shrink-0 border-r"
+        style={{ backgroundColor: theme.background, borderColor: border }}
+      >
+        {renderSidebarContent(false)}
+      </div>
+    </>
   );
 }
 

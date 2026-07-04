@@ -1,5 +1,4 @@
-import { Users, Menu, Settings, Phone, Video } from 'lucide-react';
-import { isDesktop } from 'react-device-detect';
+import { Users, Menu, Settings, Phone, Video, Bell, Trash2, LogOut } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import GroupSettingsModal from './Modals/GroupSettingsModal';
 import { useState, memo } from 'react';
@@ -18,7 +17,9 @@ const ChatHeader = memo(function ChatHeader({
   setShowMembersModal,
   setCurrentRoom,
   leaveRoomSocket,
-  onLeaveRoom
+  onLeaveRoom,
+  unreadCounts = {},
+  showSidebar
 }) {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const { theme } = useTheme();
@@ -26,6 +27,16 @@ const ChatHeader = memo(function ChatHeader({
   const deleteRoomMutation = useDeleteRoom();
   const { startCall } = useCall() || {};
   const { getNeumorphicProps } = useNeumorphism();
+  const isRoomAdmin = currentRoom && (currentRoom.groupAdmin === user?._id || currentRoom.groupAdmin === user?.id);
+  const currentChatKey = currentRoom?._id
+    ? `room_${currentRoom._id}`
+    : currentPrivateChat?.id
+      ? `private_${currentPrivateChat.id}`
+      : null;
+  const hiddenUnreadCount = Object.entries(unreadCounts).reduce((sum, [key, count]) => {
+    if (key === currentChatKey) return sum;
+    return sum + (count || 0);
+  }, 0);
 
   const handleDeleteRoom = async () => {
     if (window.confirm(`Are you sure you want to delete ${currentRoom.groupName}?`)) {
@@ -62,14 +73,27 @@ const ChatHeader = memo(function ChatHeader({
       backgroundColor: theme.background,
       borderColor: theme.isLight ? '#cbd5e0' : '#4a5568'
     }}>
-      {!isDesktop && (
+      <button
+        onClick={onToggleSidebar}
+        className="p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30 md:hidden"
+        {...getNeumorphicProps(1, 1, 1, 2)}
+        aria-label="Open sidebar"
+      >
+        <Menu className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+      </button>
+
+      {!showSidebar && hiddenUnreadCount > 0 && (
         <button
           onClick={onToggleSidebar}
-          className="p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30"
-          {...getNeumorphicProps(1, 1, 1, 2)}
-          aria-label="Open sidebar"
+          className="relative p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30 md:hidden"
+          {...getNeumorphicProps(1, 2, 2, 3)}
+          aria-label="Open unread chats"
+          title={`${hiddenUnreadCount} unread message${hiddenUnreadCount === 1 ? '' : 's'}`}
         >
-          <Menu className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+          <Bell className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
+          <span className="absolute -top-1 -right-1 min-w-[1.2rem] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+            {hiddenUnreadCount > 99 ? '99+' : hiddenUnreadCount}
+          </span>
         </button>
       )}
 
@@ -82,11 +106,11 @@ const ChatHeader = memo(function ChatHeader({
               </div>
               <div className="min-w-0">
                 <h2 className="text-base sm:text-lg font-bold truncate" style={{ color: theme.otherMessageText }}>{currentRoom.groupName}</h2>
-                <p className="text-xs sm:text-sm truncate" style={{ color: theme.otherUsernameColor, opacity: 0.8 }}>{currentRoom.groupDescription}</p>
+                <p className="hidden sm:block text-xs sm:text-sm truncate" style={{ color: theme.otherUsernameColor, opacity: 0.8 }}>{currentRoom.groupDescription}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              {currentRoom.groupAdmin === user._id || user.id && (
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-2">
+              {isRoomAdmin && (
                 <button
                   onClick={() => setShowGroupSettings(true)}
                   className="p-2 sm:p-3 rounded-full transition-all"
@@ -106,13 +130,23 @@ const ChatHeader = memo(function ChatHeader({
               </button>
 
               <button
-                onClick={(currentRoom.groupAdmin === user._id && !currentRoom?.isDeleted) ? handleDeleteRoom : handleLeaveRoom}
+                onClick={(isRoomAdmin && !currentRoom?.isDeleted) ? handleDeleteRoom : handleLeaveRoom}
                 disabled={leaveRoomMutation.isPending || deleteRoomMutation.isPending}
-                className="p-2  rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50"
+                className="px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50 flex items-center justify-center"
                 {...getNeumorphicProps(1, 1, 1, 1)}
-                title={(currentRoom?.groupAdmin === user?._id && !currentRoom?.isDeleted) ? 'Delete room' : 'Leave Room'}
+                title={(isRoomAdmin && !currentRoom?.isDeleted) ? 'Delete room' : 'Leave room'}
               >
-                <span className='w-8 h-4 text-xs'>{(currentRoom?.groupAdmin === user?._id && !currentRoom?.isDeleted) ? 'Delete room' : 'Leave Room'}</span>
+                {isRoomAdmin && !currentRoom?.isDeleted ? (
+                  <>
+                    <Trash2 className="w-4 h-4 sm:hidden" />
+                    <span className="hidden sm:inline text-xs font-medium">Delete room</span>
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="w-4 h-4 sm:hidden" />
+                    <span className="hidden sm:inline text-xs font-medium">Leave room</span>
+                  </>
+                )}
               </button>
 
 
