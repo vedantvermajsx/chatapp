@@ -10,6 +10,7 @@ class MessageCacheClient {
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: { 'Content-Type': 'application/json' },
+      timeout: 5000,
     });
     attachHmacInterceptor(this.client);
     console.log('Message cache service:', this.baseUrl);

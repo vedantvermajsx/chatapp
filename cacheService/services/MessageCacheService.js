@@ -51,10 +51,10 @@ export async function getRoomMessages({ roomId, userId, limit, before, after, ma
   const cacheKey = isFirstPage ? roomFirstPageKey(roomId, numericLimit) : null;
 
   if (cacheKey) {
-    const cached = messageCache.get(cacheKey);
-    if (cached) return cached;
-
     return dedupe(cacheKey, async () => {
+      const cached = messageCache.get(cacheKey);
+      if (cached) return _filterOutSystemMessages(cached, userId);
+
       const result = await paginateMessages({
         query: { roomId },
         limit: numericLimit,
@@ -63,7 +63,6 @@ export async function getRoomMessages({ roomId, userId, limit, before, after, ma
       });
 
       messageCache.set(cacheKey, result, PAGE_TTL_SECONDS);
-
       return _filterOutSystemMessages(result, userId);
     });
   }
@@ -116,10 +115,10 @@ export async function getPrivateMessages({ userId, otherUserId, limit, before, a
   const cacheKey = isFirstPage ? privateFirstPageKey(userId, otherUserId, numericLimit) : null;
 
   if (cacheKey) {
-    const cached = messageCache.get(cacheKey);
-    if (cached) return cached;
-
     return dedupe(cacheKey, async () => {
+      const cached = messageCache.get(cacheKey);
+      if (cached) return cached;
+
       const result = await paginateMessages({
         query: privateQuery,
         limit: numericLimit,
