@@ -23,7 +23,7 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unread = 0 
                             {room.groupName}
                         </h3>
 
-                        <span className="text-[10px] -translate-x-4 translate-y-3 md:text-xs font-semibold" style={{ color: theme.otherUsernameColor }}>
+                        <span className="-translate-x-4 text-xs font-semibold" style={{ color: theme.otherUsernameColor }}>
                             {room.memberCount ?? 0}
                         </span>
                     </div>
@@ -33,7 +33,7 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unread = 0 
                     }}>
                         {unread > 0
                             ? `${unread > 99 ? '99+' : unread > 9 ? '9+' : unread} new message${unread === 1 ? '' : 's'}`
-                            : room.groupDescription
+                            : room.isDeleted ? "This room has been deleted" : (room.groupDescription?.substr(0, 17) || "") + (room?.groupDescription?.length >= 20 ? "..." : "No description")
                         }
                     </p>
                 </div>
