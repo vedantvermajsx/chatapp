@@ -2,8 +2,13 @@ import Message from '../../models/message.model.js';
 import Room from '../../models/room.model.js';
 import UserRoom from '../../models/userRoom.model.js';
 import ConversationRead from '../../models/conversationRead.model.js';
+import { messageCache } from '../../services/CacheService.js';
 
 export async function getUserRoomIds(userId) {
+  const cacheKey = `userRooms:${userId}`;
+  const cached = messageCache.get(cacheKey);
+  if (cached) return cached;
+
   let userRoom = await UserRoom.findOne({ userId }).lean();
   let roomIds = userRoom?.roomIds?.map(String) ?? null;
 
@@ -19,7 +24,9 @@ export async function getUserRoomIds(userId) {
     }
   }
 
-  return roomIds ?? [];
+  const result = roomIds ?? [];
+  messageCache.set(cacheKey, result, 6000);
+  return result;
 }
 
 export async function computePrivateFromDB(userId) {

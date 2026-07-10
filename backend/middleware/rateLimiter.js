@@ -28,5 +28,10 @@ export const uploadLimiter = rateLimit({
   max: parseInt(process.env.UPLOAD_RATE_LIMIT_MAX, 10) || 10,
   standardHeaders: true,
   legacyHeaders: false,
-  handler: rateLimitHandler,
+  handler: (req, res) => {
+    res.status(429).json({
+      message: 'Slow down, you are uploading a lot of files.',
+      retryAfter: res.getHeader('Retry-After'),
+    });
+  },
 });

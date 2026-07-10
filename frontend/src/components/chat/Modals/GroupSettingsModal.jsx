@@ -1,12 +1,15 @@
-import React, { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import roomService from '../../../services/room.service';
-import api from '../../../services/api';
+import messageService from '../../../services/message.service';
 import Avatar from '../../common/Avatar';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
+  const { theme } = useTheme();
+  const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
   const [groupName, setGroupName] = useState(room.groupName || '');
   const [groupDescription, setGroupDescription] = useState(room.groupDescription || '');
   const [groupPic, setGroupPic] = useState(room.groupPic || '');
@@ -31,16 +34,16 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
       return;
     }
 
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('Image size must be less than 8MB');
+      return;
+    }
+
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', 'avatar');
 
     try {
-      const response = await api.post('/messages/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setGroupPic(response.data.url);
+      const result = await messageService.uploadFile(file, 'avatar');
+      setGroupPic(result.url);
       toast.success('Image uploaded successfully');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to upload image');
@@ -72,11 +75,21 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
         onClick={onClose}
       />
 
-      <div className="relative bg-white border border-gray-200 rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-lg flex flex-col">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-800">Group Settings</h2>
-          <button onClick={onClose} className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors">
-            <X className="w-5 h-5 text-gray-700" />
+      <div className="relative rounded-3xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]" style={{
+        backgroundColor: theme.background,
+        boxShadow: isLight
+          ? '1px 1px 2px rgba(0,0,0,0.1), -1px -1px 2px rgba(255,255,255,0.8)'
+          : '1px 1px 2px rgba(0,0,0,0.4), -1px -1px 2px rgba(255,255,255,0.05)'
+      }}>
+        <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: isLight ? '#cbd5e0' : '#4a5568' }}>
+          <h2 className="text-xl font-bold" style={{ color: theme.otherMessageText }}>Group Settings</h2>
+          <button onClick={onClose} className="p-2 rounded-full transition-all" style={{
+            backgroundColor: theme.background,
+            boxShadow: isLight
+              ? '0px 1px 1px rgba(0,0,0,0.1), -1px -1px 1px rgba(255,255,255,0.8)'
+              : '0px 1px 1px rgba(0,0,0,0.4), -1px -1px 1px rgba(255,255,255,0.05)'
+          }}>
+            <X className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
           </button>
         </div>
 
@@ -84,38 +97,63 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
           <form id="group-form" onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
-                <Avatar url={groupPic} name={groupName} size={24} className="w-24 h-24 text-3xl border border-gray-200" isGroup />
+                <Avatar url={groupPic} name={groupName} size={24} className="w-24 h-24 text-3xl" style={{
+                  boxShadow: isLight
+                    ? 'inset 1px 1px 3px rgba(0,0,0,0.1), inset -1px -1px 3px rgba(255,255,255,0.8)'
+                    : 'inset 1px 1px 3px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.05)'
+                }} isGroup />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="absolute bottom-0 right-0 p-2 rounded-full bg-white border border-gray-200 text-gray-700 hover:text-[#008080] transition-colors disabled:opacity-50"
+                  className="absolute bottom-0 right-0 p-2 rounded-full transition-all border"
+                  style={{
+                    backgroundColor: theme.background,
+                    boxShadow: isLight
+                      ? '2px 2px 4px rgba(0,0,0,0.1), -2px -2px 4px rgba(255,255,255,0.8)'
+                      : '2px 2px 4px rgba(0,0,0,0.4), -2px -2px 4px rgba(255,255,255,0.05)',
+                    borderColor: isLight ? '#e2e8f0' : '#4a5568'
+                  }}
                   title="Upload group picture"
                 >
-                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: theme.otherUsernameColor }} /> : <Camera className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />}
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Group Name</label>
+              <label className="block text-sm font-bold mb-2" style={{ color: theme.otherUsernameColor }}>Group Name</label>
               <input
                 type="text"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 placeholder:text-gray-400 transition-colors"
+                className="w-full px-4 py-3 border-none rounded-xl transition-all"
+                style={{
+                  backgroundColor: theme.background,
+                  color: theme.otherMessageText,
+                  boxShadow: isLight
+                    ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
+                    : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'
+                }}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+              <label className="block text-sm font-bold mb-2" style={{ color: theme.otherUsernameColor }}>Description</label>
               <textarea
                 value={groupDescription}
                 onChange={(e) => setGroupDescription(e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 text-gray-800 placeholder:text-gray-400 transition-colors resize-none"
+                className="w-full px-4 py-3 border-none rounded-xl transition-all resize-none"
+                style={{
+                  backgroundColor: theme.background,
+                  color: theme.otherMessageText,
+                  boxShadow: isLight
+                    ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
+                    : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'
+                }}
                 placeholder="Group description..."
                 required
               />
@@ -124,15 +162,19 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
           </form>
         </div>
 
-        <div className="p-6 border-t border-gray-200">
+        <div className="p-6 border-t" style={{ borderColor: isLight ? '#cbd5e0' : '#4a5568' }}>
           <button
             type="submit"
             form="group-form"
             disabled={isSaving || isUploading || !hasChanges}
-            className={`w-full py-4 font-bold rounded-2xl transition-all flex justify-center items-center gap-2 ${hasChanges && !isSaving && !isUploading
-              ? "bg-[#008080] text-white hover:bg-[#046d6d]"
-              : "bg-gray-100 text-gray-400 opacity-70 cursor-not-allowed"
-              }`}
+            className="w-full py-4 font-bold rounded-2xl transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: theme.background,
+              color: theme.myMessageBubble,
+              boxShadow: isLight
+                ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
+                : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'
+            }}
           >
             {isSaving ? (
               <Loader2 className="w-5 h-5 animate-spin" />

@@ -44,7 +44,7 @@ app.use(globalLimiter);
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
-app.use('/api/messages/upload', uploadLimiter);
+app.use('/api/messages/upload-signature', uploadLimiter);
 app.use('/api/messages', messageRoutes);
 app.get('/health', (_, res) => res.status(200).json({ ok: true }));
 

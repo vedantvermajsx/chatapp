@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Loader2, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import userService from '../../../services/user.service';
-import api from '../../../services/api';
+import messageService from '../../../services/message.service';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import authService from '../../../services/auth.service';
@@ -61,16 +61,16 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
       return;
     }
 
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error('Image size must be less than 8MB');
+      return;
+    }
+
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', 'avatar');
 
     try {
-      const response = await api.post('/messages/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setAvatarUrl(response.data.url);
+      const result = await messageService.uploadFile(file, 'avatar');
+      setAvatarUrl(result.url);
       toast.success('Image uploaded successfully');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to upload image');

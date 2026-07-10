@@ -132,6 +132,7 @@ const UnreadCacheService = {
   async seedRoomOnJoin(userId, roomId) {
     const total = await MessageCountCacheService.getRoomCount(roomId);
     await setRoomReadCount(userId, roomId, total ?? 0);
+    messageCache.delete(`userRooms:${userId}`);
     return 0;
   },
 
@@ -142,6 +143,7 @@ const UnreadCacheService = {
   invalidate(userId) {
     messageCache.delete(privKey(userId));
     messageCache.delete(readKey(userId));
+    messageCache.delete(`userRooms:${userId}`);
   },
 };
 
