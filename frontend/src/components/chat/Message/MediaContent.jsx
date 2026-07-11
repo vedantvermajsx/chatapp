@@ -6,6 +6,7 @@ import ProgressLoader from './ProgressLoader';
 function MediaContent({ msg, isOwn, theme }) {
   const [showMedia, setShowMedia] = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
+  const [playVideo, setPlayVideo] = useState(false);
 
   const shouldAutoRender = (msg.media?.type === 'image' || msg.media?.type === 'gif');
   const isGif = msg.media?.url?.toLowerCase().endsWith('.gif');
@@ -49,32 +50,17 @@ function MediaContent({ msg, isOwn, theme }) {
         </div>
       )}
 
-      {msg.media.type === 'video' && !showMedia && (
+      {msg.media.type === 'video' && (
         <div
           className="relative cursor-pointer"
-          onClick={() => setShowMedia(true)}
+          onClick={() => window.open(msg.media.url, '_blank', 'noopener,noreferrer')}
         >
-          <img
-            src={thumbnailUrl}
-            alt="Video thumbnail"
-            className="rounded-lg max-h-64 w-full object-contain"
+          <video
+            src={msg.media.url}
+            controls
+            className="rounded-lg max-h-48 md:max-h-64 w-full"
           />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-black/60 rounded-full p-3">
-              <Play className="w-8 h-8 text-white" />
-            </div>
-          </div>
         </div>
-      )}
-
-      {msg.media.type === 'video' && showMedia && (
-        <video
-          src={msg.media.url}
-          controls
-          autoPlay
-          className="rounded-lg max-h-48 md:max-h-64 w-full"
-          onDoubleClick={() => window.dispatchEvent(new CustomEvent('openImageZoom', { detail: { url: msg.media.url, media: msg.media, type: 'video' } }))}
-        />
       )}
 
       {msg.media.type === 'audio' && (

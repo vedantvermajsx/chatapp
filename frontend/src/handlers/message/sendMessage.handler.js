@@ -148,6 +148,35 @@ export const sendMessageHandler = async (
           ...uploadResult,
           isPending: false
         };
+        
+        // Clear upload progress now that upload is done
+        setMessages(prev =>
+          prev.map(msg =>
+            (msg.id || msg._id) === tempId
+              ? {
+                  ...msg,
+                  uploadProgress: null
+                }
+              : msg
+          )
+        );
+        
+        const cacheKeyAfterUpload = currentRoom
+          ? `room_${currentRoom._id}`
+          : `private_${currentPrivateChat.id}`;
+
+        if (messageCache.current[cacheKeyAfterUpload]) {
+          messageCache.current[cacheKeyAfterUpload].messages =
+            messageCache.current[cacheKeyAfterUpload].messages.map(msg =>
+              (msg.id || msg._id) === tempId
+                ? {
+                    ...msg,
+                    uploadProgress: null
+                  }
+                : msg
+            );
+        }
+        
         if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
         await dbService.addPendingMessage({ ...pendingMessageData, media: finalMediaToUse });
       }
