@@ -61,8 +61,6 @@ export async function leaveRoom(req, res) {
 
       enqueueMessage(messageData);
 
-      await messageCacheClient.appendRoomMessage(roomId, messageData);
-
       emitNewMessage(roomId, payload);
     }
 
@@ -74,6 +72,9 @@ export async function leaveRoom(req, res) {
       gender: req.user.gender,
       role: req.user.role,
     });
+
+      await messageCacheClient.appendRoomMessage(roomId, messageData);
+
 
     return res.json({ message: 'Left room successfully' });
   } catch (err) {

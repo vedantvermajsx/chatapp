@@ -25,10 +25,6 @@ export async function joinRoom(req, res) {
 
     const roomData = await roomCacheClient.addRoomMember(roomId, userId);
 
-    unreadCacheClient.seedRoomOnJoin(userId, roomId);
-    enqueueRoomMemberJoined(roomId, userId);
-
-
     const _id = new mongoose.Types.ObjectId();
     const content = `${username} joined the group`;
     const timestamp = new Date();
@@ -55,8 +51,9 @@ export async function joinRoom(req, res) {
       timestamp,
     };
 
+    unreadCacheClient.seedRoomOnJoin(userId, roomId);
+    enqueueRoomMemberJoined(roomId, userId);
     enqueueMessage(messageData);
-    await messageCacheClient.appendRoomMessage(roomId, messageData);
     emitNewMessage(roomId, payload);
 
     emitUserJoinedRoom(roomId, {
@@ -67,6 +64,9 @@ export async function joinRoom(req, res) {
       gender: req.user.gender,
       role: req.user.role,
     });
+
+    
+    await messageCacheClient.appendRoomMessage(roomId, messageData);
 
     return res.status(200).json({ message: 'Joined room successfully', room: roomData });
   } catch (err) {
