@@ -104,12 +104,14 @@ export function enqueueEmit(type, data) {
   setImmediate(runWorker);
 }
 
-async function _warmCacheForRoomMessage(roomId, senderId, isSystemMessage) {
+function _warmCacheForRoomMessage(roomId, senderId, isSystemMessage) {
   if (isSystemMessage) return;
 
   const chatKey = `room_${roomId}`;
 
-  const bumpTotal = messageCountCacheClient.incrementRoom(roomId);
+  messageCountCacheClient.incrementRoom(roomId).catch(err => 
+    console.error('[emitQueue] incrementRoom error:', err.message)
+  );
 
   const activeViewerIds = [];
   for (const [userId, viewingRoomId] of activeRooms.entries()) {
@@ -117,16 +119,21 @@ async function _warmCacheForRoomMessage(roomId, senderId, isSystemMessage) {
   }
   const caughtUpIds = new Set([String(senderId), ...activeViewerIds.map(String)]);
 
-  await bumpTotal;
-  await Promise.all(
-    [...caughtUpIds].map((id) => unreadCacheClient.reset(id, chatKey))
-  );
+  [...caughtUpIds].forEach((id) => {
+    unreadCacheClient.reset(id, chatKey).catch(err =>
+      console.error('[emitQueue] unreadCache reset error:', err.message)
+    );
+  });
 }
 
-async function _warmCacheForPrivateMessage(senderId, receiverId) {
-  await Promise.all([
-    unreadCacheClient.incrementPrivate(receiverId, senderId),
-    messageCountCacheClient.incrementPrivate(senderId, receiverId),
-    publish('notification.unread.private', { receiverId, senderId }),
-  ]);
+function _warmCacheForPrivateMessage(senderId, receiverId) {
+  unreadCacheClient.incrementPrivate(receiverId, senderId).catch(err =>
+    console.error('[emitQueue] incrementPrivate unread error:', err.message)
+  );
+  
+  messageCountCacheClient.incrementPrivate(senderId, receiverId).catch(err =>
+    console.error('[emitQueue] incrementPrivate count error:', err.message)
+  );
+  
+  publish('notification.unread.private', { receiverId, senderId });
 }

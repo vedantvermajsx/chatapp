@@ -1,5 +1,4 @@
 import jwt from 'jsonwebtoken';
-import userCacheClient from '../database/userCacheClient.js';
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -12,20 +11,16 @@ export const authenticate = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await userCacheClient.getUserById(String(decoded._id));
-
-    if (!user) return res.status(401).json({ message: 'User not found' });
-
-    const idStr = String(user._id);
+    const idStr = String(decoded._id);
 
     req.user = {
       _id: idStr,
-      username: user.username,
-      avatar: user.avatar,
-      gender: user.gender,
+      username: decoded.username,
+      avatar: decoded.avatar,
+      gender: decoded.gender,
       role: decoded.role || 'user',
-      isOnline: user.isOnline,
-      lastSeen: user.lastSeen,
+      isOnline: decoded.isOnline,
+      lastSeen: decoded.lastSeen,
     };
     next();
   } catch (err) {

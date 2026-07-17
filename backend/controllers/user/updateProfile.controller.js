@@ -7,8 +7,21 @@ export async function updateProfile(req, res) {
     const { username, bio, avatar } = req.body;
     const userId = req.user._id;
 
-    const user = await userCacheClient.getUserById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    let user = {
+      _id: userId,
+      username: req.user.username,
+      avatar: req.user.avatar,
+      gender: req.user.gender,
+      role: req.user.role || 'user',
+      bio: '',
+    };
+
+    try {
+      const cachedUser = await userCacheClient.getUserById(userId);
+      if (cachedUser) user = { ...user, ...cachedUser };
+    } catch (err) {
+      console.warn("updateProfile cache get error:", err.message);
+    }
 
     if (username && username !== user.username) {
       user.username = username;
@@ -19,7 +32,7 @@ export async function updateProfile(req, res) {
     }
 
     await userModel.findByIdAndUpdate(userId, user);
-    await userCacheClient.addUserToCache(userId, Promise.resolve(user));
+    userCacheClient.addUserToCache(userId, Promise.resolve(user)).catch(() => {});
 
     const userData = {
       _id: user._id.toString(),

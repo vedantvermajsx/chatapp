@@ -1,12 +1,10 @@
 import mongoose from 'mongoose';
-import roomCacheClient from '../../database/roomCacheClient.js';
 import xss from 'xss';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { onlineUsers } from '../../socket.js';
 import { _addQualities } from '../../utils/addQualities.js';
-import userCacheClient from '../../database/userCacheClient.js';
 
 export async function sendRoomMessage(req, res) {
   try {
@@ -14,16 +12,6 @@ export async function sendRoomMessage(req, res) {
 
     if (!roomId) {
       return res.status(400).json({ message: 'roomId required' });
-    }
-
-    const room = await roomCacheClient.isValidRoomId(roomId);
-    if (!room) {
-      return res.status(404).json({ message: 'Room not found' });
-    }
-
-    if(!room.isValid){
-      return res.status(403).json({message:'sending messages is not allowed!'
-      });
     }
 
     const sender = req.user;
@@ -36,17 +24,6 @@ export async function sendRoomMessage(req, res) {
     const senderSocketId = senderEntry?.socketId || null;
 
     let taggedUser = null;
-    if (content) {
-      const match = content.match(/@([a-zA-Z0-9_.-]+)/);
-      if (match) {
-        const username = match[1].toLowerCase();
-        const user = await userCacheClient.getUserByUsername(username);
-        if (user && String(user._id) !== senderIdStr) {
-          taggedUser = user._id;
-        }
-      }
-    }
-
     const messageData = {
       _id,
       content,

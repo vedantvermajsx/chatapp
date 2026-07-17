@@ -33,22 +33,50 @@ class LoadBalancerQueue {
       }
 
       const proxy = this.proxies.get(target);
-
       let settled = false;
+      let watchdog;
+      let onFinish, onProxyRes, onProxyError;
+
       const finalize = () => {
         if (settled) return;
         settled = true;
         clearTimeout(watchdog);
         res.removeListener('finish', onFinish);
         res.removeListener('close', onFinish);
+        proxy.removeListener('proxyRes', onProxyRes);
+        proxy.removeListener('error', onProxyError);
         this._release();
       };
 
-      const onFinish = () => finalize();
+      onFinish = () => finalize();
+      onProxyRes = () => {
+        this.healthManager.markHealthy(target);
+        finalize();
+      };
+      onProxyError = (err) => {
+        if (settled) return;
+        console.error(`[Queue] Proxy error (${target}):`, err.message);
+        this.healthManager.markUnhealthy(target);
+        settled = true;
+        clearTimeout(watchdog);
+        res.removeListener('finish', onFinish);
+        res.removeListener('close', onFinish);
+        proxy.removeListener('proxyRes', onProxyRes);
+        proxy.removeListener('error', onProxyError);
+        
+        this.activeCount--;
+        if (retries < this.maxRetries) {
+          this.pendingRequests.unshift({ req, res, retries: retries + 1 });
+        } else if (!res.headersSent) {
+          res.status(502).json({ error: 'All retries exhausted' });
+        }
+        this._drain();
+      };
+      
       res.once('finish', onFinish);
       res.once('close', onFinish);
 
-      const watchdog = setTimeout(() => {
+      watchdog = setTimeout(() => {
         console.error(`[Queue] Watchdog timeout (${target}) - forcing release`);
         this.healthManager.markUnhealthy(target);
         if (!res.headersSent && res.destroy) {
@@ -57,24 +85,12 @@ class LoadBalancerQueue {
         finalize();
       }, this.requestTimeoutMs);
 
+      proxy.once('proxyRes', onProxyRes);
+      proxy.once('error', onProxyError);
+
       proxy.web(req, res, {}, (err) => {
         if (settled) return;
-        settled = true;
-        clearTimeout(watchdog);
-        res.removeListener('finish', onFinish);
-        res.removeListener('close', onFinish);
-
-        console.error(`[Queue] Proxy error (${target}):`, err.message);
-        this.healthManager.markUnhealthy(target);
-
-        this.activeCount--;
-
-        if (retries < this.maxRetries) {
-          this.pendingRequests.unshift({ req, res, retries: retries + 1 });
-        } else if (!res.headersSent) {
-          res.status(502).json({ error: 'All retries exhausted' });
-        }
-        this._drain();
+        onProxyError(err);
       });
     });
   }

@@ -10,7 +10,8 @@ class RoomCacheClient {
 
     this.client = axios.create({
       baseURL: this.baseUrl,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000
     });
     attachHmacInterceptor(this.client);
 

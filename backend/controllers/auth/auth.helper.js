@@ -31,7 +31,15 @@ export async function handleAuthSuccess(res, userDocument, role) {
     await bloomFilter.addEmail(userData.email);
   }
 
-  const token = signToken({ _id: userDocument._id, role });
+  const token = signToken({
+    _id: userDocument._id,
+    role,
+    username: userDocument.username,
+    avatar: userDocument.avatar,
+    gender: userDocument.gender,
+    isOnline: true,
+    lastSeen: userDocument.lastSeen ?? new Date(),
+  });
   const isProduction = process.env.NODE_ENV === 'production';
 
   res.cookie('token', token, {

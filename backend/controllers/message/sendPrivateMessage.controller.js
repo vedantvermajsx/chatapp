@@ -19,11 +19,6 @@ export async function sendPrivateMessage(req, res) {
       return res.status(400).json({ message: 'Cannot send message to yourself' });
     }
 
-    const receiver = await userCacheClient.getUserById(receiverId);
-    if (!receiver) {
-      return res.status(404).json({ message: 'Receiver not found' });
-    }
-
     const _id = new mongoose.Types.ObjectId().toString();
     const sanitizedContent = xss(content || '');
     const timestamp = new Date();

@@ -1,13 +1,43 @@
 import userCacheClient from "../../database/userCacheClient.js";
+import User from "../../models/user.model.js";
 
 export async function getProfile(req, res) {
   try {
     const userId = req.user._id;
     
-    const user = await userCacheClient.getUserById(userId);
+    let user = {
+      _id: userId,
+      username: req.user.username,
+      avatar: req.user.avatar,
+      gender: req.user.gender,
+      isOnline: req.user.isOnline,
+      lastSeen: req.user.lastSeen,
+      age: null,
+      bio: '',
+    };
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    try {
+      const cachedUser = await userCacheClient.getUserById(userId);
+      if (cachedUser) {
+        user = { ...user, ...cachedUser };
+      } else {
+        const dbUser = await User.findById(userId);
+        if (dbUser) {
+          user = {
+            _id: String(dbUser._id),
+            username: dbUser.username,
+            avatar: dbUser.avatar,
+            gender: dbUser.gender,
+            age: dbUser.age,
+            bio: dbUser.bio,
+            isOnline: dbUser.isOnline,
+            lastSeen: dbUser.lastSeen,
+          };
+          userCacheClient.addUserToCache(userId, Promise.resolve(user)).catch(() => {});
+        }
+      }
+    } catch (err) {
+      console.warn("getProfile cache/DB error:", err.message);
     }
 
     const profile = {
