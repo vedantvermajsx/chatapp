@@ -23,7 +23,7 @@ export const getPrivateMessages = async (req, res) => {
     const { user } = req;
     const userId = user._id;
 
-    const [{ messages, hasMore }, theirReadReceipt] = await Promise.all([
+    const [messagesResult, lastReadResult] = await Promise.allSettled([
       messageCacheClient.getPrivateMessages(
         userId,
         otherUserId,
@@ -36,19 +36,29 @@ export const getPrivateMessages = async (req, res) => {
       lastReadCacheClient.get(otherUserId, `private_${userId}`),
     ]);
 
+    if (messagesResult.status === 'rejected') {
+      throw messagesResult.reason;
+    }
+    const { messages, hasMore } = messagesResult.value;
+
+    let theirReadReceipt = null;
+    if (lastReadResult.status === 'fulfilled') {
+      theirReadReceipt = lastReadResult.value;
+    }
+
     const lastRead = {
       messageId: theirReadReceipt?.messageId ?? null,
       seenAt: theirReadReceipt?.lastSeenAt ?? null,
     };
 
     if (!messages || !messages.length) {
-      const unreadCount = await applyUnreadOnFetch({
+      applyUnreadOnFetch({
         userId,
         chatKey: `private_${otherUserId}`,
         hasMore: false,
         messages: [],
       });
-      return res.status(200).json({ messages: [], hasMore: false, lastRead, unreadCount });
+      return res.status(200).json({ messages: [], hasMore: false, lastRead, unreadCount: 0 });
     }
 
     const participantIds = [...new Set([userId, otherUserId])];
@@ -75,14 +85,14 @@ export const getPrivateMessages = async (req, res) => {
       };
     });
 
-    const unreadCount = await applyUnreadOnFetch({
+    applyUnreadOnFetch({
       userId,
       chatKey: `private_${otherUserId}`,
       hasMore,
       messages,
     });
 
-    res.status(200).json({ messages: formattedMessages, hasMore, lastRead, unreadCount });
+    res.status(200).json({ messages: formattedMessages, hasMore, lastRead, unreadCount: 0 });
   } catch (error) {
     console.error('Error getting private messages:', error);
     res.status(500).json({ message: 'Failed to get messages', error: error.message });

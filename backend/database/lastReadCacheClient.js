@@ -1,4 +1,6 @@
 import axios from 'axios';
+import http from 'http';
+import https from 'https';
 import dotenv from 'dotenv';
 import { attachHmacInterceptor } from '../utils/hmacClient.js';
 dotenv.config();
@@ -8,7 +10,9 @@ class LastReadCacheClient {
     this.client = axios.create({
       baseURL: process.env.CACHE_SERVICE_ROOT_URL,
       headers: { 'Content-Type': 'application/json' },
-      timeout: 2000
+      timeout: 5000,
+      httpAgent: new http.Agent({ keepAlive: true, maxSockets: 100 }),
+      httpsAgent: new https.Agent({ keepAlive: true, maxSockets: 100 }),
     });
     attachHmacInterceptor(this.client);
   }
@@ -27,7 +31,7 @@ class LastReadCacheClient {
 
   async setRoom(userId, roomId, { messageId, lastReadAt }) {
     try {
-      await this.client.post(`/last-read/${userId}/room`, { roomId, messageId, lastReadAt });
+      await this.client.post(`/last-read/${userId}/room`, { roomId, messageId, lastReadAt }, { timeout: 30000 });
     } catch (err) {
       console.error('[LastReadCacheClient] setRoom error:', err.message);
     }
@@ -35,7 +39,7 @@ class LastReadCacheClient {
 
   async setPrivate(userId, peerId, { messageId, timestamp, lastSeenAt }) {
     try {
-      await this.client.post(`/last-read/${userId}/private`, { peerId, messageId, timestamp, lastSeenAt });
+      await this.client.post(`/last-read/${userId}/private`, { peerId, messageId, timestamp, lastSeenAt }, { timeout: 30000 });
     } catch (err) {
       console.error('[LastReadCacheClient] setPrivate error:', err.message);
     }
@@ -43,7 +47,7 @@ class LastReadCacheClient {
 
   async invalidate(userId, chatKey) {
     try {
-      await this.client.delete(`/last-read/${userId}/${chatKey}`);
+      await this.client.delete(`/last-read/${userId}/${chatKey}`, { timeout: 30000 });
     } catch (err) {
       console.error('[LastReadCacheClient] invalidate error:', err.message);
     }

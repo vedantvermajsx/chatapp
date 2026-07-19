@@ -36,8 +36,8 @@ export const setupSocket = (server) => {
       threshold: 8,
       zlibDeflateOptions: {
         chunkSize: 16 * 1024,
-        level: 6,
-        memLevel: 8
+        level: 3,
+        memLevel: 9
       },
       zlibInflateOptions: {
         chunkSize: 16 * 1024

@@ -1,5 +1,5 @@
 class LoadBalancerQueue {
-  constructor(healthManager, proxies, maxRetries = 3, requestTimeoutMs = 20000, maxConcurrent = 50) {
+  constructor(healthManager, proxies, maxRetries = 3, requestTimeoutMs = 20000, maxConcurrent = 200) {
     this.healthManager = healthManager;
     this.proxies = proxies;
     this.maxRetries = maxRetries;
@@ -23,75 +23,80 @@ class LoadBalancerQueue {
   }
 
   _handle({ req, res, retries }) {
-    this.healthManager.getNextHealthyServer().then((target) => {
-      if (!target) {
-        if (!res.headersSent) {
-          res.status(502).json({ error: 'No healthy backend servers available' });
-        }
-        this._release();
-        return;
+    const target = this.healthManager.getNextHealthyServer();
+
+    if (!target) {
+      if (!res.headersSent) {
+        res.status(502).json({ error: 'No healthy backend servers available' });
       }
+      this._release();
+      return;
+    }
 
-      const proxy = this.proxies.get(target);
-      let settled = false;
-      let watchdog;
-      let onFinish, onProxyRes, onProxyError;
+    const proxy = this.proxies.get(target);
+    let settled = false;
+    let watchdog;
 
-      const finalize = () => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(watchdog);
-        res.removeListener('finish', onFinish);
-        res.removeListener('close', onFinish);
-        proxy.removeListener('proxyRes', onProxyRes);
-        proxy.removeListener('error', onProxyError);
-        this._release();
-      };
+    const finalize = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      res.removeListener('finish', onFinish);
+      res.removeListener('close', onFinish);
+      proxy.removeListener('proxyRes', onProxyRes);
+      proxy.removeListener('error', onProxyError);
+      this._release();
+    };
 
-      onFinish = () => finalize();
-      onProxyRes = () => {
-        this.healthManager.markHealthy(target);
-        finalize();
-      };
-      onProxyError = (err) => {
-        if (settled) return;
-        console.error(`[Queue] Proxy error (${target}):`, err.message);
-        this.healthManager.markUnhealthy(target);
-        settled = true;
-        clearTimeout(watchdog);
-        res.removeListener('finish', onFinish);
-        res.removeListener('close', onFinish);
-        proxy.removeListener('proxyRes', onProxyRes);
-        proxy.removeListener('error', onProxyError);
-        
-        this.activeCount--;
-        if (retries < this.maxRetries) {
-          this.pendingRequests.unshift({ req, res, retries: retries + 1 });
-        } else if (!res.headersSent) {
-          res.status(502).json({ error: 'All retries exhausted' });
-        }
-        this._drain();
-      };
-      
-      res.once('finish', onFinish);
-      res.once('close', onFinish);
+    const onFinish = () => finalize();
 
-      watchdog = setTimeout(() => {
-        console.error(`[Queue] Watchdog timeout (${target}) - forcing release`);
-        this.healthManager.markUnhealthy(target);
-        if (!res.headersSent && res.destroy) {
-          res.destroy();
-        }
-        finalize();
-      }, this.requestTimeoutMs);
+    const onProxyRes = (proxyRes, proxyReq, proxyResObj) => {
+      if (proxyReq !== req && proxyResObj !== res) return;
+      this.healthManager.markHealthy(target);
+      finalize();
+    };
 
-      proxy.once('proxyRes', onProxyRes);
-      proxy.once('error', onProxyError);
+    const onProxyError = (err, proxyReq) => {
+      if (proxyReq && proxyReq !== req) return; // belongs to another request
+      if (settled) return;
 
-      proxy.web(req, res, {}, (err) => {
-        if (settled) return;
-        onProxyError(err);
-      });
+      console.error(`[Queue] Proxy error (${target}):`, err.message);
+      this.healthManager.markUnhealthy(target);
+
+      settled = true;
+      clearTimeout(watchdog);
+      res.removeListener('finish', onFinish);
+      res.removeListener('close', onFinish);
+      proxy.removeListener('proxyRes', onProxyRes);
+      proxy.removeListener('error', onProxyError);
+
+      this.activeCount--;
+      if (retries < this.maxRetries) {
+        this.pendingRequests.unshift({ req, res, retries: retries + 1 });
+      } else if (!res.headersSent) {
+        res.status(502).json({ error: 'All retries exhausted' });
+      }
+      this._drain();
+    };
+
+    res.once('finish', onFinish);
+    res.once('close', onFinish);
+
+    watchdog = setTimeout(() => {
+      console.error(`[Queue] Watchdog timeout (${target}) - forcing release`);
+      this.healthManager.markUnhealthy(target);
+      if (!res.headersSent && res.destroy) {
+        res.destroy();
+      }
+      finalize();
+    }, this.requestTimeoutMs);
+
+    proxy.on('proxyRes', onProxyRes);
+    proxy.on('error', onProxyError);
+
+    proxy.web(req, res, {}, (err) => {
+      if (settled) return;
+      onProxyError(err, req);
     });
   }
 

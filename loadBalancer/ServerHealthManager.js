@@ -4,14 +4,24 @@ class ServerHealthManager {
     this.cooldownMs = cooldownMs;
     this.serverStatus = new Map();
     this.currentIndex = 0;
+    this.inFlightChecks = new Map();
 
-    servers.forEach(async server => {
+    servers.forEach(server => {
       this.serverStatus.set(server, {
         healthy: true,
         lastChecked: 0
       });
-      await this.checkServerHealth(server);
     });
+
+    this.ready = Promise.all(
+      servers.map(server => this.checkServerHealth(server))
+    );
+  }
+
+  static async create(servers, cooldownMs) {
+    const manager = new ServerHealthManager(servers, cooldownMs);
+    await manager.ready;
+    return manager;
   }
 
   async checkServerHealth(server) {
@@ -22,35 +32,46 @@ class ServerHealthManager {
       return status.healthy;
     }
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(`${server}/health`, {
-        method: "GET",
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      const isHealthy = response.ok;
-
-      this.serverStatus.set(server, {
-        healthy: isHealthy,
-        lastChecked: now
-      });
-
-      return isHealthy;
-    } catch (err) {
-      console.error(`Health check failed for ${server}:`, err.message);
-      this.serverStatus.set(server, {
-        healthy: false,
-        lastChecked: now
-      });
-      return false;
+    if (this.inFlightChecks.has(server)) {
+      return this.inFlightChecks.get(server);
     }
+
+    const checkPromise = (async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(`${server}/health`, {
+          method: "GET",
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        const isHealthy = response.ok;
+
+        this.serverStatus.set(server, {
+          healthy: isHealthy,
+          lastChecked: Date.now()
+        });
+
+        return isHealthy;
+      } catch (err) {
+        console.error(`Health check failed for ${server}:`, err.message);
+        this.serverStatus.set(server, {
+          healthy: false,
+          lastChecked: Date.now()
+        });
+        return false;
+      } finally {
+        this.inFlightChecks.delete(server);
+      }
+    })();
+
+    this.inFlightChecks.set(server, checkPromise);
+    return checkPromise;
   }
 
-  async getNextHealthyServer() {
+  getNextHealthyServer() {
     for (let i = 0; i < this.servers.length; i++) {
       const server = this.servers[this.currentIndex];
       this.currentIndex = (this.currentIndex + 1) % this.servers.length;

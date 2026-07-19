@@ -27,13 +27,13 @@ export const getRoomMessages = async (req, res) => {
 
 
     if (!messages.length) {
-      const unreadCount = await applyUnreadOnFetch({
+      applyUnreadOnFetch({
         userId,
         chatKey: `room_${roomId}`,
         hasMore: false,
         messages: [],
       });
-      return res.status(200).json({ messages: [], hasMore: false, unreadCount });
+      return res.status(200).json({ messages: [], hasMore: false, unreadCount: 0 });
     }
 
     const nonSystemMessages = messages.filter((m) => !m.isSystemMessage);
@@ -68,14 +68,14 @@ export const getRoomMessages = async (req, res) => {
   };
 });
 
-    const unreadCount = await applyUnreadOnFetch({
+    applyUnreadOnFetch({
       userId,
       chatKey: `room_${roomId}`,
       hasMore,
       messages,
     });
 
-    res.status(200).json({ messages: formattedMessages, hasMore, unreadCount });
+    res.status(200).json({ messages: formattedMessages, hasMore, unreadCount: 0 });
   } catch (error) {
     console.error('Error getting room messages:', error);
     res.status(500).json({ message: 'Failed to get messages', error: error.message });

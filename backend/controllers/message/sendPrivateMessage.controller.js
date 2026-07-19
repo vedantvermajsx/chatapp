@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import xss from 'xss';
-import userCacheClient from '../../database/userCacheClient.js';
 import emitNewPrivateMessage from '../../emitters/newPrivateMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
@@ -15,6 +14,7 @@ export async function sendPrivateMessage(req, res) {
     }
 
     const sender = req.user;
+
     if (String(sender._id) === String(receiverId)) {
       return res.status(400).json({ message: 'Cannot send message to yourself' });
     }
@@ -67,6 +67,7 @@ export async function sendPrivateMessage(req, res) {
 
     return res.json(messageData);
   } catch (err) {
+    console.error('[sendPrivateMessage] error:', err);
     return res.status(500).json({ message: err.message });
   }
 }

@@ -11,24 +11,24 @@ export const getLastRead = async (req, res) => {
   }
 };
 
-export const setRoomLastRead = async (req, res) => {
+export const setRoomLastRead = (req, res) => {
   try {
     const { userId } = req.params;
     const { roomId, messageId, lastReadAt } = req.body;
     if (!roomId) return res.status(400).json({ error: 'roomId required' });
-    await LastReadCacheService.setRoom(userId, roomId, { messageId, lastReadAt: new Date(lastReadAt) });
+    LastReadCacheService.setRoom(userId, roomId, { messageId, lastReadAt: new Date(lastReadAt) });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-export const setPrivateLastRead = async (req, res) => {
+export const setPrivateLastRead = (req, res) => {
   try {
     const { userId } = req.params;
     const { peerId, messageId, timestamp, lastSeenAt } = req.body;
     if (!peerId) return res.status(400).json({ error: 'peerId required' });
-    await LastReadCacheService.setPrivate(userId, peerId, {
+    LastReadCacheService.setPrivate(userId, peerId, {
       messageId,
       timestamp: timestamp ? new Date(timestamp) : null,
       lastSeenAt: new Date(lastSeenAt),

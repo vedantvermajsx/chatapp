@@ -22,14 +22,12 @@ async function dedupe(k, fetcher) {
 }
 
 const LastReadCacheService = {
-  
-
-    get(userId, chatKey) {
+  get(userId, chatKey) {
     const cached = messageCache.get(key(userId, chatKey));
     return cached === EMPTY ? null : cached;
   },
 
-    async getOrLoad(userId, chatKey) {
+  async getOrLoad(userId, chatKey) {
     const k = key(userId, chatKey);
     const cached = messageCache.get(k);
     if (cached !== null) return cached === EMPTY ? null : cached;
@@ -68,32 +66,16 @@ const LastReadCacheService = {
     });
   },
 
-  
-
-  async setRoom(userId, roomId, { messageId, lastReadAt }) {
-    await RoomMessageRead.findOneAndUpdate(
-      { userId, roomId },
-      { $set: { lastReadMessageId: messageId ?? null, lastReadAt } },
-      { upsert: true }
-    );
+  setRoom(userId, roomId, { messageId, lastReadAt }) {
     messageCache.set(key(userId, `room_${roomId}`), { messageId, lastReadAt }, TTL);
   },
 
-  async setPrivate(userId, peerId, { messageId, timestamp, lastSeenAt }) {
-    
+  setPrivate(userId, peerId, { messageId, timestamp, lastSeenAt }) {
     if(!userId || !peerId || !messageId){
       return;
     }
-
-    await ConversationRead.findOneAndUpdate(
-      { senderId: peerId, receiverId: userId },
-      { $set: { messageId, timestamp, lastSeenAt } },
-      { upsert: true }
-    );
     messageCache.set(key(userId, `private_${peerId}`), { messageId, timestamp, lastSeenAt }, TTL);
   },
-
-  
 
   invalidate(userId, chatKey) {
     messageCache.delete(key(userId, chatKey));

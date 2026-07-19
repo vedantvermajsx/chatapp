@@ -18,6 +18,10 @@ export function createAdminServer({ port, getStats }) {
   app.use(adminLimiter);
 
   const server = http.createServer(app);
+  
+  server.on('connection', (socket) => {
+    socket.setNoDelay(true);
+  });
 
   const wss = new WebSocketServer({
     server,

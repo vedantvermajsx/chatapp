@@ -1,4 +1,6 @@
 import axios from 'axios';
+import http from 'http';
+import https from 'https';
 import dotenv from 'dotenv';
 import { attachHmacInterceptor } from '../utils/hmacClient.js';
 
@@ -9,7 +11,9 @@ class UserCacheClient {
     this.client = axios.create({
       baseURL: process.env.CACHE_SERVICE_ROOT_URL,
       headers: { 'Content-Type': 'application/json' },
-      timeout: 3000,
+      timeout: 5000,
+      httpAgent: new http.Agent({ keepAlive: true, maxSockets: 100 }),
+      httpsAgent: new https.Agent({ keepAlive: true, maxSockets: 100 }),
     });
     attachHmacInterceptor(this.client);
   }
@@ -18,7 +22,7 @@ class UserCacheClient {
     let lastErr;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        await this.client.post('/users/seed', userDoc);
+        await this.client.post('/users/seed', userDoc, { timeout: 30000 });
         return;
       } catch (err) {
         lastErr = err;
@@ -68,7 +72,7 @@ class UserCacheClient {
   async addUserToCache(userId, dataPromise) {
     try {
       const data = await dataPromise;
-      await this.client.put(`/users/${userId}`, data);
+      await this.client.put(`/users/${userId}`, data, { timeout: 30000 });
     } catch (err) {
       console.warn('[UserCacheClient] addUserToCache error:', err.message);
     }
@@ -88,22 +92,22 @@ class UserCacheClient {
 
   async updateUserById(userId, patch) {
     try {
-      await this.client.put(`/users/${userId}`, patch);
+      await this.client.put(`/users/${userId}`, patch, { timeout: 30000 });
     } catch (err) {
       console.warn('[UserCacheClient] updateUserById error:', err.message);
     }
   }
 
-  async deleteUserById(userId) {
+  async deleteUserById(userId, data) {
     try {
-      await this.client.delete(`/users/${userId}`);
+      await this.client.delete(`/users/${userId}`, { data, timeout: 30000 });
     } catch (err) {
       console.warn('[UserCacheClient] deleteUserById error:', err.message);
     }
   }
 
   invalidate(userId) {
-    this.client.delete(`/users/${userId}/cache`).catch((err) => {
+    this.client.delete(`/users/${userId}/cache`, { timeout: 30000 }).catch((err) => {
       console.error('[UserCacheClient] invalidate error:', err.message);
     });
   }

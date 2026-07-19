@@ -1,4 +1,6 @@
 import axios from 'axios';
+import http from 'http';
+import https from 'https';
 import dotenv from 'dotenv';
 import { attachHmacInterceptor } from '../utils/hmacClient.js';
 
@@ -10,10 +12,15 @@ class MessageCacheClient {
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: { 'Content-Type': 'application/json' },
-      timeout: 5000,
+      timeout: 10000,
+      httpAgent: new http.Agent({ keepAlive: true, maxSockets: 1000 }),
+      httpsAgent: new https.Agent({ keepAlive: true, maxSockets: 1000 }),
     });
     attachHmacInterceptor(this.client);
     console.log('Message cache service:', this.baseUrl);
+    
+    this.roomMessageBatch = new Map();
+    this.batchTimer = null;
   }
 
   async getRoomMessages(roomId, { userId, limit, before, after } = {}) {
@@ -42,7 +49,7 @@ class MessageCacheClient {
 
   async invalidatePrivateMessages(userId, otherUserId) {
     try {
-      await this.client.post('/messages/invalidate', { senderId: userId, receiverId: otherUserId });
+      await this.client.post('/messages/invalidate', { senderId: userId, receiverId: otherUserId }, { timeout: 30000 });
     } catch (err) {
       console.error('[MessageCacheClient] Error invalidating private messages:', err.message);
     }
@@ -50,23 +57,40 @@ class MessageCacheClient {
 
   async invalidateRoomMessages(roomId) {
     try {
-      await this.client.post('/messages/invalidate', { roomId });
+      await this.client.post('/messages/invalidate', { roomId }, { timeout: 30000 });
     } catch (err) {
       console.error('[MessageCacheClient] Error invalidating room messages:', err.message);
     }
   }
 
   async appendRoomMessage(roomId, messageData) {
-    try {
-      await this.client.post('/messages/append', { roomId, messages: [messageData] });
-    } catch (err) {
-      console.error('[MessageCacheClient] Error appending room message:', err.message);
+    if (!this.roomMessageBatch.has(roomId)) {
+      this.roomMessageBatch.set(roomId, []);
+    }
+    this.roomMessageBatch.get(roomId).push(messageData);
+
+    if (!this.batchTimer) {
+      this.batchTimer = setTimeout(() => this._flushRoomMessageBatch(), 200);
+    }
+  }
+
+  async _flushRoomMessageBatch() {
+    this.batchTimer = null;
+    const batches = this.roomMessageBatch;
+    this.roomMessageBatch = new Map();
+
+    for (const [roomId, messages] of batches.entries()) {
+      try {
+        await this.client.post('/messages/append', { roomId, messages }, { timeout: 30000 });
+      } catch (err) {
+        console.error('[MessageCacheClient] Error appending room message:', err.message);
+      }
     }
   }
 
   async appendPrivateMessage(senderId, receiverId, messageData) {
     try {
-      await this.client.post('/messages/append', { senderId, receiverId, messages: [messageData] });
+      await this.client.post('/messages/append', { senderId, receiverId, messages: [messageData] }, { timeout: 30000 });
     } catch (err) {
       console.error('[MessageCacheClient] Error appending private message:', err.message);
     }

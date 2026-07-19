@@ -1,6 +1,5 @@
 import { signToken } from '../../utils/tokenGenerator.js';
 import userCacheClient from '../../database/userCacheClient.js';
-import { bloomFilter } from '../../utils/bloomFilterService.js';
 
 export async function handleAuthSuccess(res, userDocument, role) {
   const userData = {
@@ -20,16 +19,13 @@ export async function handleAuthSuccess(res, userDocument, role) {
   const cacheProfile = {
     _id: userData._id,
     username: userData.username,
+    email: userData.email,
     avatar: userData.avatar,
     gender: userData.gender,
     role,
   };
 
   await userCacheClient.seedUser(cacheProfile);
-  await bloomFilter.add(cacheProfile.username);
-  if (userData.email) {
-    await bloomFilter.addEmail(userData.email);
-  }
 
   const token = signToken({
     _id: userDocument._id,

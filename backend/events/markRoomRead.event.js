@@ -1,5 +1,3 @@
-import RoomMessageRead from '../models/roomMessageRead.model.js';
-import Message from '../models/message.model.js';
 import { activeRooms } from '../socket.js';
 import unreadCacheClient from '../database/unreadCacheClient.js';
 import lastReadCacheClient from '../database/lastReadCacheClient.js';
@@ -13,37 +11,7 @@ const handleMarkRoomRead = (socket) => async ({ roomId, messageId, timestamp }) 
   activeRooms.set(String(userId), String(roomId));
 
   try {
-    let lastReadAt;
-
-    if (timestamp) {
-      lastReadAt = new Date(timestamp);
-    } else if (messageId) {
-      const msg = await Message.findById(messageId, 'timestamp').lean();
-      lastReadAt = msg?.timestamp ?? new Date();
-    } else {
-      lastReadAt = new Date();
-    }
-
-    const existing = await RoomMessageRead.findOne({ userId, roomId })
-      .select('lastReadAt')
-      .lean();
-
-    
-    
-    
-    if (existing?.lastReadAt && lastReadAt <= existing.lastReadAt) {
-      socket.emit('roomReadAck', { roomId });
-      return;
-    }
-
-    await RoomMessageRead.findOneAndUpdate(
-      { userId, roomId },
-      { $set: { lastReadMessageId: messageId ?? null, lastReadAt } },
-      { upsert: true, new: true }
-    );
-
-    await unreadCacheClient.reset(userId, `room_${roomId}`);
-    lastReadCacheClient.setRoom(userId, roomId, { messageId: messageId ?? null, lastReadAt }).catch(() => {});
+    const lastReadAt = timestamp ? new Date(timestamp) : new Date();
 
     publish('notification.lastread.room', {
       userId,
@@ -51,6 +19,11 @@ const handleMarkRoomRead = (socket) => async ({ roomId, messageId, timestamp }) 
       messageId: messageId ?? null,
       lastReadAt: lastReadAt.toISOString(),
     });
+
+    unreadCacheClient.reset(userId, `room_${roomId}`).catch(err => {
+      console.error('[markRoomRead] unreadCache reset error:', err.message);
+    });
+    lastReadCacheClient.setRoom(userId, roomId, { messageId: messageId ?? null, lastReadAt }).catch(() => {});
 
     socket.emit('roomReadAck', { roomId });
   } catch (err) {

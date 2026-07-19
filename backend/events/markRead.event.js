@@ -29,10 +29,12 @@ const handleMarkRead = (socket, io) => async ({ senderId, receiverId, messageId,
   
   if (existing?.timestamp && messageTimestamp <= new Date(existing.timestamp)) return;
 
-  await lastReadCacheClient.setPrivate(receiverId, senderId, {
+  lastReadCacheClient.setPrivate(receiverId, senderId, {
     messageId,
     timestamp: messageTimestamp,
     lastSeenAt: now,
+  }).catch(err => {
+    console.error('[markRead] lastReadCache setPrivate error:', err.message);
   });
 
   unreadCacheClient.reset(receiverId, `private_${senderId}`).catch(() => {});

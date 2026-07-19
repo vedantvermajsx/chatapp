@@ -20,11 +20,10 @@ const MessageCountCacheService = {
     return count;
   },
 
-  incrementRoom(roomId) {
+  incrementRoom(roomId, by = 1) {
     const k = roomKey(roomId);
     const cur = messageCache.get(k);
-    if (cur !== null) messageCache.set(k, cur + 1, TTL);
-    
+    if (cur !== null) messageCache.set(k, cur + by, TTL);
   },
 
   invalidateRoom(roomId) {

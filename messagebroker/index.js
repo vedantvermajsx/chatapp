@@ -37,6 +37,10 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ error: 'Not found' }));
 });
 
+server.on('connection', (socket) => {
+  socket.setNoDelay(true);
+});
+
 const wss = new WebSocketServer({
   server,
   maxPayload: MAX_PAYLOAD_BYTES

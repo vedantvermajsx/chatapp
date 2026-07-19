@@ -71,8 +71,15 @@ connectDB()
   .then(async () => {
    await roomCacheService.initialize();
   
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
       console.log(`Cache and Bloom service running on http://localhost:${PORT}`);
+    });
+    
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
+    
+    server.on('connection', (socket) => {
+      socket.setNoDelay(true);
     });
   })
   .catch((err) => {

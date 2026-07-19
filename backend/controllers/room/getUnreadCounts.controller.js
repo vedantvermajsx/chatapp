@@ -2,10 +2,16 @@ import unreadCacheClient from '../../database/unreadCacheClient.js';
 
 export async function getUnreadCounts(req, res) {
   try {
-    const cached = await unreadCacheClient.getAll(req.user._id);
-    res.json(cached.counts);
+    let counts = {};
+    try {
+      const cached = await unreadCacheClient.getAll(req.user._id);
+      counts = cached.counts || {};
+    } catch (cacheErr) {
+      console.warn('[getUnreadCounts] cache error, returning empty counts:', cacheErr.message);
+    }
+    res.json(counts);
   } catch (err) {
     console.error('[getUnreadCounts] error:', err);
-    res.status(500).json({ message: err.message });
+    res.status(200).json({}); 
   }
 }

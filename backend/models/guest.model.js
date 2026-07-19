@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { generateGuestId } from "../utils/idGenerator.js";
 import Room from "./room.model.js";
 import userCacheClient from "../database/userCacheClient.js";
-import { bloomFilter } from "../utils/bloomFilterService.js";
 
 const guestScheme = new mongoose.Schema({
     _id: { type: String, default: generateGuestId },
@@ -24,11 +23,7 @@ async function cleanupGuestData(guestDoc) {
             { groupMembers: guestId },
             { $pull: { groupMembers: guestId } }
         );
-        await userCacheClient.deleteUserById(guestId);
-        
-        if (guestDoc.username) {
-            await bloomFilter.remove(guestDoc.username);
-        }
+        await userCacheClient.deleteUserById(guestId, { username: guestDoc.username });
     } catch (error) {
         console.error('Error cleaning up guest data:', error);
     }

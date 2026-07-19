@@ -1,4 +1,6 @@
 import axios from 'axios';
+import http from 'http';
+import https from 'https';
 import dotenv from 'dotenv';
 import { attachHmacInterceptor } from '../utils/hmacClient.js';
 
@@ -11,7 +13,9 @@ class RoomCacheClient {
     this.client = axios.create({
       baseURL: this.baseUrl,
       headers: { 'Content-Type': 'application/json' },
-      timeout: 10000
+      timeout: 10000,
+      httpAgent: new http.Agent({ keepAlive: true, maxSockets: 100 }),
+      httpsAgent: new https.Agent({ keepAlive: true, maxSockets: 100 }),
     });
     attachHmacInterceptor(this.client);
 
@@ -21,7 +25,7 @@ class RoomCacheClient {
   async addRoomToCache(id, data) {
     try {
       const resolvedData = await data;
-      await this.client.post('/rooms', { id, data: resolvedData });
+      await this.client.post('/rooms', { id, data: resolvedData }, { timeout: 30000 });
     } catch (err) {
       console.error(`[RoomCacheClient] Error in addRoomToCache for room ${id}:`, err.message);
     }
@@ -59,7 +63,7 @@ class RoomCacheClient {
 
   async refreshRoomCache(roomId) {
     try {
-      await this.client.post(`/rooms/${roomId}/refresh`);
+      await this.client.post(`/rooms/${roomId}/refresh`, undefined, { timeout: 30000 });
     } catch (err) {
       console.error(`[RoomCacheClient] Error in refreshRoomCache for room ${roomId}:`, err.message);
     }
@@ -130,7 +134,7 @@ class RoomCacheClient {
 
   async markRoomDeleted(id) {
     try {
-      await this.client.post(`/rooms/${id}/mark-deleted`);
+      await this.client.post(`/rooms/${id}/mark-deleted`, undefined, { timeout: 30000 });
     } catch (err) {
       console.error(`[RoomCacheClient] Error in markRoomDeleted for room ${id}:`, err.message);
     }
@@ -138,7 +142,7 @@ class RoomCacheClient {
 
   async deleteRoomById(id) {
     try {
-      await this.client.delete(`/rooms/${id}`);
+      await this.client.delete(`/rooms/${id}`, { timeout: 30000 });
     } catch (err) {
       console.error(`[RoomCacheClient] Error in deleteRoomById for room ${id}:`, err.message);
     }
@@ -157,7 +161,7 @@ class RoomCacheClient {
 
   async addRoomMember(roomId, userId) {
     try {
-      const response = await this.client.post(`/rooms/${roomId}/members/add`, { userId });
+      const response = await this.client.post(`/rooms/${roomId}/members/add`, { userId }, { timeout: 30000 });
       return response.data?.room ?? null;
     } catch (err) {
       console.error(`[RoomCacheClient] Error in addRoomMember for room ${roomId}:`, err.message);
@@ -167,7 +171,7 @@ class RoomCacheClient {
 
   async removeRoomMember(roomId, userId) {
     try {
-      await this.client.post(`/rooms/${roomId}/members/remove`, { userId });
+      await this.client.post(`/rooms/${roomId}/members/remove`, { userId }, { timeout: 30000 });
     } catch (err) {
       console.error(`[RoomCacheClient] Error in removeRoomMember for room ${roomId}:`, err.message);
     }

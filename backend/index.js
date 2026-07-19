@@ -19,6 +19,11 @@ dotenv.config();
 const app = express();
 app.set('trust proxy', 1);
 const server = http.createServer(app);
+
+server.on('connection', (socket) => {
+  socket.setNoDelay(true);
+});
+
 const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : ['http://localhost:5173'];
 
 app.use(cors({

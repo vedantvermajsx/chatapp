@@ -21,9 +21,11 @@ async function processItem(item) {
       }
     }
     publish('newMessage', { roomId, payload });
-    _warmCacheForRoomMessage(roomId, payload.userId, payload.isSystemMessage).catch(
-      (err) => console.error('[emitQueue] newMessage cache warm error:', err.message)
-    );
+    try {
+      _warmCacheForRoomMessage(roomId, payload.userId, payload.isSystemMessage);
+    } catch (err) {
+      console.error('[emitQueue] newMessage cache warm error:', err.message);
+    }
 
   } else if (type === 'newPrivateMessage') {
     const { senderId, receiverId, payload } = data;
@@ -37,9 +39,11 @@ async function processItem(item) {
     }
     publish('newPrivateMessage', { senderId: senderStr, receiverId: receiverStr, payload });
     if (!payload.isSystemMessage) {
-      _warmCacheForPrivateMessage(senderId, receiverId).catch(
-        (err) => console.error('[emitQueue] newPrivateMessage cache warm error:', err.message)
-      );
+      try {
+        _warmCacheForPrivateMessage(senderId, receiverId);
+      } catch (err) {
+        console.error('[emitQueue] newPrivateMessage cache warm error:', err.message);
+      }
     }
 
   } else if (type === 'newRoom') {
@@ -119,11 +123,12 @@ function _warmCacheForRoomMessage(roomId, senderId, isSystemMessage) {
   }
   const caughtUpIds = new Set([String(senderId), ...activeViewerIds.map(String)]);
 
-  [...caughtUpIds].forEach((id) => {
-    unreadCacheClient.reset(id, chatKey).catch(err =>
-      console.error('[emitQueue] unreadCache reset error:', err.message)
+  const idList = [...caughtUpIds];
+  if (idList.length > 0) {
+    unreadCacheClient.resetMultiple(idList, chatKey).catch(err =>
+      console.error('[emitQueue] unreadCache resetMultiple error:', err.message)
     );
-  });
+  }
 }
 
 function _warmCacheForPrivateMessage(senderId, receiverId) {

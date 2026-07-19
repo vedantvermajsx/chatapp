@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import httpProxy from 'http-proxy';
+import http from 'http';
+import https from 'https';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -15,9 +17,9 @@ class LoadBalancer {
       healthCheckCooldownMs = 30000,
       healthCheckIntervalMs = 10000 * 10,
       maxRetries = 3,
-      maxConcurrent = parseInt(process.env.MAX_CONCURRENT_REQUESTS, 10) || 50,
+      maxConcurrent = 200,
       port = 8080,
-      rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+      rateLimitWindowMs =  15 * 60 * 1000,
       rateLimitMaxRequests = parseInt(process.env.RATE_LIMIT_MAX, 10) || 300
     } = options;
 
@@ -26,15 +28,28 @@ class LoadBalancer {
       healthCheckCooldownMs
     );
 
+    const httpAgent = new http.Agent({
+      keepAlive: true,
+      maxSockets: 100,
+    });
+    const httpsAgent = new https.Agent({
+      keepAlive: true,
+      maxSockets: 100,
+    });
+
     this.proxies = new Map();
     for (const server of servers) {
+      const isHttps = server.startsWith('https://');
+      const agent = isHttps ? httpsAgent : httpAgent;
+      
       const proxy = httpProxy.createProxyServer({
         target: server,
         changeOrigin: true,
         ws: true,
         xfwd: true,
         proxyTimeout: 15000, 
-        timeout: 15000       
+        timeout: 15000,
+        agent,
       });
 
       proxy.on('error', (err, req, res) => {
@@ -217,6 +232,10 @@ class LoadBalancer {
       console.log(
         `[${new Date().toISOString()}] Load Balancer listening on ${this.port}`
       );
+    });
+
+    this.server.on('connection', (socket) => {
+      socket.setNoDelay(true);
     });
 
     

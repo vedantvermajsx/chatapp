@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const TIMESTAMP_TOLERANCE_MS = 30 * 1000; 
+const TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000; 
 
 function sha256(str) {
   return crypto.createHash('sha256').update(str, 'utf8').digest('hex');
