@@ -81,7 +81,8 @@ function Chat() {
     loadRoomMembers,
     setUnreadCounts,
     setJoinedRooms,
-    setCurrentRoom
+    setCurrentRoom,
+    setHasMoreNewerMessages
   });
 
   useEffect(() => {
@@ -157,7 +158,7 @@ function Chat() {
   }, [currentRoom?._id, currentPrivateChat?.id, handleChatRead, messages, hasMoreNewerMessages]);
 
   return (
-    <div className="flex w-full h-dvh overflow-hidden overflow-y-hidden relative" style={{ backgroundColor: theme.background }}>
+    <div className="flex w-full h-dvh h-svh max-h-dvh max-h-svh overflow-hidden relative" style={{ backgroundColor: theme.background }}>
       <RoomSidebar
         user={user}
         logout={logout}

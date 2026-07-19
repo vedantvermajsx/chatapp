@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
-import { updatePrivateChatOptimistically } from '../handlers/chat.handlers';
+import { updatePrivateChatOptimistically, catchUpNewerMessagesHandler } from '../handlers/chat.handlers.js';
 import { dbService } from '../services/indexedDB.service.js';
 
 export const useChatSocket = (user, {
@@ -19,7 +19,8 @@ export const useChatSocket = (user, {
   loadRoomMembers,
   setUnreadCounts,
   setJoinedRooms,
-  setCurrentRoom
+  setCurrentRoom,
+  setHasMoreNewerMessages
 }) => {
   const socketRef = useRef(null);
   const userRef = useRef(user);
@@ -98,7 +99,7 @@ export const useChatSocket = (user, {
     if (!socketRef.current) return;
     const socket = socketRef.current;
 
-    const handleConnect = () => {
+    const handleConnect = async () => {
       const currentUser = userRef.current;
       if (currentUser) {
         socket.emit('join', {
@@ -109,6 +110,38 @@ export const useChatSocket = (user, {
         });
       }
       loadJoinedRoomsRef.current?.(socket);
+      
+      // Catch up on newer messages for all cached chats
+      const cache = messageCacheRef.current;
+      for (const [cacheKey, data] of Object.entries(cache)) {
+        if (!data.messages || data.messages.length === 0) continue;
+        
+        if (cacheKey.startsWith('room_')) {
+          const roomId = cacheKey.replace('room_', '');
+          await catchUpNewerMessagesHandler(
+            roomId,
+            'room',
+            data.messages,
+            // If this is the current active room, update the messages state
+            currentRoomRef.current?._id === roomId ? setMessages : () => {},
+            setHasMoreNewerMessages,
+            messageCacheRef,
+            setUnreadCounts
+          );
+        } else if (cacheKey.startsWith('private_')) {
+          const otherUserId = cacheKey.replace('private_', '');
+          await catchUpNewerMessagesHandler(
+            otherUserId,
+            'private',
+            data.messages,
+            // If this is the current active chat, update the messages state
+            currentPrivateChatRef.current?.id === otherUserId ? setMessages : () => {},
+            setHasMoreNewerMessages,
+            messageCacheRef,
+            setUnreadCounts
+          );
+        }
+      }
     };
 
     const handleNewMessage = async (msg) => {
