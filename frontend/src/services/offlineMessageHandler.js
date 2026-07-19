@@ -1,23 +1,69 @@
 import { dbService } from './indexedDB.service';
 import messageService from './message.service';
+import roomService from './room.service';
 import { toast } from 'sonner';
+import { catchUpNewerMessagesHandler } from '../handlers/chat.handlers';
 
 let isOnline = navigator.onLine;
 let isSending = false;
+let dependencies = {
+  messageCache: null,
+  setUnreadCounts: null,
+  setHasMoreNewerMessages: null,
+  setMessages: null,
+  currentRoom: null,
+  currentPrivateChat: null
+};
+
+export const setOfflineHandlerDependencies = (deps) => {
+  dependencies = { ...dependencies, ...deps };
+};
 
 export const sendPendingMessages = async () => {
   if (!isOnline || isSending) return;
   isSending = true;
 
   try {
+    if (dependencies.setUnreadCounts) {
+      const unreadCounts = await roomService.getUnreadCounts();
+      dependencies.setUnreadCounts(unreadCounts);
+    }
+
     const pendingMessages = await dbService.getPendingMessages();
     if (!pendingMessages.length) return;
+
+    const caughtUpChats = new Set();
 
     for (const pendingMsg of pendingMessages) {
       const tempId = pendingMsg.id || pendingMsg._id;
       const cacheKey = pendingMsg.type === 'room'
         ? `room_${pendingMsg.roomId}`
         : `private_${pendingMsg.receiverId}`;
+
+      if (!caughtUpChats.has(cacheKey) && dependencies.messageCache) {
+        const chatData = dependencies.messageCache.current[cacheKey];
+        if (chatData?.messages && chatData.messages.length > 0) {
+          const chatId = pendingMsg.type === 'room' ? pendingMsg.roomId : pendingMsg.receiverId;
+          const type = pendingMsg.type;
+
+          const setMessagesForCache = () => {
+            const isCurrentRoom = type === 'room' && dependencies.currentRoom?._id === chatId;
+            const isCurrentPrivate = type === 'private' && dependencies.currentPrivateChat?.id === chatId;
+            return (isCurrentRoom || isCurrentPrivate) ? dependencies.setMessages : () => {};
+          };
+
+          await catchUpNewerMessagesHandler(
+            chatId,
+            type,
+            chatData.messages,
+            setMessagesForCache(),
+            dependencies.setHasMoreNewerMessages,
+            dependencies.messageCache,
+            dependencies.setUnreadCounts
+          );
+          caughtUpChats.add(cacheKey);
+        }
+      }
 
       try {
         let finalMedia = pendingMsg.media || null;
@@ -96,7 +142,7 @@ export const setupOfflineHandler = () => {
     isOnline = true;
     const pending = await dbService.getPendingMessages();
     if (pending.length > 0) {
-      toast.success('Back online! Sending pending messages...');
+      toast.success('Back online! Catching up on new messages and sending pending messages...');
     }
     sendPendingMessages();
   });

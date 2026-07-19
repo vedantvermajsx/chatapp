@@ -17,6 +17,7 @@ import roomService from '../services/room.service';
 import userService from '../services/user.service';
 import { toast } from 'sonner';
 import { dbService } from '../services/indexedDB.service';
+import { setOfflineHandlerDependencies, setupOfflineHandler } from '../services/offlineMessageHandler.js';
 
 export const useChatState = (user) => {
   const [messages, setMessages] = useState([]);
@@ -93,6 +94,21 @@ export const useChatState = (user) => {
     window.addEventListener('pending-message-sent', handlePendingSent);
     return () => window.removeEventListener('pending-message-sent', handlePendingSent);
   }, [currentRoom?._id, currentPrivateChat?.id]);
+
+  useEffect(() => {
+    setOfflineHandlerDependencies({
+      messageCache,
+      setUnreadCounts,
+      setHasMoreNewerMessages,
+      setMessages,
+      currentRoom,
+      currentPrivateChat
+    });
+  }, [messageCache, setUnreadCounts, setHasMoreNewerMessages, setMessages, currentRoom, currentPrivateChat]);
+
+  useEffect(() => {
+    setupOfflineHandler();
+  }, []);
 
   const clearUnread = useCallback((chatKey) => {
     setUnreadCounts(prev => {
