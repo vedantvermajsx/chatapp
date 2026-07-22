@@ -46,7 +46,7 @@ export async function createRoom(req, res) {
       }
     }
 
-    console.log('room created', roomData.groupName);
+   // console.log('room created', roomData.groupName);
     res.status(201).json({ message: 'Room created successfully', room: roomData });
   } catch (err) {
     console.error('[createRoom] unexpected error:', err.message);

@@ -110,32 +110,35 @@ export const useChatSocket = (user, {
         });
       }
       loadJoinedRoomsRef.current?.(socket);
-      
-      // Catch up on newer messages for all cached chats
+      loadPrivateChatsRef.current?.();
+
       const cache = messageCacheRef.current;
-      for (const [cacheKey, data] of Object.entries(cache)) {
-        if (!data.messages || data.messages.length === 0) continue;
-        
-        if (cacheKey.startsWith('room_')) {
-          const roomId = cacheKey.replace('room_', '');
+      const activeRoomId = currentRoomRef.current?._id;
+      const activePrivateChatId = currentPrivateChatRef.current?.id;
+
+      if (activeRoomId) {
+        const cacheKey = `room_${activeRoomId}`;
+        const data = cache[cacheKey];
+        if (data?.messages?.length) {
           await catchUpNewerMessagesHandler(
-            roomId,
+            activeRoomId,
             'room',
             data.messages,
-            // If this is the current active room, update the messages state
-            currentRoomRef.current?._id === roomId ? setMessages : () => {},
+            setMessages,
             setHasMoreNewerMessages,
             messageCacheRef,
             setUnreadCounts
           );
-        } else if (cacheKey.startsWith('private_')) {
-          const otherUserId = cacheKey.replace('private_', '');
+        }
+      } else if (activePrivateChatId) {
+        const cacheKey = `private_${activePrivateChatId}`;
+        const data = cache[cacheKey];
+        if (data?.messages?.length) {
           await catchUpNewerMessagesHandler(
-            otherUserId,
+            activePrivateChatId,
             'private',
             data.messages,
-            // If this is the current active chat, update the messages state
-            currentPrivateChatRef.current?.id === otherUserId ? setMessages : () => {},
+            setMessages,
             setHasMoreNewerMessages,
             messageCacheRef,
             setUnreadCounts
@@ -188,35 +191,34 @@ export const useChatSocket = (user, {
       }
 
       const cacheKey = `room_${msg.roomId}`;
-      if (messageCache.current[cacheKey]) {
-        const prevMessages = messageCache.current[cacheKey].messages;
-        const existingOptimisticIndex = prevMessages.findIndex(m =>
-          m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
-        );
+      if (isActiveRoom) {
+        if (messageCache.current[cacheKey]) {
+          const prevMessages = messageCache.current[cacheKey].messages;
+          const existingOptimisticIndex = prevMessages.findIndex(m =>
+            m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
+          );
 
-        const alreadyInCache = prevMessages.some((m) => String(m.id) === String(newMessage.id));
-        let newCacheMessages;
-        if (!alreadyInCache) {
-          if (isOwnMessage && existingOptimisticIndex !== -1) {
-            newCacheMessages = [...prevMessages];
-            newCacheMessages[existingOptimisticIndex] = newMessage;
-          } else {
-            newCacheMessages = [...prevMessages, newMessage];
+          const alreadyInCache = prevMessages.some((m) => String(m.id) === String(newMessage.id));
+          let newCacheMessages;
+          if (!alreadyInCache) {
+            if (isOwnMessage && existingOptimisticIndex !== -1) {
+              newCacheMessages = [...prevMessages];
+              newCacheMessages[existingOptimisticIndex] = newMessage;
+            } else {
+              newCacheMessages = [...prevMessages, newMessage];
+            }
+          }
+
+          if (newCacheMessages && newCacheMessages !== prevMessages) {
+            messageCache.current[cacheKey] = {
+              ...messageCache.current[cacheKey],
+              messages: newCacheMessages
+            };
           }
         }
 
-        if (newCacheMessages && newCacheMessages !== prevMessages) {
-          messageCache.current[cacheKey] = {
-            ...messageCache.current[cacheKey],
-            messages: newCacheMessages
-          };
-        }
-      }
+        await dbService.addMessage(cacheKey, newMessage);
 
-      await dbService.addMessage(cacheKey, newMessage);
-
-      
-      if (isActiveRoom) {
         socket.emit('markRoomRead', {
           roomId: msg.roomId,
           messageId: newMessage.id,
@@ -224,7 +226,6 @@ export const useChatSocket = (user, {
         });
       }
 
-      
       if (!isOwnMessage && !isActiveRoom && !msg.isSystemMessage) {
         setUnreadCounts(prev => ({ ...prev, [cacheKey]: (prev[cacheKey] || 0) + 1 }));
       }
@@ -276,39 +277,40 @@ export const useChatSocket = (user, {
         }),
       };
 
-      if (messageCache.current[cacheKey]) {
-        const prevMessages = messageCache.current[cacheKey].messages;
-        const existingOptimisticIndex = prevMessages.findIndex(m =>
-          m.isOwn && m.isPending && m.text === newMessageObj.text && (!!m.media === !!newMessageObj.media)
-        );
-
-        let newCacheMessages;
-        if (isOwnMessage && existingOptimisticIndex !== -1) {
-          newCacheMessages = [...prevMessages];
-          newCacheMessages[existingOptimisticIndex] = newMessageObj;
-        } else {
-          const already = prevMessages.some((m) => String(m.id) === String(newMessageObj.id));
-          newCacheMessages = already ? prevMessages : [...prevMessages, newMessageObj];
-        }
-
-        if (newCacheMessages !== prevMessages) {
-          messageCache.current[cacheKey] = {
-            ...messageCache.current[cacheKey],
-            messages: newCacheMessages
-          };
-        }
-      } else {
-        messageCache.current[cacheKey] = {
-          messages: [newMessageObj],
-          hasMore: false,
-          timestamp: Date.now()
-        };
-      }
-
-      
       const isActiveChat = currentPrivateChatRef.current?.id === otherUserId;
 
       if (isActiveChat) {
+        if (messageCache.current[cacheKey]) {
+          const prevMessages = messageCache.current[cacheKey].messages;
+          const existingOptimisticIndex = prevMessages.findIndex(m =>
+            m.isOwn && m.isPending && m.text === newMessageObj.text && (!!m.media === !!newMessageObj.media)
+          );
+
+          let newCacheMessages;
+          if (isOwnMessage && existingOptimisticIndex !== -1) {
+            newCacheMessages = [...prevMessages];
+            newCacheMessages[existingOptimisticIndex] = newMessageObj;
+          } else {
+            const already = prevMessages.some((m) => String(m.id) === String(newMessageObj.id));
+            newCacheMessages = already ? prevMessages : [...prevMessages, newMessageObj];
+          }
+
+          if (newCacheMessages !== prevMessages) {
+            messageCache.current[cacheKey] = {
+              ...messageCache.current[cacheKey],
+              messages: newCacheMessages
+            };
+          }
+        } else {
+          messageCache.current[cacheKey] = {
+            messages: [newMessageObj],
+            hasMore: false,
+            timestamp: Date.now()
+          };
+        }
+
+        await dbService.addMessage(cacheKey, newMessageObj);
+
         setMessages((prev) => {
           if (msg._id && prev.some(m => String(m.id) === String(msg._id))) return prev;
           const existingOptimisticIndex = newMessageObj.isSystemMessage ? -1 : prev.findIndex(m =>
@@ -332,9 +334,6 @@ export const useChatSocket = (user, {
           });
         }
       }
-      
-      await dbService.addMessage(cacheKey, newMessageObj);
-
     };
 
     const handleReadReceipt = async ({ senderId, receiverId, messageId, lastSeenAt }) => {

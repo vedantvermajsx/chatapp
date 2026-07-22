@@ -16,5 +16,5 @@ export function registerRoomHandlers(subscribe, on) {
   subscribe('room.deleted');
   on('room.deleted', handleRoomDeleted);
 
-  console.log('[RoomProcessor] subscribed to room.created, room.member.joined, room.member.left, room.deleted');
+ // console.log('[RoomProcessor] subscribed to room.created, room.member.joined, room.member.left, room.deleted');
 }

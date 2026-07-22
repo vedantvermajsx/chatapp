@@ -72,9 +72,9 @@ class LoadBalancer {
       });
 
       proxy.on('proxyRes', (proxyRes, req) => {
-        console.log(
-          `[${new Date().toISOString()}] [LB] ${req.method} ${req.url} -> ${server} (${proxyRes.statusCode})`
-        );
+        // console.log(
+        //   `[${new Date().toISOString()}] [LB] ${req.method} ${req.url} -> ${server} (${proxyRes.statusCode})`
+        // );
         this.healthManager.markHealthy(server);
       });
 
@@ -113,17 +113,16 @@ class LoadBalancer {
 
   setupRequestLogger() {
     this.app.use((req, res, next) => {
-      const start = Date.now();
+     // const start = Date.now();
+      // console.log(
+      //   `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} from ${req.ip} - Started`
+      // );
 
-      console.log(
-        `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} from ${req.ip} - Started`
-      );
-
-      res.on('finish', () => {
-        console.log(
-          `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${res.statusCode} (${Date.now() - start}ms)`
-        );
-      });
+      // res.on('finish', () => {
+      //   console.log(
+      //     `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${res.statusCode} (${Date.now() - start}ms)`
+      //   );
+      // });
 
       next();
     });
@@ -215,9 +214,9 @@ class LoadBalancer {
           await this.healthManager.checkServerHealth(server);
 
           if (this.healthManager.serverStatus.get(server).healthy) {
-            console.log(
-              `[${new Date().toISOString()}] Server restored: ${server}`
-            );
+          //  console.log(
+          //    `[${new Date().toISOString()}] Server restored: ${server}`
+          //  );
             this.queue.process();
           }
         }

@@ -13,7 +13,7 @@ async function setPresence(userId, isOnline, lastSeen) {
     await Model.findByIdAndUpdate(userId, {
       $set: { isOnline, lastSeen: seenAt },
     });
-    console.log(`[UserPresenceProcessor] ${userId} -> isOnline:${isOnline} @ ${seenAt.toISOString()}`);
+   // console.log(`[UserPresenceProcessor] ${userId} -> isOnline:${isOnline} @ ${seenAt.toISOString()}`);
   } catch (err) {
     console.error(`[UserPresenceProcessor] failed to set presence for ${userId}:`, err.message);
   }

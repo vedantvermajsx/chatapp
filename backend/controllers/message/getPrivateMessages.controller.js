@@ -52,13 +52,13 @@ export const getPrivateMessages = async (req, res) => {
     };
 
     if (!messages || !messages.length) {
-      applyUnreadOnFetch({
+      const unreadCount = await applyUnreadOnFetch({
         userId,
         chatKey: `private_${otherUserId}`,
         hasMore: false,
         messages: [],
       });
-      return res.status(200).json({ messages: [], hasMore: false, lastRead, unreadCount: 0 });
+      return res.status(200).json({ messages: [], hasMore: false, lastRead, unreadCount });
     }
 
     const participantIds = [...new Set([userId, otherUserId])];
@@ -67,7 +67,8 @@ export const getPrivateMessages = async (req, res) => {
     const formattedMessages = messages.map((msg) => {
       const isOwn = String(msg.senderId) === String(userId);
 
-      const senderDetails = userDetailsMap.get(msg.senderId) || deletedUserFallback(msg);
+      const cachedSender = userDetailsMap.get(msg.senderId);
+      const senderDetails = cachedSender && cachedSender.username ? cachedSender : deletedUserFallback(msg);
 
       return {
         _id: msg._id || msg.id,
@@ -85,14 +86,14 @@ export const getPrivateMessages = async (req, res) => {
       };
     });
 
-    applyUnreadOnFetch({
+    const unreadCount = await applyUnreadOnFetch({
       userId,
       chatKey: `private_${otherUserId}`,
       hasMore,
       messages,
     });
 
-    res.status(200).json({ messages: formattedMessages, hasMore, lastRead, unreadCount: 0 });
+    res.status(200).json({ messages: formattedMessages, hasMore, lastRead, unreadCount });
   } catch (error) {
     console.error('Error getting private messages:', error);
     res.status(500).json({ message: 'Failed to get messages', error: error.message });

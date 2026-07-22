@@ -60,6 +60,15 @@ class MessageService {
     }
   }
 
+  async getLastReadStatus(otherUserId) {
+    try {
+      const response = await api.get(`${this.basePath}/private/${otherUserId}/last-seen`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getRoomMessages(roomId, limit = 20, before = null, after = null) {
     try {
       const params = new URLSearchParams({ limit });

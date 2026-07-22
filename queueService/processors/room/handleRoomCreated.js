@@ -9,7 +9,7 @@ export async function handleRoomCreated({ room, creatorId }) {
       ...room,
       _id: new mongoose.Types.ObjectId(room._id),
     });
-    console.log(`[RoomProcessor] created room ${room._id} (${room.groupName})`);
+  //  console.log(`[RoomProcessor] created room ${room._id} (${room.groupName})`);
   } catch (err) {
     if (err.code === 11000) {
       console.warn(`[RoomProcessor] duplicate room ignored: ${room.groupName}`);
@@ -25,7 +25,7 @@ export async function handleRoomCreated({ room, creatorId }) {
       { $addToSet: { roomIds: room._id } },
       { upsert: true }
     );
-    console.log(`[RoomProcessor] added room ${room._id} to UserRoom for creator ${creatorId}`);
+   // console.log(`[RoomProcessor] added room ${room._id} to UserRoom for creator ${creatorId}`);
   } catch (err) {
     console.error(`[RoomProcessor] failed to update UserRoom for creator ${creatorId}:`, err.message);
   }

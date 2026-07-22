@@ -5,8 +5,6 @@ import { _addQualities } from '../../utils/addQualities.js';
 export async function uploadMedia(req, res) {
   try {
 
-    console.log("upload cloudinary called ... ");
-    
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }

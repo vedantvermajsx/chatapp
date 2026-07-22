@@ -33,7 +33,8 @@ export const getPrivateChats = async (req, res) => {
           ? lastMessage.receiverId
           : lastMessage.senderId;
 
-        const rawOtherUser = userDetailsMap.get(otherUserId) || deletedUserFallback(otherUserId);
+        const cachedOtherUser = userDetailsMap.get(otherUserId);
+        const rawOtherUser = cachedOtherUser && cachedOtherUser.username ? cachedOtherUser : deletedUserFallback(otherUserId);
 
         
         

@@ -1,4 +1,4 @@
-import { messageCache } from './CacheService.js';
+import { readStateCache } from './CacheService.js';
 import ConversationRead from '../models/conversationRead.model.js';
 import RoomMessageRead from '../models/roomMessageRead.model.js';
 
@@ -23,13 +23,13 @@ async function dedupe(k, fetcher) {
 
 const LastReadCacheService = {
   get(userId, chatKey) {
-    const cached = messageCache.get(key(userId, chatKey));
+    const cached = readStateCache.get(key(userId, chatKey));
     return cached === EMPTY ? null : cached;
   },
 
   async getOrLoad(userId, chatKey) {
     const k = key(userId, chatKey);
-    const cached = messageCache.get(k);
+    const cached = readStateCache.get(k);
     if (cached !== null) return cached === EMPTY ? null : cached;
 
     return dedupe(k, async () => {
@@ -42,7 +42,7 @@ const LastReadCacheService = {
           .lean();
         if (record) {
           const val = { messageId: record.lastReadMessageId, lastReadAt: record.lastReadAt };
-          messageCache.set(k, val, TTL);
+          readStateCache.set(k, val, TTL);
           return val;
         }
       } else if (chatKey.startsWith('private_')) {
@@ -56,34 +56,34 @@ const LastReadCacheService = {
             timestamp: record.timestamp,
             lastSeenAt: record.lastSeenAt,
           };
-          messageCache.set(k, val, TTL);
+          readStateCache.set(k, val, TTL);
           return val;
         }
       }
 
-      messageCache.set(k, EMPTY, NEGATIVE_TTL);
+      readStateCache.set(k, EMPTY, NEGATIVE_TTL);
       return null;
     });
   },
 
   setRoom(userId, roomId, { messageId, lastReadAt }) {
-    messageCache.set(key(userId, `room_${roomId}`), { messageId, lastReadAt }, TTL);
+    readStateCache.set(key(userId, `room_${roomId}`), { messageId, lastReadAt }, TTL);
   },
 
   setPrivate(userId, peerId, { messageId, timestamp, lastSeenAt }) {
     if(!userId || !peerId || !messageId){
       return;
     }
-    messageCache.set(key(userId, `private_${peerId}`), { messageId, timestamp, lastSeenAt }, TTL);
+    readStateCache.set(key(userId, `private_${peerId}`), { messageId, timestamp, lastSeenAt }, TTL);
   },
 
   invalidate(userId, chatKey) {
-    messageCache.delete(key(userId, chatKey));
+    readStateCache.delete(key(userId, chatKey));
   },
 
   invalidateAllForUser(userId, chatKeys = []) {
     for (const ck of chatKeys) {
-      messageCache.delete(key(userId, ck));
+      readStateCache.delete(key(userId, ck));
     }
   }
 };

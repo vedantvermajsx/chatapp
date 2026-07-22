@@ -171,6 +171,7 @@ const MessageList = ({
                 if (idx === firstMessageIndex) firstMsgElRef.current = el;
                 if (idx === lastMessagePaginationIndex) lastMsgPaginationRef.current = el;
               }}
+              className={idx === messages.length - 1 ? 'animate-bubble-in' : ''}
             >
               {msg?.isSystemMessage ? <SystemMessage msg={msg} isPrivateChat={isPrivateChat} /> :
                 <Message

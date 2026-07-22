@@ -64,34 +64,40 @@ export const loadRoomMessagesHandler = async (
 
 async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts) {
   try {
-    let latestTimestamp = currentCache.messages?.[currentCache.messages.length - 1]?.timestamp;
+    let mergedMessages = currentCache.messages;
+    let latestTimestamp = mergedMessages?.[mergedMessages.length - 1]?.timestamp;
     if (!latestTimestamp) return;
 
-    let mergedMessages = currentCache.messages;
-    const fetchLimit = unreadCount > 0 ? Math.min(unreadCount, 20) : 20;
+    let hasMore = true;
+    let lastUnreadCount = unreadCount;
 
-    const res = await messageService.getRoomMessages(roomId, fetchLimit, null, latestTimestamp);
-    if (!res.messages?.length) {
-      if (setHasMoreNewerMessages) setHasMoreNewerMessages(res.hasMore || false);
-      syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
-      return;
+    while (hasMore) {
+      const res = await messageService.getRoomMessages(roomId, 20, null, latestTimestamp);
+      lastUnreadCount = res.unreadCount;
+      hasMore = res.hasMore || false;
+
+      if (!res.messages?.length) break;
+
+      const existingIds = new Set(mergedMessages.map(m => String(m.id)));
+      const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
+
+      if (reallyNew.length) {
+        mergedMessages = [...mergedMessages, ...reallyNew];
+        await dbService.mergeNewMessages(cacheKey, reallyNew);
+        latestTimestamp = mergedMessages[mergedMessages.length - 1].timestamp;
+      } else if (hasMore) {
+        break;
+      }
     }
 
-    const existingIds = new Set(mergedMessages.map(m => String(m.id)));
-    const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
-
-    if (reallyNew.length) {
-      mergedMessages = [...mergedMessages, ...reallyNew];
-      messageCache.current[cacheKey] = {
-        messages: mergedMessages,
-        hasMore: currentCache.hasMore,
-        timestamp: Date.now(),
-      };
-      setMessages(mergedMessages);
-      await dbService.mergeNewMessages(cacheKey, reallyNew);
-    }
-    if (setHasMoreNewerMessages) setHasMoreNewerMessages(res.hasMore || false);
-    syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
+    messageCache.current[cacheKey] = {
+      messages: mergedMessages,
+      hasMore: currentCache.hasMore,
+      timestamp: Date.now(),
+    };
+    setMessages(mergedMessages);
+    if (setHasMoreNewerMessages) setHasMoreNewerMessages(hasMore);
+    syncUnreadFromResponse(setUnreadCounts, cacheKey, lastUnreadCount);
   } catch {
   }
 }

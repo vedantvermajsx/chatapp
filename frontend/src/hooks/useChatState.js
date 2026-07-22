@@ -348,7 +348,7 @@ export const useChatState = (user) => {
       setUnreadCounts
     );
     setShowSidebar(false);
-  }, [joinedRooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread, setJoinedRooms, loadJoinedRooms]);
+  }, [joinedRooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread, setJoinedRooms, loadJoinedRooms, unreadCounts]);
 
   const startPrivateChat = useCallback(async (otherUser, socket) => {
     const switchId = ++currentSwitchId.current;
@@ -370,7 +370,7 @@ export const useChatState = (user) => {
       setUnreadCounts
     );
     setShowSidebar(false);
-  }, [user, CACHE_TTL, clearUnread]);
+  }, [user, CACHE_TTL, clearUnread, unreadCounts]);
 
   const loadMoreMessages = useCallback(async () => {
     if (currentPrivateChat) {

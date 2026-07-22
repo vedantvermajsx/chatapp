@@ -11,7 +11,7 @@ export async function handleMemberLeft({ roomId, userId }) {
       { $pull: { groupMembers: userId } },
       { new: true }
     ).lean();
-    console.log(`[RoomProcessor] removed member ${userId} from room ${roomId}`);
+  //  console.log(`[RoomProcessor] removed member ${userId} from room ${roomId}`);
   } catch (err) {
     console.error(`[RoomProcessor] failed to remove member ${userId} from room ${roomId}:`, err.message);
   }
@@ -36,7 +36,7 @@ export async function handleMemberLeft({ roomId, userId }) {
       await Message.deleteMany({ roomId });
       await RoomMessageRead.deleteMany({ roomId });
       await Room.deleteOne({ _id: roomId });
-      console.log(`[RoomProcessor] purged deleted room ${roomId} after last member left`);
+    //  console.log(`[RoomProcessor] purged deleted room ${roomId} after last member left`);
     } catch (err) {
       console.error(`[RoomProcessor] failed to purge deleted room ${roomId}:`, err.message);
     }

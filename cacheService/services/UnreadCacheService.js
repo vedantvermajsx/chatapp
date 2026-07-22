@@ -1,4 +1,4 @@
-import { messageCache } from './CacheService.js';
+import { readStateCache } from './CacheService.js';
 import MessageCountCacheService from './MessageCountCacheService.js';
 import RoomMessageRead from '../models/roomMessageRead.model.js';
 
@@ -21,21 +21,21 @@ function roomIdOf(chatKey) {
 }
 
 async function getRoomReadCount(userId, roomId) {
-  const all = messageCache.get(readKey(userId)) ?? {};
+  const all = readStateCache.get(readKey(userId)) ?? {};
   if (Object.prototype.hasOwnProperty.call(all, roomId)) return all[roomId];
 
   const doc = await RoomMessageRead.findOne({ userId, roomId }).lean();
   const count = doc?.readCount ?? 0;
   all[roomId] = count;
-  messageCache.set(readKey(userId), all, TTL);
+  readStateCache.set(readKey(userId), all, TTL);
   return count;
 }
 
 function setRoomReadCount(userId, roomId, count) {
   const clamped = Math.max(0, count);
-  const all = messageCache.get(readKey(userId)) ?? {};
+  const all = readStateCache.get(readKey(userId)) ?? {};
   all[roomId] = clamped;
-  messageCache.set(readKey(userId), all, TTL);
+  readStateCache.set(readKey(userId), all, TTL);
   return clamped;
 }
 
@@ -49,7 +49,7 @@ async function roomUnread(userId, roomId) {
 
 const UnreadCacheService = {
   getAll(userId) {
-    return messageCache.get(privKey(userId)) ?? null;
+    return readStateCache.get(privKey(userId)) ?? null;
   },
 
   async getAllWithRooms(userId, roomIds = []) {
@@ -65,20 +65,20 @@ const UnreadCacheService = {
   },
 
   seed(userId, counts) {
-    const existing = messageCache.get(privKey(userId));
+    const existing = readStateCache.get(privKey(userId));
     if (existing !== null) return;
     const privateOnly = {};
     for (const [chatKey, count] of Object.entries(counts || {})) {
       if (!isRoomKey(chatKey)) privateOnly[chatKey] = count;
     }
-    messageCache.set(privKey(userId), privateOnly, TTL);
+    readStateCache.set(privKey(userId), privateOnly, TTL);
   },
 
   increment(userId, chatKey) {
     if (isRoomKey(chatKey)) return;
-    const existing = messageCache.get(privKey(userId)) ?? {};
+    const existing = readStateCache.get(privKey(userId)) ?? {};
     existing[chatKey] = (existing[chatKey] ?? 0) + 1;
-    messageCache.set(privKey(userId), existing, TTL);
+    readStateCache.set(privKey(userId), existing, TTL);
   },
 
   async reset(userId, chatKey) {
@@ -88,10 +88,10 @@ const UnreadCacheService = {
       setRoomReadCount(userId, roomId, total ?? 0);
       return 0;
     }
-    const existing = messageCache.get(privKey(userId));
+    const existing = readStateCache.get(privKey(userId));
     if (!existing || !existing[chatKey]) return 0;
     delete existing[chatKey];
-    messageCache.set(privKey(userId), existing, TTL);
+    readStateCache.set(privKey(userId), existing, TTL);
     return 0;
   },
 
@@ -106,7 +106,7 @@ const UnreadCacheService = {
       setRoomReadCount(userId, roomId, nextRead);
       return Math.max(0, (total ?? 0) - nextRead);
     }
-    const existing = messageCache.get(privKey(userId)) ?? {};
+    const existing = readStateCache.get(privKey(userId)) ?? {};
     const current = existing[chatKey] ?? 0;
     const next = Math.max(0, current - Math.max(0, by));
     if (next === 0) {
@@ -114,25 +114,25 @@ const UnreadCacheService = {
     } else {
       existing[chatKey] = next;
     }
-    messageCache.set(privKey(userId), existing, TTL);
+    readStateCache.set(privKey(userId), existing, TTL);
     return next;
   },
 
   async seedRoomOnJoin(userId, roomId) {
     const total = await MessageCountCacheService.getRoomCount(roomId);
     setRoomReadCount(userId, roomId, total ?? 0);
-    messageCache.delete(`userRooms:${userId}`);
+    readStateCache.delete(`userRooms:${userId}`);
     return 0;
   },
 
   set(userId, counts) {
-    messageCache.set(privKey(userId), { ...counts }, TTL);
+    readStateCache.set(privKey(userId), { ...counts }, TTL);
   },
 
   invalidate(userId) {
-    messageCache.delete(privKey(userId));
-    messageCache.delete(readKey(userId));
-    messageCache.delete(`userRooms:${userId}`);
+    readStateCache.delete(privKey(userId));
+    readStateCache.delete(readKey(userId));
+    readStateCache.delete(`userRooms:${userId}`);
   },
 };
 

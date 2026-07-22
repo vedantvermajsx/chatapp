@@ -74,4 +74,8 @@ class CacheService {
 export const userCache = new CacheService(5000);
 export const messageCache = new CacheService(50000);
 export const roomCache = new CacheService(5000);
+// Dedicated store for unread counters and last-read pointers so high-churn
+// message-page/chat-list caching can never evict them (they were sharing
+// messageCache's LRU map before, which caused unread counts to vanish).
+export const readStateCache = new CacheService(20000);
 export default userCache;

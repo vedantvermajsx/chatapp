@@ -83,18 +83,18 @@ async function start() {
 
   subscribe('user.registered');
   on('user.registered', (data) => userQueue.add(data));
-  console.log('[UserRegistrationProcessor] subscribed to user.registered');
+ // console.log('[UserRegistrationProcessor] subscribed to user.registered');
 
   subscribe('guest.registered');
   on('guest.registered', (data) => guestQueue.add(data));
-  console.log('[GuestRegistrationProcessor] subscribed to guest.registered');
+  //console.log('[GuestRegistrationProcessor] subscribed to guest.registered');
 
   subscribe('user.presence.online');
   on('user.presence.online', (data) => presenceQueue.add({ _eventType: 'user.presence.online', ...data }));
 
   subscribe('user.presence.offline');
   on('user.presence.offline', (data) => presenceQueue.add({ _eventType: 'user.presence.offline', ...data }));
-  console.log('[UserPresenceProcessor] subscribed to user.presence.online, user.presence.offline');
+  //console.log('[UserPresenceProcessor] subscribed to user.presence.online, user.presence.offline');
 
   subscribe('room.created');
   on('room.created', (data) => roomQueue.add({ _eventType: 'room.created', ...data }));
@@ -108,7 +108,7 @@ async function start() {
   subscribe('room.deleted');
   on('room.deleted', (data) => roomQueue.add({ _eventType: 'room.deleted', ...data }));
 
-  console.log('[RoomProcessor] subscribed to room.created, room.member.joined, room.member.left, room.deleted');
+  //console.log('[RoomProcessor] subscribed to room.created, room.member.joined, room.member.left, room.deleted');
 
   subscribe('notification.unread.private');
   on('notification.unread.private', (data) => notificationQueue.add({ _eventType: 'notification.unread.private', ...data }));
@@ -119,7 +119,7 @@ async function start() {
   subscribe('notification.lastread.private');
   on('notification.lastread.private', (data) => notificationQueue.add({ _eventType: 'notification.lastread.private', ...data }));
 
-  console.log('[NotificationProcessor] subscribed to notification.* channels');
+  //console.log('[NotificationProcessor] subscribed to notification.* channels');
 
   createAdminServer({
     port: process.env.PORT || 6000,

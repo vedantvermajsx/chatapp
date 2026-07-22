@@ -1,14 +1,20 @@
 import unreadCacheClient from '../database/unreadCacheClient.js';
 
-export function applyUnreadOnFetch({ userId, chatKey, hasMore, messages = [] }) {
-  if (!userId || !chatKey) return null;
+export async function applyUnreadOnFetch({ userId, chatKey, hasMore, messages = [] }) {
+  if (!userId || !chatKey) return 0;
 
   const unreadEligibleCount = messages.filter((m) => !m.isSystemMessage).length;
 
-  if (hasMore === false) {
-    unreadCacheClient.reset(userId, chatKey).catch(() => {});
-  } else if (unreadEligibleCount > 0) {
-    unreadCacheClient.decrement(userId, chatKey, unreadEligibleCount).catch(() => {});
+  try {
+    if (hasMore === false) {
+      const count = await unreadCacheClient.reset(userId, chatKey);
+      return count ?? 0;
+    } else if (unreadEligibleCount > 0) {
+      const count = await unreadCacheClient.decrement(userId, chatKey, unreadEligibleCount);
+      return count ?? 0;
+    }
+  } catch {
+    return 0;
   }
-  return null;
+  return 0;
 }

@@ -27,13 +27,13 @@ export const getRoomMessages = async (req, res) => {
 
 
     if (!messages.length) {
-      applyUnreadOnFetch({
+      const unreadCount = await applyUnreadOnFetch({
         userId,
         chatKey: `room_${roomId}`,
         hasMore: false,
         messages: [],
       });
-      return res.status(200).json({ messages: [], hasMore: false, unreadCount: 0 });
+      return res.status(200).json({ messages: [], hasMore: false, unreadCount });
     }
 
     const nonSystemMessages = messages.filter((m) => !m.isSystemMessage);
@@ -53,7 +53,8 @@ export const getRoomMessages = async (req, res) => {
     };
   }
 
-  const senderDetails = userDetailsMap.get(msg.senderId) || deletedUserFallback();
+  const cachedSender = userDetailsMap.get(msg.senderId);
+  const senderDetails = cachedSender && cachedSender.username ? cachedSender : deletedUserFallback();
 
   return {
     _id: msg._id || msg.id,
@@ -68,14 +69,14 @@ export const getRoomMessages = async (req, res) => {
   };
 });
 
-    applyUnreadOnFetch({
+    const unreadCount = await applyUnreadOnFetch({
       userId,
       chatKey: `room_${roomId}`,
       hasMore,
       messages,
     });
 
-    res.status(200).json({ messages: formattedMessages, hasMore, unreadCount: 0 });
+    res.status(200).json({ messages: formattedMessages, hasMore, unreadCount });
   } catch (error) {
     console.error('Error getting room messages:', error);
     res.status(500).json({ message: 'Failed to get messages', error: error.message });

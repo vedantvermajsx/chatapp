@@ -2,11 +2,11 @@ import Message from '../../models/message.model.js';
 import Room from '../../models/room.model.js';
 import UserRoom from '../../models/userRoom.model.js';
 import ConversationRead from '../../models/conversationRead.model.js';
-import { messageCache } from '../../services/CacheService.js';
+import { readStateCache } from '../../services/CacheService.js';
 
 export async function getUserRoomIds(userId) {
   const cacheKey = `userRooms:${userId}`;
-  const cached = messageCache.get(cacheKey);
+  const cached = readStateCache.get(cacheKey);
   if (cached) return cached;
 
   let userRoom = await UserRoom.findOne({ userId }).lean();
@@ -25,7 +25,7 @@ export async function getUserRoomIds(userId) {
   }
 
   const result = roomIds ?? [];
-  messageCache.set(cacheKey, result, 6000);
+  readStateCache.set(cacheKey, result, 6000);
   return result;
 }
 

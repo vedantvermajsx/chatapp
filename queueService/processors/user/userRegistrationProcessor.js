@@ -11,7 +11,7 @@ export async function handleUserRegistered(userData) {
     }
 
     await User.create(userData);
-    console.log(`[UserRegistrationProcessor] created user (${username})`);
+  //  console.log(`[UserRegistrationProcessor] created user (${username})`);
   } catch (err) {
     if (err.code === 11000) {
       console.warn(
