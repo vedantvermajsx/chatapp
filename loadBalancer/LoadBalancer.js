@@ -30,11 +30,17 @@ class LoadBalancer {
 
     const httpAgent = new http.Agent({
       keepAlive: true,
-      maxSockets: 100,
+      maxSockets: 256,        
+      maxFreeSockets: 64,        
+      timeout: 65000,         
+      keepAliveMsecs: 5000,   
     });
     const httpsAgent = new https.Agent({
       keepAlive: true,
-      maxSockets: 100,
+      maxSockets: 256,        
+      maxFreeSockets: 64,     
+      timeout: 65000,         
+      keepAliveMsecs: 5000,   
     });
 
     this.proxies = new Map();
@@ -234,7 +240,7 @@ class LoadBalancer {
     });
 
     this.server.on('connection', (socket) => {
-      socket.setNoDelay(true);
+      socket.setNoDelay(true); // Disable Nagle's algorithm for lower latency
     });
 
     

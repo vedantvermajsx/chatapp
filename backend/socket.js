@@ -42,7 +42,11 @@ export const setupSocket = (server) => {
       zlibInflateOptions: {
         chunkSize: 16 * 1024
       }
-    }
+    },
+    pingInterval: 10000,    
+    pingTimeout: 5000,      
+    upgradeTimeout: 10000,  
+    transports: ['websocket', 'polling'],
   });
   io.use(socketAuthMiddleware);
 
