@@ -18,7 +18,7 @@ export async function updateProfile(req, res) {
 
     try {
       const cachedUser = await userCacheClient.getUserById(userId);
-      if (cachedUser) user = { ...user, ...cachedUser };
+      if (cachedUser) user = {...cachedUser,...user};
     } catch (err) {
       console.warn("updateProfile cache get error:", err.message);
     }
