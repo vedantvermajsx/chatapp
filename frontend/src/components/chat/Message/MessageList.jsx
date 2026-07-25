@@ -165,7 +165,7 @@ const MessageList = ({
         <div className="space-y-4">
           {messages.map((msg, idx) => (
             <div
-              key={msg._id || msg.id}
+              key={Date.now + idx}
               ref={(el) => {
                 if (idx === lastNonOwnIndex) lastMsgElRef.current = el;
                 if (idx === firstMessageIndex) firstMsgElRef.current = el;
