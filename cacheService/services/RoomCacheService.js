@@ -325,7 +325,7 @@ class RoomCacheService {
       groupName: r.groupName,
       groupDescription: r.groupDescription,
       groupAdmin: r.groupAdmin,
-      groupPic: r.groupPic,
+      groupPic: r.groupPic.replace('upload/', 'upload/w_50,h_50,c_fill/'),
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       memberCount: (r.groupMembers || []).length,

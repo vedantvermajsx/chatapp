@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import roomCacheClient from '../../database/roomCacheClient.js';
 import { enqueueRoomCreation } from '../../utils/queueClient.js';
+import unreadCacheClient from '../../database/unreadCacheClient.js';
 
 export async function createRoom(req, res) {
   try {
@@ -34,6 +35,9 @@ export async function createRoom(req, res) {
 
     await roomCacheClient.addRoomToCache(roomId, roomData);
     roomCacheClient.addRoomMember(roomId, groupAdmin);
+    unreadCacheClient.seedRoomOnJoin(groupAdmin, roomId).catch(err =>
+      console.error('[createRoom] seedRoomOnJoin error:', err.message)
+    );
 
     const io = req.app.get('io');
     const { onlineUsers } = await import('../../socket.js');

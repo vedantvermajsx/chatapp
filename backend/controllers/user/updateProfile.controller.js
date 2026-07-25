@@ -13,12 +13,14 @@ export async function updateProfile(req, res) {
       avatar: req.user.avatar,
       gender: req.user.gender,
       role: req.user.role || 'user',
-      bio: '',
+      bio: req.user.bio,
     };
+
 
     try {
       const cachedUser = await userCacheClient.getUserById(userId);
-      if (cachedUser) user = {...cachedUser,...user};
+      console.log(cachedUser);
+      if (cachedUser) user = { ...user, ...cachedUser };
     } catch (err) {
       console.warn("updateProfile cache get error:", err.message);
     }
@@ -39,6 +41,7 @@ export async function updateProfile(req, res) {
       username: user.username,
       avatar: user.avatar,
       role: user.role || 'user',
+      bio: user.bio,  
     };
 
     res.json({ message: 'Profile updated', user: userData });

@@ -263,14 +263,6 @@ function RoomSidebar({
       />
 
       <ThemePicker show={showThemePicker} onClose={() => setShowThemePicker(false)} />
-
-      {showUserSettings && (
-        <UserSettingsModal
-          user={user}
-          onClose={() => setShowUserSettings(false)}
-          onUpdateSuccess={updateUser}
-        />
-      )}
     </div>
   );
 
@@ -289,6 +281,14 @@ function RoomSidebar({
       >
         {renderSidebarContent(false)}
       </div>
+
+      {showUserSettings && (
+        <UserSettingsModal
+          user={user}
+          onClose={() => setShowUserSettings(false)}
+          onUpdateSuccess={updateUser}
+        />
+      )}
     </>
   );
 }

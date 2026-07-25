@@ -98,12 +98,10 @@ const UnreadCacheService = {
   async decrement(userId, chatKey, by = 1) {
     if (isRoomKey(chatKey)) {
       const roomId = roomIdOf(chatKey);
-      const [total, read] = await Promise.all([
-        MessageCountCacheService.getRoomCount(roomId),
-        getRoomReadCount(userId, roomId),
-      ]);
-      const nextRead = Math.min(total ?? 0, (read ?? 0) + Math.max(0, by));
+      const read = await getRoomReadCount(userId, roomId);
+      const nextRead = (read ?? 0) + Math.max(0, by);
       setRoomReadCount(userId, roomId, nextRead);
+      const total = await MessageCountCacheService.getRoomCount(roomId);
       return Math.max(0, (total ?? 0) - nextRead);
     }
     const existing = readStateCache.get(privKey(userId)) ?? {};

@@ -14,6 +14,7 @@ export async function sendRoomMessage(req, res) {
       return res.status(400).json({ message: 'roomId required' });
     }
 
+
     const sender = req.user;
     const _id = new mongoose.Types.ObjectId().toString();
     const content = xss(message || '');

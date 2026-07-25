@@ -1,0 +1,144 @@
+
+# ChatNow System Architecture Overview
+
+## Project Overview
+ChatNow is a modern, scalable real-time chat application with support for public/private rooms, direct messaging, media sharing, and more. It uses a microservices architecture for high availability and performance.
+
+---
+
+## Core Microservices
+1. **Frontend** (React/Vite): Client-side interface for users
+2. **Load Balancer**: Distributes traffic across backend instances, handles sticky sessions for Socket.IO
+3. **Backend**: Main API and Socket.IO server for handling client requests
+4. **Cache Service**: In-memory cache with Bloom filters, Trie, and LRU cache for fast lookups
+5. **Message Broker**: Cross-service communication via WebSockets
+6. **Queue Service**: Asynchronous MongoDB persistence via batching
+
+---
+
+## Key Features & Technologies
+
+### 1. Frontend
+- **React** with **Vite**
+- **TailwindCSS** for styling
+- **Socket.IO Client** for real-time communication
+- **IndexedDB** for offline message storage
+- **React Query** for data fetching/caching
+- **WebRTC** for voice/video calls
+- **Sonner** for notifications
+- **Emoji Picker** and **Stickers**
+
+### 2. Backend
+- **Express** API server
+- **Socket.IO** for real-time chat
+- **MongoDB** for data persistence (via Queue Service)
+- **Cloudinary** for media (images/videos/audio) storage
+- **JWT** for authentication
+- **Bcrypt** for password hashing
+- **XSS** protection for message content
+- **HMAC** for secure inter-service communication
+
+### 3. Cache Service
+- **LRU Cache** (CacheService.js): In-memory cache with TTL and size limits for users, rooms, messages, and read state
+- **Bloom Filter** (BloomfilterService.js): Counting bloom filter (8MB, 3 hash functions) for fast username/email duplicate checks (supports add/remove/mightContain operations)
+- **Trie** (RoomTrie.js): Prefix tree for fast room search by name
+- **REST API** endpoints for cache operations
+- **HMAC Authentication** for secure access
+
+### 4. Message Broker
+- **WebSocket Server** (ws library) for cross-service communication
+- **Channel-based Pub/Sub**: Services subscribe to channels and publish events
+- **Rate Limiting**: Per-IP connection limits and token bucket for inbound messages
+- **Heartbeats** for connection health checks
+- **Message Queue** to prevent backpressure
+
+### 5. Queue Service
+- **Batch Processing**: Batches operations (50 messages per batch, 500ms flush interval) for efficient MongoDB writes
+- **Multiple Queues**:
+  - messageQueue: Message persistence
+  - userQueue: User registration
+  - guestQueue: Guest user registration
+  - presenceQueue: User online/offline status
+  - roomQueue: Room creation, member join/leave, deletion
+  - notificationQueue: Unread counts and last-read tracking
+- **Message Broker Integration**: Subscribes to broker channels for events
+- **MongoDB** for data storage
+
+### 6. Load Balancer
+- **http-proxy** for reverse proxying
+- **Health Checks**: Periodically checks backend server health
+- **Sticky Sessions**: IP-based hashing for Socket.IO connections
+- **Rate Limiting**: Per-IP request limits
+- **Queueing System**: Controls concurrent requests to prevent overload
+
+---
+
+## Data Flow Example (Sending a Message)
+1. Client sends message via Socket.IO to Backend (through Load Balancer)
+2. Backend validates user, updates Cache Service synchronously
+3. Backend publishes event to Message Broker (message.created)
+4. Backend emits message to relevant clients via Socket.IO
+5. Queue Service subscribes to message.created, batches messages, writes to MongoDB
+6. Frontend receives message, updates UI and IndexedDB
+
+---
+
+## Important Design Principles
+- **Separation of Concerns**: Backend/Cache Service never write to MongoDB directly; Queue Service handles all persistence
+- **Fire-and-Forget Pattern**: Critical operations update cache synchronously, then emit events for async persistence
+- **Message Ordering**: Sequential processing in emitQueue ensures messages are delivered in order
+- **Compression**: Gzip for HTTP, perMessageDeflate for Socket.IO
+- **Connection Pooling**: HTTP keep-alive for inter-service communication
+
+---
+
+## Architecture Diagram
+```
+┌──────────────┐
+│   Frontend   │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────┐
+│  Load Balancer   │ (Sticky sessions for Socket.IO)
+└──────┬───────────┘
+       │
+       ▼
+┌──────────────────┐
+│    Backend       │ (API + Socket.IO)
+└──────┬───────────┘
+       │
+       ├──────────────────┐
+       │                  │
+       ▼                  ▼
+┌──────────────┐  ┌─────────────────┐
+│Cache Service │  │  Message Broker  │ (Pub/Sub)
+└──────────────┘  └────────┬────────┘
+                           │
+                           ▼
+                    ┌─────────────────┐
+                    │  Queue Service  │ (Batch MongoDB writes)
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │    MongoDB      │
+                    └─────────────────┘
+```
+
+---
+
+## Key Files to Reference
+- **Cache Service**:
+  - cacheService/services/BloomfilterService.js
+  - cacheService/services/RoomTrie.js
+  - cacheService/services/CacheService.js
+- **Backend**:
+  - backend/utils/cloudinary.utils.js
+  - backend/utils/emitQueue.js
+- **Queue Service**:
+  - queueService/index.js
+- **Message Broker**:
+  - messagebroker/index.js
+- **Load Balancer**:
+  - loadBalancer/LoadBalancer.js

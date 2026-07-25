@@ -19,6 +19,8 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   const fileInputRef = useRef(null);
   const requestRef = useRef(0);
 
+  console.log('MOUNT')
+
   useEffect(() => {
     const trimmed = username.trim();
 
@@ -78,6 +80,7 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
       setIsUploading(false);
     }
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

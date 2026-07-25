@@ -3,7 +3,6 @@ import { useTheme } from '../contexts/ThemeContext';
 export const useNeumorphism = () => {
   const { theme } = useTheme();
 
-  // Flat, minimal shadow system (size/blur args kept for API compatibility, only scale matters)
   const getShadow = (isLight, inset, size, blur) => {
     if (inset) {
       const c = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.35)';

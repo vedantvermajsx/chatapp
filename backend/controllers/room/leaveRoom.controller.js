@@ -73,7 +73,7 @@ export async function leaveRoom(req, res) {
       role: req.user.role,
     });
 
-      await messageCacheClient.appendRoomMessage(roomId, messageData);
+    await messageCacheClient.appendRoomMessage(roomId, messageData);
 
 
     return res.json({ message: 'Left room successfully' });

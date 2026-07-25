@@ -123,10 +123,9 @@ function _warmCacheForRoomMessage(roomId, senderId, isSystemMessage) {
   }
   const caughtUpIds = new Set([String(senderId), ...activeViewerIds.map(String)]);
 
-  const idList = [...caughtUpIds];
-  if (idList.length > 0) {
-    unreadCacheClient.resetMultiple(idList, chatKey).catch(err =>
-      console.error('[emitQueue] unreadCache resetMultiple error:', err.message)
+  for (const id of caughtUpIds) {
+    unreadCacheClient.decrement(id, chatKey, 1).catch(err =>
+      console.error('[emitQueue] unreadCache decrement error:', err.message)
     );
   }
 }
