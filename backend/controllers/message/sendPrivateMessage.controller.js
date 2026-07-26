@@ -25,6 +25,7 @@ export async function sendPrivateMessage(req, res) {
     const senderIdStr = String(sender._id);
     const receiverIdStr = String(receiverId);
 
+
     const messageData = {
       _id,
       content: sanitizedContent,
@@ -54,6 +55,8 @@ export async function sendPrivateMessage(req, res) {
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
     };
+
+    console.log(payload);
 
     enqueueMessage(messageData);
 

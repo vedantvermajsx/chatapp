@@ -10,6 +10,8 @@ export async function createGuest(req, res) {
 
     const refactoredUsername = username?.trim().toLowerCase();
 
+    console.log(username,gender);
+
     if (!refactoredUsername) {
       return res.status(400).json({ message: 'Username is required' });
     }

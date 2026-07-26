@@ -22,13 +22,13 @@ export const getPrivateMessages = async (req, res) => {
     const { limit = 20, before, after } = req.query;
     const { user } = req;
     const userId = user._id;
-
+    const limitInt = parseInt(limit);
     const [messagesResult, lastReadResult] = await Promise.allSettled([
       messageCacheClient.getPrivateMessages(
         userId,
         otherUserId,
         {
-          limit: parseInt(limit, 10),
+          limit: isNaN(limitInt) ? 20 : limitInt,
           before: before || undefined,
           after: after || undefined,
         }

@@ -18,6 +18,8 @@ export const getRoomMessages = async (req, res) => {
     const { roomId } = req.params;
     const { limit = 20, before, after } = req.query;
 
+    console.log(userId + "   "+roomId );
+
     const { messages, hasMore } = await messageCacheClient.getRoomMessages(roomId, {
       userId,
       limit: parseInt(limit, 10),
