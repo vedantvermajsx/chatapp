@@ -1,4 +1,6 @@
 import roomCacheService from '../../services/RoomCacheService.js';
+import UserRoom from '../../models/userRoom.model.js';
+import { readStateCache } from '../../services/CacheService.js';
 
 export const removeRoomMember = async (req, res) => {
   try {
@@ -9,6 +11,12 @@ export const removeRoomMember = async (req, res) => {
     await roomCacheService.removeRoomMember(roomId, userId);
 
     await roomCacheService.removeUserRoom(userId, roomId);
+
+    await UserRoom.findOneAndUpdate(
+      { userId },
+      { $pull: { roomIds: roomId } }
+    );
+    readStateCache.delete(`userRooms:${userId}`);
 
     res.json({ ok: true });
   } catch (err) {

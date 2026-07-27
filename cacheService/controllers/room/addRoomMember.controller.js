@@ -1,4 +1,6 @@
 import roomCacheService from '../../services/RoomCacheService.js';
+import UserRoom from '../../models/userRoom.model.js';
+import { readStateCache } from '../../services/CacheService.js';
 
 export const addRoomMember = async (req, res) => {
   try {
@@ -11,6 +13,13 @@ export const addRoomMember = async (req, res) => {
     
     const roomDoc = await roomCacheService.getRoomById(roomId);
     const roomData = roomDoc ? await roomCacheService.addUserRoom(userId, roomId, roomDoc) : null;
+
+    await UserRoom.findOneAndUpdate(
+      { userId },
+      { $addToSet: { roomIds: roomId } },
+      { upsert: true }
+    );
+    readStateCache.delete(`userRooms:${userId}`);
 
     res.json({ ok: true, room: roomData });
   } catch (err) {
