@@ -1,6 +1,6 @@
 import MessageCountCacheService from '../../services/MessageCountCacheService.js';
 
-export const incrementRoomCount = (req, res) => {
-  MessageCountCacheService.incrementRoom(req.params.roomId);
-  res.json({ ok: true });
+export const incrementRoomCount = async (req, res) => {
+  await MessageCountCacheService.incrementRoom(req.params.roomId);
+  res.status(200).json({ ok: true });
 };

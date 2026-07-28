@@ -20,10 +20,19 @@ const MessageCountCacheService = {
     return count;
   },
 
-  incrementRoom(roomId, by = 1) {
+  async incrementRoom(roomId, by = 1) {
     const k = roomKey(roomId);
     const cur = messageCache.get(k);
-    if (cur !== null) messageCache.set(k, cur + by, TTL);
+    if (cur !== null) {
+      const next = cur + by;
+      messageCache.set(k, next, TTL);
+      return next;
+    }
+    // cache cold: warm from DB (DB write happens before this call reaches us),
+    // fall back to a count query so we never silently drop the increment.
+    const count = await Message.countDocuments({ roomId });
+    messageCache.set(k, count, TTL);
+    return count;
   },
 
   invalidateRoom(roomId) {

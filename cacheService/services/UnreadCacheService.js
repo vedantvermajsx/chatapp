@@ -31,11 +31,22 @@ async function getRoomReadCount(userId, roomId) {
   return count;
 }
 
-function setRoomReadCount(userId, roomId, count) {
+async function setRoomReadCount(userId, roomId, count) {
   const clamped = Math.max(0, count);
   const all = readStateCache.get(readKey(userId)) ?? {};
   all[roomId] = clamped;
   readStateCache.set(readKey(userId), all, TTL);
+
+  try {
+    await RoomMessageRead.findOneAndUpdate(
+      { userId, roomId },
+      { $set: { readCount: clamped } },
+      { upsert: true }
+    );
+  } catch (err) {
+    console.error('[UnreadCacheService] readCount persist error:', err.message);
+  }
+
   return clamped;
 }
 
@@ -85,7 +96,7 @@ const UnreadCacheService = {
     if (isRoomKey(chatKey)) {
       const roomId = roomIdOf(chatKey);
       const total = await MessageCountCacheService.getRoomCount(roomId);
-      setRoomReadCount(userId, roomId, total ?? 0);
+      await setRoomReadCount(userId, roomId, total ?? 0);
       return 0;
     }
     const existing = readStateCache.get(privKey(userId));
@@ -100,7 +111,7 @@ const UnreadCacheService = {
       const roomId = roomIdOf(chatKey);
       const read = await getRoomReadCount(userId, roomId);
       const nextRead = (read ?? 0) + Math.max(0, by);
-      setRoomReadCount(userId, roomId, nextRead);
+      await setRoomReadCount(userId, roomId, nextRead);
       const total = await MessageCountCacheService.getRoomCount(roomId);
       return Math.max(0, (total ?? 0) - nextRead);
     }
@@ -118,7 +129,7 @@ const UnreadCacheService = {
 
   async seedRoomOnJoin(userId, roomId) {
     const total = await MessageCountCacheService.getRoomCount(roomId);
-    setRoomReadCount(userId, roomId, total ?? 0);
+    await setRoomReadCount(userId, roomId, total ?? 0);
     readStateCache.delete(`userRooms:${userId}`);
     return 0;
   },
