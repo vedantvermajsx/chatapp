@@ -23,11 +23,12 @@ export default function handleDisconnect(socket, io) {
       return;
     }
 
+    activeRooms.delete(String(disconnectedUserId));
+
     const timer = setTimeout(async () => {
       const current = onlineUsers.get(disconnectedUserId);
       if (current && current.socketId === socket.id) {
         onlineUsers.delete(disconnectedUserId);
-        activeRooms.delete(String(disconnectedUserId));
 
         const lastSeen = new Date();
 
