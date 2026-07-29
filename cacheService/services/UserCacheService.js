@@ -180,7 +180,7 @@ const UserCacheService = {
     const cacheKey = `user:search:${trimmed.toLowerCase()}:${cappedLimit}`;
     const cached = userCache.get(cacheKey);
     if (cached) {
-      return excludeId ? cached.filter((u) => String(u._id) !== String(excludeId)) : cached;
+      return excludeId ? cached.filter((u) => String(u.userid) !== String(excludeId)) : cached;
     }
 
     const results = await dedupe(cacheKey, async () => {
@@ -190,24 +190,24 @@ const UserCacheService = {
       const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(`^${escaped}`, 'i');
 
-      const users = await User.find({ username: regex })
-        .select('_id username avatar bio isOnline')
-        .limit(cappedLimit)
-        .lean();
+      const [users, guests] = await Promise.all([
+        User.find({ username: regex }).select('_id username avatar').limit(cappedLimit).lean(),
+        Guest.find({ username: regex }).select('_id username avatar').limit(cappedLimit).lean(),
+      ]);
 
-      const mapped = users.map((u) => ({
-        _id: String(u._id),
-        username: u.username,
-        avatar: u.avatar ?? '',
-        bio: u.bio ?? '',
-        isOnline: !!u.isOnline,
-      }));
+      const mapped = [...users, ...guests]
+        .slice(0, cappedLimit)
+        .map((u) => ({
+          userid: String(u._id),
+          username: u.username,
+          pfp: u.avatar ?? '',
+        }));
 
       userCache.set(cacheKey, mapped, SEARCH_TTL);
       return mapped;
     });
 
-    return excludeId ? results.filter((u) => String(u._id) !== String(excludeId)) : results;
+    return excludeId ? results.filter((u) => String(u.userid) !== String(excludeId)) : results;
   },
 
   invalidate(userId) {
