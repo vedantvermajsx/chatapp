@@ -4,8 +4,20 @@ import Guest from '../models/guest.model.js';
 
 const isGuestId = (id) => String(id).startsWith('guest_');
 
-const USER_TTL  = null; 
-const INDEX_TTL = null; 
+const USER_TTL   = null;
+const INDEX_TTL  = null;
+const SEARCH_TTL = 30; // seconds
+
+const inFlight = new Map();
+
+async function dedupe(key, fetcher) {
+  const existing = inFlight.get(key);
+  if (existing) return existing;
+
+  const promise = fetcher().finally(() => inFlight.delete(key));
+  inFlight.set(key, promise);
+  return promise;
+}
 
 function userKey(userId)   { return `user:${userId}`; }
 function usernameKey(name) { return `user:username:${name.toLowerCase()}`; }
@@ -158,6 +170,44 @@ const UserCacheService = {
     }
 
     return { taken: false };
+  },
+
+  async searchUsers(query, limit = 5, { excludeId } = {}) {
+    const trimmed = (query || '').trim();
+    if (!trimmed) return [];
+
+    const cappedLimit = Math.min(Math.max(Number(limit) || 5, 1), 20);
+    const cacheKey = `user:search:${trimmed.toLowerCase()}:${cappedLimit}`;
+    const cached = userCache.get(cacheKey);
+    if (cached) {
+      return excludeId ? cached.filter((u) => String(u._id) !== String(excludeId)) : cached;
+    }
+
+    const results = await dedupe(cacheKey, async () => {
+      const existing = userCache.get(cacheKey);
+      if (existing) return existing;
+
+      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`^${escaped}`, 'i');
+
+      const users = await User.find({ username: regex })
+        .select('_id username avatar bio isOnline')
+        .limit(cappedLimit)
+        .lean();
+
+      const mapped = users.map((u) => ({
+        _id: String(u._id),
+        username: u.username,
+        avatar: u.avatar ?? '',
+        bio: u.bio ?? '',
+        isOnline: !!u.isOnline,
+      }));
+
+      userCache.set(cacheKey, mapped, SEARCH_TTL);
+      return mapped;
+    });
+
+    return excludeId ? results.filter((u) => String(u._id) !== String(excludeId)) : results;
   },
 
   invalidate(userId) {

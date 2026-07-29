@@ -7,9 +7,11 @@ export async function deleteUser(req, res) {
     if (req.user._id !== userId && req.user.role !== 'admin')
       return res.status(403).json({ message: 'Forbidden' });
 
-    await userModel.findByIdAndDelete(userId);
+    const deleted = await userModel.findByIdAndDelete(userId).lean();
 
-    userCacheClient.deleteUserById(userId).catch(() => {});
+    userCacheClient
+      .deleteUserById(userId, { username: deleted?.username, email: deleted?.email })
+      .catch(() => {});
     res.clearCookie('token');
     res.json({ message: 'User deleted' });
   } catch (err) {

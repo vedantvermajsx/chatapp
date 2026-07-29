@@ -1,4 +1,5 @@
 import { isUsernameTaken } from "./usernameTaken.js";
+import { usernameValidationError } from "../../utils/validators.js";
 
 export async function checkUsername(req, res) {
   try {
@@ -6,10 +7,15 @@ export async function checkUsername(req, res) {
     if (!username || typeof username !== 'string') {
       return res.status(400).json({ message: 'Username is required' });
     }
-    
+
     const trimmedUsername = username.trim();
     if (trimmedUsername.length === 0) {
       return res.status(400).json({ message: 'Username cannot be empty' });
+    }
+
+    const formatError = usernameValidationError(trimmedUsername);
+    if (formatError) {
+      return res.status(400).json({ message: formatError, isValid: false });
     }
 
     const taken = await isUsernameTaken(trimmedUsername);

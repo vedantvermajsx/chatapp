@@ -1,6 +1,9 @@
 import userCacheClient from '../../database/userCacheClient.js';
 import transformCloudinaryUrl from '../../utils/transformCloudinaryUrl.js';
 import userModel from '../../models/user.model.js';
+import { usernameValidationError } from '../../utils/validators.js';
+import { isUsernameTaken } from '../auth/usernameTaken.js';
+import { bloomFilter } from '../../utils/bloomFilterService.js';
 
 export async function updateProfile(req, res) {
   try {
@@ -25,8 +28,23 @@ export async function updateProfile(req, res) {
       console.warn("updateProfile cache get error:", err.message);
     }
 
-    if (username && username !== user.username) {
-      user.username = username;
+    const previousUsername = user.username;
+    let usernameChanged = false;
+
+    if (username && username.trim().toLowerCase() !== user.username) {
+      const formatError = usernameValidationError(username);
+      if (formatError) {
+        return res.status(400).json({ message: formatError });
+      }
+
+      const normalized = username.trim().toLowerCase();
+      const taken = await isUsernameTaken(normalized);
+      if (taken) {
+        return res.status(409).json({ message: 'username is already taken' });
+      }
+
+      user.username = normalized;
+      usernameChanged = true;
     }
     if (bio !== undefined) user.bio = bio;
     if (avatar !== undefined) {
@@ -35,6 +53,15 @@ export async function updateProfile(req, res) {
 
     await userModel.findByIdAndUpdate(userId, user);
     userCacheClient.addUserToCache(userId, Promise.resolve(user)).catch(() => {});
+
+    if (usernameChanged) {
+      bloomFilter.add(user.username).catch((err) =>
+        console.warn('[updateProfile] bloomFilter.add failed:', err.message)
+      );
+      bloomFilter.remove(previousUsername).catch((err) =>
+        console.warn('[updateProfile] bloomFilter.remove failed:', err.message)
+      );
+    }
 
     const userData = {
       _id: user._id.toString(),

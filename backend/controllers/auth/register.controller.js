@@ -7,6 +7,7 @@ import { enqueueUserRegistration } from '../../utils/queueClient.js';
 import User from '../../models/user.model.js';
 import { isUsernameTaken } from './usernameTaken.js';
 import { bloomFilter } from '../../utils/bloomFilterService.js';
+import { usernameValidationError } from '../../utils/validators.js';
 
 const SALT_ROUNDS = 10;
 
@@ -26,6 +27,11 @@ export async function register(req, res) {
 
     if (password.length < 6 || password.length > 50) {
       return res.status(400).json({ message: 'Password must be between 6 and 50 characters' });
+    }
+
+    const usernameError = usernameValidationError(username);
+    if (usernameError) {
+      return res.status(400).json({ message: usernameError });
     }
 
     const trimmedEmail = email.trim().toLowerCase();

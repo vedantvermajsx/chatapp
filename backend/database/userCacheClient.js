@@ -90,6 +90,18 @@ class UserCacheClient {
     }
   }
 
+  async searchUsers(query, limit = 5, excludeId) {
+    try {
+      const res = await this.client.get('/users/search', {
+        params: { q: query, limit, excludeId },
+      });
+      return res.data || [];
+    } catch (err) {
+      console.error('[UserCacheClient] searchUsers error:', err.message);
+      return [];
+    }
+  }
+
   async updateUserById(userId, patch) {
     try {
       await this.client.put(`/users/${userId}`, patch, { timeout: 30000 });

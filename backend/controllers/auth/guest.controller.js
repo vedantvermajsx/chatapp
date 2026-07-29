@@ -3,6 +3,7 @@ import { handleAuthSuccess } from './auth.helper.js';
 import { isUsernameTaken } from './usernameTaken.js';
 import { enqueueGuestRegistration } from '../../utils/queueClient.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
+import { USERNAME_CHARS_REGEX } from '../../utils/validators.js';
 
 export async function createGuest(req, res) {
   try {
@@ -21,6 +22,10 @@ export async function createGuest(req, res) {
 
     if (refactoredUsername.length < 2 || refactoredUsername.length > 30) {
       return res.status(400).json({ message: 'Username must be 2–30 characters' });
+    }
+
+    if (!USERNAME_CHARS_REGEX.test(refactoredUsername)) {
+      return res.status(400).json({ message: 'Username can only contain letters, numbers, and underscores' });
     }
 
     const taken = await isUsernameTaken(refactoredUsername);
