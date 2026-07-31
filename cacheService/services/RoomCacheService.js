@@ -15,7 +15,7 @@ async function resolveMembers(ids) {
   const usersById = await UserCacheService.getUsersByIds(ids);
   const results = ids.map((id) => {
     const user = usersById.get(String(id));
-    return user ? MEMBER_PROJECTION(user) : null;
+    return user && user.username ? MEMBER_PROJECTION(user) : null;
   });
   return results.filter(Boolean);
 }

@@ -21,62 +21,65 @@ export async function leaveRoom(req, res) {
       return res.status(403).json({ message: "admin cannot leave the group.", success: true });
     }
 
-    const hasMember = await roomCacheClient.hasMember(roomId, userId);
-    
-    if (hasMember) {
-      roomCacheClient.removeRoomMember(roomId, userId).catch(() => {});
-      enqueueRoomMemberLeft(roomId, userId);
-    }
+   
+  const hasMember = await roomCacheClient.hasMember(roomId, userId);
 
-    if (!room.isDeleted) {
-      const _id = new mongoose.Types.ObjectId();
-      const content = `${username} left the group`;
-      const timestamp = new Date();
+  if (!hasMember) {
+  return res.status(400).json({
+    message: "You are not a member of this room",
+  });
+  }
 
-      const messageData = {
-        _id,
-        content,
-        senderId: userId,
-        isSystemMessage: true,
-        systemType: 'member-left',
-        roomId,
-        receiverId: null,
-        media: null,
-        timestamp,
-      };
+  await roomCacheClient.removeRoomMember(roomId, userId);
+  enqueueRoomMemberLeft(roomId, userId);
 
-      const payload = {
-        _id: _id.toString(),
-        roomId,
-        userId,
-        username,
-        text: content,
-        isSystemMessage: true,
-        systemType: 'member-left',
-        timestamp,
-        gender: req.user.gender,
-        avatar: req.user.avatar,
-        media: null,
-      };
+  if (!room.isDeleted) {
+  const _id = new mongoose.Types.ObjectId();
+  const content = `${username} left the group`;
+  const timestamp = new Date();
 
-      enqueueMessage(messageData);
+  const messageData = {
+    _id,
+    content,
+    senderId: userId,
+    isSystemMessage: true,
+    systemType: "member-left",
+    roomId,
+    receiverId: null,
+    media: null,
+    timestamp,
+  };
 
-      emitNewMessage(roomId, payload);
-    }
+  const payload = {
+    _id: _id.toString(),
+    roomId,
+    userId,
+    username,
+    text: content,
+    isSystemMessage: true,
+    systemType: "member-left",
+    timestamp,
+    gender: req.user.gender,
+    avatar: req.user.avatar,
+    media: null,
+  };
 
-    emitUserLeftRoom(roomId, {
-      roomId,
-      userId,
-      username,
-      avatar: req.user.avatar,
-      gender: req.user.gender,
-      role: req.user.role,
-    });
+  await messageCacheClient.appendRoomMessage(roomId, messageData);
+  enqueueMessage(messageData);
+  
+  emitNewMessage(roomId, payload);
+}
 
-    await messageCacheClient.appendRoomMessage(roomId, messageData);
+emitUserLeftRoom(roomId, {
+  roomId,
+  userId,
+  username,
+  avatar: req.user.avatar,
+  gender: req.user.gender,
+  role: req.user.role,
+});
 
-
-    return res.json({ message: 'Left room successfully' });
+return res.json({ message: "Left room successfully" });
   } catch (err) {
     console.error('[leaveRoom] error:', err);
     return res.status(500).json({ message: err.message });
