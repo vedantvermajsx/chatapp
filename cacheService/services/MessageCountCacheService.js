@@ -15,7 +15,7 @@ const MessageCountCacheService = {
     const cached = messageCache.get(k);
     if (cached !== null) return cached;
 
-    const count = await Message.countDocuments({ roomId });
+    const count = await Message.countDocuments({ roomId, isSystemMessage: { $ne: true } });
     messageCache.set(k, count, TTL);
     return count;
   },
@@ -28,9 +28,7 @@ const MessageCountCacheService = {
       messageCache.set(k, next, TTL);
       return next;
     }
-    // cache cold: warm from DB (DB write happens before this call reaches us),
-    // fall back to a count query so we never silently drop the increment.
-    const count = await Message.countDocuments({ roomId });
+    const count = await Message.countDocuments({ roomId, isSystemMessage: { $ne: true } });
     messageCache.set(k, count, TTL);
     return count;
   },

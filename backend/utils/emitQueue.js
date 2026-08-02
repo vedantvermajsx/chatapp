@@ -16,8 +16,10 @@ async function processItem(item) {
     if (io) {
       if (senderSocketId) {
         io.to(roomId).except(senderSocketId).emit('newMessage', payload);
+        io.to(roomId).except(senderSocketId).emit('unreadUpdate', { chatKey: `room_${roomId}` });
       } else {
         io.to(roomId).emit('newMessage', payload);
+        io.to(roomId).emit('unreadUpdate', { chatKey: `room_${roomId}` });
       }
     }
     publish('newMessage', { roomId, payload });
