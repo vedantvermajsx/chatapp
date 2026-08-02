@@ -14,8 +14,6 @@ export const addRoomMember = async (req, res) => {
     const roomDoc = await roomCacheService.getRoomById(roomId);
     const roomData = roomDoc ? await roomCacheService.addUserRoom(userId, roomId, roomDoc) : null;
 
-    // Keep the UserRoom doc (source of truth for unread room list) in sync too —
-    // addUserRoom above only updates RoomCacheService's in-memory index.
     await UserRoom.findOneAndUpdate(
       { userId },
       { $addToSet: { roomIds: roomId } },
