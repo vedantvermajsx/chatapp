@@ -62,6 +62,7 @@ export const getRoomMessages = async (req, res) => {
     _id: msg._id || msg.id,
     text: msg.content || msg.text || '',
     isOwn: msg.senderId === userId,
+    senderId: msg.senderId,
     timestamp: msg.timestamp,
     username: senderDetails.username,
     gender: senderDetails.gender,
