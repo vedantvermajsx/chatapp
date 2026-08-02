@@ -7,7 +7,7 @@ import { _addQualities } from '../../utils/addQualities.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
-    const { receiverId, content, media, isSystemMessage, systemType } = req.body;
+    const { receiverId, content, media, isSystemMessage, systemType, replyTo } = req.body;
 
     if (!receiverId) {
       return res.status(400).json({ message: 'receiverId required' });
@@ -37,6 +37,7 @@ export async function sendPrivateMessage(req, res) {
       status: 'sent',
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
+      replyTo: replyTo || null,
     };
 
     const payload = {
@@ -54,6 +55,7 @@ export async function sendPrivateMessage(req, res) {
       media: media ? _addQualities(media) : null,
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
+      replyTo: replyTo || null,
     };
 
     console.log(payload);

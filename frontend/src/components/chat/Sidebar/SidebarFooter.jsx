@@ -1,8 +1,11 @@
-import { Settings, Palette, LogOut } from 'lucide-react';
+import { Settings, Palette, LogOut, ShieldCheck } from 'lucide-react';
+import { useState } from 'react';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 import Avatar from '../../common/Avatar';
+import SecurityPolicyModal from '../Modals/SecurityPolicyModal';
 
 const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) => {
+  const [showSecurityPolicy, setShowSecurityPolicy] = useState(false);
   const { theme, getNeumorphicProps } = useNeumorphism();
   const border = theme.isLight ? '#cbd5e0' : '#4a5568';
 
@@ -40,6 +43,14 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
           <Palette className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
         </button>
         <button
+          onClick={() => setShowSecurityPolicy(true)}
+          className="p-1 rounded-xl transition-all"
+          title="Security & Policy"
+          {...getNeumorphicProps(1, 4, 0, 0)}
+        >
+          <ShieldCheck className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
+        </button>
+        <button
           onClick={onLogout}
           className="p-1 rounded-xl transition-all"
           title="Logout"
@@ -48,6 +59,10 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
           <LogOut className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
         </button>
       </div>
+
+      {showSecurityPolicy && (
+        <SecurityPolicyModal onClose={() => setShowSecurityPolicy(false)} />
+      )}
     </div>
   );
 };

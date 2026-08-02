@@ -8,7 +8,7 @@ import { _addQualities } from '../../utils/addQualities.js';
 
 export async function sendRoomMessage(req, res) {
   try {
-    const { roomId, message, media, isSystemMessage, systemType } = req.body;
+    const { roomId, message, media, isSystemMessage, systemType, replyTo } = req.body;
 
     if (!roomId) {
       return res.status(400).json({ message: 'roomId required' });
@@ -36,6 +36,7 @@ export async function sendRoomMessage(req, res) {
       media: media || null,
       timestamp,
       taggedUser,
+      replyTo: replyTo || null,
     };
 
     const payload = {
@@ -53,6 +54,7 @@ export async function sendRoomMessage(req, res) {
       lastSeen: sender.lastSeen,
       media: media?_addQualities(media):null,
       taggedUser,
+      replyTo: replyTo || null,
     };
 
     enqueueMessage(messageData);

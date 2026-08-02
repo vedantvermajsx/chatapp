@@ -1,10 +1,13 @@
-import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Users as UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import roomService from '../../../services/room.service';
+import userService from '../../../services/user.service';
 import RoomList from './RoomList';
 import GlobalRoomList from './GlobalRoomList';
 import PrivateChatList from './PrivateChatList';
+import UserSearchRow from './UserSearchRow';
+import Spinner from '../../common/Spinner';
 import CreateRoomForm from '../Modals/CreateRoomForm';
 import UserSettingsModal from '../Modals/UserSettingsModal';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -64,6 +67,34 @@ function RoomSidebar({
 
   const border = theme.isLight ? '#cbd5e0' : '#4a5568';
   const accent = theme.primary || '#6366f1';
+
+  const [userResults, setUserResults] = useState([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const isUserSearch = activeTab === 'Explore' && searchQuery.trim().startsWith('@');
+
+  useEffect(() => {
+    if (!isUserSearch) {
+      setUserResults([]);
+      return;
+    }
+    const q = searchQuery.trim().slice(1);
+    if (!q) {
+      setUserResults([]);
+      return;
+    }
+    setSearchingUsers(true);
+    const t = setTimeout(async () => {
+      try {
+        const results = await userService.searchUsers(q, 5);
+        setUserResults(Array.isArray(results) ? results.slice(0, 5) : []);
+      } catch {
+        setUserResults([]);
+      } finally {
+        setSearchingUsers(false);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [isUserSearch, searchQuery]);
 
   const handleDeletePrivateChat = async (otherUserId, e) => {
     e.stopPropagation();
@@ -196,6 +227,32 @@ function RoomSidebar({
     </div>
   );
 
+  const myId = user?._id || user?.id;
+  const people = userResults.filter((u) => u.id !== myId);
+
+  const renderUserSearch = () => (
+    <div>
+      <div className="flex items-center gap-2 font-bold text-xs md:text-sm mb-3 px-2" style={{ color: theme.otherUsernameColor }}>
+        <UsersIcon className="w-3 h-3 md:w-4 md:h-4" /> People
+      </div>
+      <div className="space-y-2 md:space-y-3">
+        {searchingUsers && people.length === 0 ? (
+          <div className="p-4 md:p-8 flex justify-center">
+            <Spinner />
+          </div>
+        ) : people.length === 0 ? (
+          <p className="text-xs text-center py-2 opacity-50" style={{ color: theme.otherMessageText }}>
+            No users found
+          </p>
+        ) : (
+          people.map((u) => (
+            <UserSearchRow key={u.id} user={u} onStartPrivateChat={handleStartPrivateChat} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+
   const renderSidebarContent = (showMobileClose) => (
     <div className="flex flex-col h-full overflow-hidden py-2" style={{ backgroundColor: theme.background }}>
       <SidebarHeader showMobileClose={showMobileClose} onCloseSidebar={onCloseSidebar} />
@@ -208,13 +265,15 @@ function RoomSidebar({
           {renderMyChats()}
         </div>
         <div style={{ display: activeTab === 'Explore' ? 'block' : 'none' }}>
-          <GlobalRoomList
-            currentRoom={currentRoom}
-            handleJoinRoom={handleJoinRoom}
-            searchQuery={searchQuery}
-            socket={socket}
-            isActive={activeTab === 'Explore'}
-          />
+          {isUserSearch ? renderUserSearch() : (
+            <GlobalRoomList
+              currentRoom={currentRoom}
+              handleJoinRoom={handleJoinRoom}
+              searchQuery={searchQuery}
+              socket={socket}
+              isActive={activeTab === 'Explore' && !isUserSearch}
+            />
+          )}
         </div>
       </div>
 
@@ -266,13 +325,16 @@ function RoomSidebar({
     </div>
   );
 
+  const hasActiveChat = !!(currentRoom || currentPrivateChat);
+
   return (
     <>
-      <div className="fixed inset-0 z-50 md:hidden" style={{ display: showSidebar ? 'block' : 'none' }}>
-        <div className="absolute inset-0 bg-black/50" onClick={onCloseSidebar} />
-        <div className="absolute left-0 top-0 h-full w-[85vw] max-w-72" style={{ backgroundColor: theme.background }}>
-          {renderSidebarContent(true)}
-        </div>
+      { }
+      <div
+        className={`${hasActiveChat ? 'hidden' : 'flex'} md:hidden flex-col w-full h-full flex-shrink-0`}
+        style={{ backgroundColor: theme.background }}
+      >
+        {renderSidebarContent(false)}
       </div>
 
       <div

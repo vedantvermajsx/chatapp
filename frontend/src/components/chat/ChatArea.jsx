@@ -47,7 +47,6 @@ const ChatArea = memo(function ChatArea({
   socket,
   typingUsers = {},
   messageCache,
-  showSidebar
 }) {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -470,7 +469,6 @@ const ChatArea = memo(function ChatArea({
           leaveRoomSocket={leaveRoomSocket}
           onLeaveRoom={onLeaveRoom}
           unreadCounts={unreadCounts}
-          showSidebar={showSidebar}
         />
       </div>
 

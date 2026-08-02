@@ -26,6 +26,25 @@ class UserService {
     });
     return response.data.data;
   }
+
+  async getUserProfile(userId) {
+    const response = await api.get(`${this.basePath}/${userId}/profile`);
+    return response.data?.user;
+  }
+
+  async searchUsers(query, limit = 5) {
+    const response = await api.get(`${this.basePath}/search`, {
+      params: { q: query, limit }
+    });
+    const data = response.data;
+    const list = Array.isArray(data) ? data : (data?.users || data?.data || []);
+    return list.map((u) => ({
+      id: u.userid || u.id || u._id,
+      username: u.username,
+      avatar: u.pfp ?? u.avatar ?? '',
+      bio: u.bio ?? '',
+    }));
+  }
 }
 
 const userService = new UserService();

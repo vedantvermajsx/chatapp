@@ -1,4 +1,4 @@
-import { Users, Menu, Settings, Phone, Video, Bell, Trash2, LogOut } from 'lucide-react';
+import { Users, ArrowLeft, Settings, Phone, Video, Trash2, LogOut } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import GroupSettingsModal from './Modals/GroupSettingsModal';
 import { useState, memo } from 'react';
@@ -19,7 +19,6 @@ const ChatHeader = memo(function ChatHeader({
   leaveRoomSocket,
   onLeaveRoom,
   unreadCounts = {},
-  showSidebar,
 }) {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const { theme } = useTheme();
@@ -75,27 +74,17 @@ const ChatHeader = memo(function ChatHeader({
     }}>
       <button
         onClick={onToggleSidebar}
-        className="p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30 md:hidden"
+        className="relative p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30 md:hidden"
         {...getNeumorphicProps(1, 1, 1, 2)}
-        aria-label="Open sidebar"
+        aria-label="Back to chats"
       >
-        <Menu className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
-      </button>
-
-      {!showSidebar && hiddenUnreadCount > 0 && (
-        <button
-          onClick={onToggleSidebar}
-          className="relative p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30 md:hidden"
-          {...getNeumorphicProps(1, 2, 2, 3)}
-          aria-label="Open unread chats"
-          title={`${hiddenUnreadCount} unread message${hiddenUnreadCount === 1 ? '' : 's'}`}
-        >
-          <Bell className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
+        <ArrowLeft className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+        {hiddenUnreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[1.2rem] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
             {hiddenUnreadCount > 99 ? '99+' : hiddenUnreadCount}
           </span>
-        </button>
-      )}
+        )}
+      </button>
 
       <div className="flex-1 flex items-center justify-between min-w-0">
         {currentRoom ? (

@@ -83,6 +83,7 @@ export const getPrivateMessages = async (req, res) => {
         isOwn,
         timestamp: msg.timestamp,
         media:msg.media?_addQualities(msg.media):null,
+        replyTo: msg.replyTo || null,
       };
     });
 

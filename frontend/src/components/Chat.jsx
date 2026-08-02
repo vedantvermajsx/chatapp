@@ -157,6 +157,12 @@ function Chat() {
     handleChatRead(chatKey, lastNonOwnMessage);
   }, [currentRoom?._id, currentPrivateChat?.id, handleChatRead, messages, hasMoreNewerMessages]);
 
+  const hasActiveChat = !!(currentRoom || currentPrivateChat);
+  const handleBackToList = useCallback(() => {
+    setCurrentRoom(null);
+    setCurrentPrivateChat(null);
+  }, [setCurrentRoom, setCurrentPrivateChat]);
+
   return (
     <div className="flex w-full h-dvh h-svh max-h-dvh max-h-svh overflow-hidden relative" style={{ backgroundColor: theme.background }}>
       <RoomSidebar
@@ -188,14 +194,13 @@ function Chat() {
         setPrivateChats={setPrivateChats}
         loadingRooms={loadingRooms}
         loadingPrivateChats={loadingPrivateChats}
-        showSidebar={showSidebar}
-        onCloseSidebar={() => setShowSidebar(false)}
         unreadCounts={unreadCounts}
         socket={socket}
       />
 
       <CallProvider socket={socket}>
         <CallOverlay />
+        <div className={`${hasActiveChat ? 'flex' : 'hidden'} md:flex flex-1 min-w-0 overflow-hidden`}>
         <ChatArea
           user={user}
           currentRoom={currentRoom}
@@ -225,7 +230,7 @@ function Chat() {
           loadingNewerMessages={loadingNewerMessages}
           loadMoreMessages={loadMoreMessages}
           loadNewerMessages={loadNewerMessages}
-          onToggleSidebar={() => setShowSidebar(s => !s)}
+          onToggleSidebar={handleBackToList}
           loadRoomMembers={loadRoomMembers}
           hasMoreMembers={hasMoreMembers}
           loadMoreRoomMembers={loadMoreRoomMembers}
@@ -235,8 +240,8 @@ function Chat() {
           socket={socket}
           typingUsers={typingUsers}
           messageCache={messageCache}
-          showSidebar={showSidebar}
         />
+        </div>
       </CallProvider>
     </div>
   );

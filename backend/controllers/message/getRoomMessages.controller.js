@@ -68,6 +68,7 @@ export const getRoomMessages = async (req, res) => {
     avatar: senderDetails.avatar,
     media:msg.media?_addQualities(msg.media):null,
     taggedUser: msg.taggedUser,
+    replyTo: msg.replyTo || null,
   };
 });
 

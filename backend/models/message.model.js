@@ -34,6 +34,11 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: null
     },
+    replyTo: {
+      type: String,
+      ref: 'Message',
+      default: null
+    },
 
     isSystemMessage: {
       type: Boolean,

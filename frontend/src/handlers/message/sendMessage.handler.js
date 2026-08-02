@@ -149,7 +149,6 @@ export const sendMessageHandler = async (
           isPending: false
         };
         
-        // Clear upload progress now that upload is done
         setMessages(prev =>
           prev.map(msg =>
             (msg.id || msg._id) === tempId
