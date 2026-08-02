@@ -8,7 +8,7 @@ import { _addQualities } from '../../utils/addQualities.js';
 
 export async function sendRoomMessage(req, res) {
   try {
-    const { roomId, message, media, isSystemMessage, systemType, replyTo } = req.body;
+    const { roomId, message, media, isSystemMessage, systemType, replyTo, taggedUser } = req.body;
 
     if (!roomId) {
       return res.status(400).json({ message: 'roomId required' });
@@ -24,7 +24,7 @@ export async function sendRoomMessage(req, res) {
     const senderEntry = onlineUsers.get(senderIdStr);
     const senderSocketId = senderEntry?.socketId || null;
 
-    let taggedUser = null;
+    const safeTaggedUser = taggedUser ? String(taggedUser) : null;
     const messageData = {
       _id,
       content,
@@ -35,7 +35,7 @@ export async function sendRoomMessage(req, res) {
       receiverId: null,
       media: media || null,
       timestamp,
-      taggedUser,
+      taggedUser: safeTaggedUser,
       replyTo: replyTo || null,
     };
 
@@ -53,7 +53,7 @@ export async function sendRoomMessage(req, res) {
       isOnline: sender.isOnline,
       lastSeen: sender.lastSeen,
       media: media?_addQualities(media):null,
-      taggedUser,
+      taggedUser: safeTaggedUser,
       replyTo: replyTo || null,
     };
 

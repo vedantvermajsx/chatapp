@@ -7,7 +7,7 @@ import { _addQualities } from '../../utils/addQualities.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
-    const { receiverId, content, media, isSystemMessage, systemType, replyTo } = req.body;
+    const { receiverId, content, media, isSystemMessage, systemType, replyTo, taggedUser } = req.body;
 
     if (!receiverId) {
       return res.status(400).json({ message: 'receiverId required' });
@@ -24,6 +24,7 @@ export async function sendPrivateMessage(req, res) {
     const timestamp = new Date();
     const senderIdStr = String(sender._id);
     const receiverIdStr = String(receiverId);
+    const safeTaggedUser = taggedUser ? String(taggedUser) : null;
 
 
     const messageData = {
@@ -37,6 +38,7 @@ export async function sendPrivateMessage(req, res) {
       status: 'sent',
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
+      taggedUser: safeTaggedUser,
       replyTo: replyTo || null,
     };
 
@@ -55,6 +57,7 @@ export async function sendPrivateMessage(req, res) {
       media: media ? _addQualities(media) : null,
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
+      taggedUser: safeTaggedUser,
       replyTo: replyTo || null,
     };
 
