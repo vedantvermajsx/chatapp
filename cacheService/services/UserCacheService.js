@@ -191,8 +191,8 @@ const UserCacheService = {
       const regex = new RegExp(`^${escaped}`, 'i');
 
       const [users, guests] = await Promise.all([
-        User.find({ username: regex }).select('_id username avatar').limit(cappedLimit).lean(),
-        Guest.find({ username: regex }).select('_id username avatar').limit(cappedLimit).lean(),
+        User.find({ username: regex }).select('_id username avatar publicKey').limit(cappedLimit).lean(),
+        Guest.find({ username: regex }).select('_id username avatar publicKey').limit(cappedLimit).lean(),
       ]);
 
       const mapped = [...users, ...guests]
@@ -201,6 +201,7 @@ const UserCacheService = {
           userid: String(u._id),
           username: u.username,
           pfp: u.avatar ?? '',
+          publicKey: u.publicKey ?? null,
         }));
 
       userCache.set(cacheKey, mapped, SEARCH_TTL);

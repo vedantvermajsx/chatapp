@@ -3,11 +3,15 @@ import roomCacheClient from '../../database/roomCacheClient.js';
 import { enqueueRoomCreation } from '../../utils/queueClient.js';
 import unreadCacheClient from '../../database/unreadCacheClient.js';
 
+
 export async function createRoom(req, res) {
   try {
-    const { groupName, groupDescription } = req.body;
+    const { groupName, groupDescription, publicKey, privateKey } = req.body;
     if (!groupName || !groupDescription) {
       return res.status(400).json({ message: 'Name and description required' });
+    }
+    if (!publicKey || !privateKey) {
+      return res.status(400).json({ message: 'Room publicKey and privateKey are required' });
     }
 
     const exists = await roomCacheClient.getRoomByName(groupName);
@@ -27,6 +31,8 @@ export async function createRoom(req, res) {
       groupPic:
         'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1781261557/UI__15-1024-195514528_vf6uwo.avif',
       groupMembers: [groupAdmin],
+      publicKey,
+      privateKey,
       createdAt: now,
       updatedAt: now,
     };
@@ -50,7 +56,6 @@ export async function createRoom(req, res) {
       }
     }
 
-   // console.log('room created', roomData.groupName);
     res.status(201).json({ message: 'Room created successfully', room: roomData });
   } catch (err) {
     console.error('[createRoom] unexpected error:', err.message);

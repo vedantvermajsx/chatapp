@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
 import emitNewMessage from '../../emitters/newMessage.emitter.js';
 import emitUserJoinedRoom from '../../emitters/userJoinedRoom.emitter.js';
+import emitRoomKeyNeeded from '../../emitters/roomKeyNeeded.emitter.js';
 import { enqueueMessage, enqueueRoomMemberJoined } from '../../utils/queueClient.js';
 import roomCacheClient from '../../database/roomCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import unreadCacheClient from '../../database/unreadCacheClient.js';
+import userCacheClient from '../../database/userCacheClient.js';
 
 export async function joinRoom(req, res) {
   try {
@@ -68,7 +70,19 @@ export async function joinRoom(req, res) {
     
     await messageCacheClient.appendRoomMessage(roomId, messageData);
 
-    return res.status(200).json({ message: 'Joined room successfully', room: roomData });
+    try {
+      const [memberIds, joiningUser] = await Promise.all([
+        roomCacheClient.getRoomMemberIds(roomId),
+        userCacheClient.getUserById(userId),
+      ]);
+      emitRoomKeyNeeded(roomId, memberIds || [], { userId, publicKey: joiningUser?.publicKey ?? null }, userId);
+    } catch (e) {
+      console.error('[joinRoom] roomKeyNeeded emit error:', e.message);
+    }
+
+    const { keyEncrypted, ...safeRoomData } = roomData || {};
+
+    return res.status(200).json({ message: 'Joined room successfully', room: safeRoomData });
   } catch (err) {
     console.error('[joinRoom] error:', err);
     return res.status(500).json({ message: err.message });

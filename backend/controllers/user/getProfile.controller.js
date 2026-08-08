@@ -14,6 +14,7 @@ export async function getProfile(req, res) {
       lastSeen: req.user.lastSeen,
       age: null,
       bio: '',
+      publicKey: req.user.publicKey ?? null,
     };
 
     try {
@@ -32,6 +33,7 @@ export async function getProfile(req, res) {
             bio: dbUser.bio,
             isOnline: dbUser.isOnline,
             lastSeen: dbUser.lastSeen,
+            publicKey: dbUser.publicKey ?? null,
           };
           userCacheClient.addUserToCache(userId, Promise.resolve(user)).catch(() => {});
         }
@@ -49,12 +51,12 @@ export async function getProfile(req, res) {
       bio: user.bio,
       isOnline: user.isOnline,
       lastSeen: user.lastSeen,
+      publicKey: user.publicKey ?? null,
     };
 
     res.status(200).json({ message: "User fetched successfully", user: profile });
 
   } catch (error) {
-    console.log("Error in getProfile controller:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 }

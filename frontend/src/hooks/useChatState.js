@@ -23,6 +23,7 @@ export const useChatState = (user) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [taggedUserId, setTaggedUserId] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [joinedRooms, setJoinedRooms] = useState([]);
   const [loadingJoinedRooms, setLoadingJoinedRooms] = useState(false);
@@ -250,9 +251,11 @@ export const useChatState = (user) => {
       setPrivateChats,
       messageCache,
       selectedFile,
-      setSelectedFile
+      setSelectedFile,
+      taggedUserId,
+      setTaggedUserId
     );
-  }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile, hasMoreNewerMessages, messages]);
+  }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile, hasMoreNewerMessages, messages, taggedUserId]);
 
   const sendSticker = useCallback(async (stickerEmoji) => {
     if (hasMoreNewerMessages && messages.length > 0) {
@@ -345,7 +348,8 @@ export const useChatState = (user) => {
       messageCache,
       CACHE_TTL,
       unreadCounts[`room_${roomId}`] || 0,
-      setUnreadCounts
+      setUnreadCounts,
+      roomObject?.privateKey ?? null
     );
     setShowSidebar(false);
   }, [joinedRooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread, setJoinedRooms, loadJoinedRooms, unreadCounts]);
@@ -392,7 +396,8 @@ export const useChatState = (user) => {
         setHasMoreMessages,
         loadingMoreMessages,
         messageCache,
-        setUnreadCounts
+        setUnreadCounts,
+        currentRoom.privateKey ?? null
       );
     }
   }, [currentPrivateChat, currentRoom, user, messages]);
@@ -422,7 +427,8 @@ export const useChatState = (user) => {
           setMessages,
           setHasMoreNewerMessages,
           messageCache,
-          setUnreadCounts
+          setUnreadCounts,
+          currentRoom.privateKey ?? null
         );
       }
     } finally {
@@ -473,6 +479,7 @@ export const useChatState = (user) => {
     messages, setMessages,
     inputMessage, setInputMessage,
     selectedFile, setSelectedFile,
+    taggedUserId, setTaggedUserId,
     rooms, setRooms,
     joinedRooms, setJoinedRooms,
     loadingJoinedRooms,

@@ -1,5 +1,4 @@
-import { getIO } from '../socket.js';
-import { activeRooms } from '../socket.js';
+import { getIO, activeRooms, onlineUsers } from '../socket.js';
 import { publish } from './messageBroker.js';
 import unreadCacheClient from '../database/unreadCacheClient.js';
 import messageCountCacheClient from '../database/messageCountCacheClient.js';
@@ -14,13 +13,27 @@ async function processItem(item) {
     const { roomId, payload, senderSocketId } = data;
     const io = getIO();
     if (io) {
-      if (senderSocketId) {
-        io.to(roomId).except(senderSocketId).emit('newMessage', payload);
-        io.to(roomId).except(senderSocketId).emit('unreadUpdate', { chatKey: `room_${roomId}` });
-      } else {
-        io.to(roomId).emit('newMessage', payload);
-        io.to(roomId).emit('unreadUpdate', { chatKey: `room_${roomId}` });
+      const activeViewerSocketIds = [];
+      for (const [userId, viewingRoomId] of activeRooms.entries()) {
+        if (viewingRoomId === String(roomId)) {
+          const entry = onlineUsers.get(String(userId));
+          if (entry?.socketId) activeViewerSocketIds.push(entry.socketId);
+        }
       }
+
+      let msgEmit = io.to(roomId);
+      if (senderSocketId) {
+        msgEmit = msgEmit.except(senderSocketId);
+      }
+      
+      let unreadEmit = io.to(roomId);
+      const unreadExceptIds = [...new Set([senderSocketId, ...activeViewerSocketIds].filter(Boolean))];
+      for (const id of unreadExceptIds) {
+        unreadEmit = unreadEmit.except(id);
+      }
+
+      msgEmit.emit('newMessage', payload);
+      unreadEmit.emit('unreadUpdate', { chatKey: `room_${roomId}` });
     }
     publish('newMessage', { roomId, payload });
     try {
@@ -74,6 +87,11 @@ async function processItem(item) {
       }
     }
     publish('userJoinedRoom', { roomId, data: eventData });
+
+  } else if (type === 'roomKeyNeeded') {
+    const { to, payload } = data;
+    const io = getIO();
+    if (io) io.to(to).emit('roomKeyNeeded', payload);
 
   } else if (type === 'userLeftRoom') {
     const { roomId, eventData, senderSocketId } = data;

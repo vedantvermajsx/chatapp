@@ -52,8 +52,6 @@ let room = joinedRooms.find(r => r._id === roomId) || roomObject || null;
   try {
     const res = await roomService.joinRoom(roomId, data);
 
-    
-    
     if (!room) {
       const serverRoom = res?.room || res?.data?.room || null;
       if (serverRoom) {

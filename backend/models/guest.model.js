@@ -8,6 +8,7 @@ const guestScheme = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     gender:   { type: Number, required: true },
     avatar:   { type: String, required: false },
+    publicKey: { type: String, default: null },
     isOnline: { type: Boolean, default: true },
     lastSeen: { type: Date, default: Date.now },
 }, { timestamps: true });

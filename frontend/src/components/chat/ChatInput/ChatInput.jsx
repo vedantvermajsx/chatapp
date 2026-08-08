@@ -15,6 +15,8 @@ const ChatInput = memo(forwardRef(({
   user,
   inputMessage,
   setInputMessage,
+  taggedUserId,
+  setTaggedUserId,
   sendMessage,
   disabled,
   onFileSelect,
@@ -38,6 +40,7 @@ const ChatInput = memo(forwardRef(({
   const [mentionIndex, setMentionIndex] = useState(0);
   const [mentionSuggestions, setMentionSuggestions] = useState([]);
   const [isMentionLoading, setIsMentionLoading] = useState(false);
+  const [taggedMention, setTaggedMention] = useState(null);
   const { theme } = useTheme();
   const { getShadow } = useNeumorphism();
   const MAX_CHARS = 1000;
@@ -65,7 +68,10 @@ const ChatInput = memo(forwardRef(({
     return match ? match[1] : null;
   };
 
-  const insertMention = (username) => {
+  const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const insertMention = (member) => {
+    const username = member.username;
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const range = sel.getRangeAt(0);
@@ -86,6 +92,9 @@ const ChatInput = memo(forwardRef(({
     setInputMessage(inputRef.current?.innerText || '');
     setMentionQuery(null);
     setMentionSuggestions([]);
+    const taggedId = member._id || member.id || null;
+    setTaggedMention(taggedId ? { id: taggedId, username } : null);
+    setTaggedUserId?.(taggedId);
   };
 
   const fetchMentionSuggestions = useCallback((roomId, query) => {
@@ -128,6 +137,8 @@ const ChatInput = memo(forwardRef(({
   useEffect(() => {
     setMentionQuery(null);
     setMentionSuggestions([]);
+    setTaggedMention(null);
+    setTaggedUserId?.(null);
     clearTimeout(mentionDebounceRef.current);
     if (mentionAbortRef.current) mentionAbortRef.current.abort();
   }, [currentRoom?._id]);
@@ -488,6 +499,10 @@ const ChatInput = memo(forwardRef(({
                 } else {
                   setMentionQuery(null);
                 }
+                if (taggedMention && !new RegExp(`(^|\\s)@${escapeRegExp(taggedMention.username)}(\\s|$)`).test(text)) {
+                  setTaggedMention(null);
+                  setTaggedUserId?.(null);
+                }
               }}
               onKeyDown={(e) => {
                 if (mentionQuery !== null && mentionSuggestions.length > 0) {
@@ -503,7 +518,7 @@ const ChatInput = memo(forwardRef(({
                   }
                   if (e.key === 'Enter' || e.key === 'Tab') {
                     e.preventDefault();
-                    insertMention(mentionSuggestions[mentionIndex].username);
+                    insertMention(mentionSuggestions[mentionIndex]);
                     return;
                   }
                   if (e.key === 'Escape') {

@@ -53,8 +53,8 @@ export const useRooms = (search = '') =>
 export const useCreateRoom = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ groupName, groupDescription }) =>
-      roomService.createRoom(groupName, groupDescription),
+    mutationFn: ({ groupName, groupDescription, publicKey, privateKey }) =>
+      roomService.createRoom(groupName, groupDescription, publicKey, privateKey),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
   });
 };

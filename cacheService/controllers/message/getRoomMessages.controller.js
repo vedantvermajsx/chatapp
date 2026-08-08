@@ -7,6 +7,8 @@ function mapRoomMessage(msg) {
     timestamp: msg.timestamp,
     senderId: msg.senderId,
     taggedUser: msg.taggedUser || null,
+    iv: msg.iv || null,
+    wrappedKey: msg.wrappedKey || null,
   };
   if (msg.media){
     formatted.media = msg.media;

@@ -1,5 +1,5 @@
 export const DB_NAME = 'GatherUpDB';
-export const DB_VERSION = 5; 
+export const DB_VERSION = 6; 
 export const MAX_MESSAGES_PER_CHAT = 100;
 
 export const STORES = {
@@ -10,6 +10,7 @@ export const STORES = {
   pendingFiles: 'pendingFiles',
   chatMeta: 'chatMeta',
   unreadCounts: 'unreadCounts',
+  keys: 'keys',
 };
 
 let dbInstance = null;
@@ -70,6 +71,10 @@ export const openDB = () => {
 
       if (!db.objectStoreNames.contains(STORES.unreadCounts)) {
         db.createObjectStore(STORES.unreadCounts, { keyPath: 'chatKey' });
+      }
+
+      if (!db.objectStoreNames.contains(STORES.keys)) {
+        db.createObjectStore(STORES.keys, { keyPath: 'id' });
       }
     };
   });

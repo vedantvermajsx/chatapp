@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Tag, Loader2, Check, X } from 'lucide-react';
 import authService from '../../services/auth.service';
+import { sanitizeUsernameInput, isValidUsername, USERNAME_HINT } from '../../utils/validation';
 
 const inputClass =
     'w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14.5px] text-gray-900 placeholder:text-gray-400 focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/10 transition-colors disabled:opacity-50 disabled:bg-gray-50';
@@ -52,6 +53,10 @@ function GuestForm({ setCurrForm }) {
             setError('Username must be 2–30 characters');
             return;
         }
+        if (!isValidUsername(guestUsername.trim())) {
+            setError(USERNAME_HINT);
+            return;
+        }
         if (!agreedToTerms) {
             setError('Please accept the Terms and Conditions to continue');
             return;
@@ -88,7 +93,7 @@ function GuestForm({ setCurrForm }) {
                             type="text"
                             placeholder="Choose a username"
                             value={guestUsername}
-                            onChange={(e) => setGuestUsername(e.target.value)}
+                            onChange={(e) => setGuestUsername(sanitizeUsernameInput(e.target.value))}
                             disabled={isLoading}
                             required
                             minLength={2}
@@ -96,6 +101,9 @@ function GuestForm({ setCurrForm }) {
                             className={inputClass}
                         />
                     </div>
+                    {guestUsername.length === 0 && (
+                        <p className="text-xs text-gray-400 mt-1.5 ml-1">{USERNAME_HINT}</p>
+                    )}
                     {usernameStatus === 'checking' && (
                         <p className="text-xs text-gray-400 mt-1.5 ml-1 flex items-center gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" /> Checking availability...

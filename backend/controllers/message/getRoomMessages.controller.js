@@ -3,6 +3,7 @@ import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { applyUnreadOnFetch } from '../../utils/applyUnreadOnFetch.js';
+import { compact } from '../../utils/compact.js';
 
 function deletedUserFallback() {
   return {
@@ -18,15 +19,12 @@ export const getRoomMessages = async (req, res) => {
     const { roomId } = req.params;
     const { limit = 20, before, after } = req.query;
 
-    console.log(userId + "   "+roomId );
-
     const { messages, hasMore } = await messageCacheClient.getRoomMessages(roomId, {
       userId,
       limit: parseInt(limit, 10),
       before: before || undefined,
       after: after || undefined,
     });
-
 
     if (!messages.length) {
       const unreadCount = await applyUnreadOnFetch({
@@ -44,34 +42,36 @@ export const getRoomMessages = async (req, res) => {
       ? await userCacheClient.getUsersByIds(senderIds)
       : new Map();
 
-      const formattedMessages = messages.map((msg) => {
-  if (msg.isSystemMessage) {
-    return {
-      _id: msg._id || msg.id,
-      isSystemMessage: true,
-      systemType: msg.systemType || null,
-      text: msg.content || msg.text || '',
-      timestamp: msg.timestamp,
-    };
-  }
+    const formattedMessages = messages.map((msg) => {
+      if (msg.isSystemMessage) {
+        return {
+          _id: msg._id || msg.id,
+          isSystemMessage: true,
+          systemType: msg.systemType || null,
+          text: msg.content || msg.text || '',
+          timestamp: msg.timestamp,
+        };
+      }
 
-  const cachedSender = userDetailsMap.get(msg.senderId);
-  const senderDetails = cachedSender && cachedSender.username ? cachedSender : deletedUserFallback();
+      const cachedSender = userDetailsMap.get(msg.senderId);
+      const senderDetails = cachedSender && cachedSender.username ? cachedSender : deletedUserFallback();
 
-  return {
-    _id: msg._id || msg.id,
-    text: msg.content || msg.text || '',
-    isOwn: msg.senderId === userId,
-    senderId: msg.senderId,
-    timestamp: msg.timestamp,
-    username: senderDetails.username,
-    gender: senderDetails.gender,
-    avatar: senderDetails.avatar,
-    media:msg.media?_addQualities(msg.media):null,
-    taggedUser: msg.taggedUser,
-    replyTo: msg.replyTo || null,
-  };
-});
+      return compact({
+        _id: msg._id || msg.id,
+        text: msg.content || msg.text || '',
+        iv: msg.iv || null,
+        wrappedKey: msg.wrappedKey || null,
+        isOwn: msg.senderId === userId,
+        senderId: msg.senderId,
+        timestamp: msg.timestamp,
+        username: senderDetails.username,
+        gender: senderDetails.gender,
+        avatar: senderDetails.avatar,
+        media: msg.media ? _addQualities(msg.media) : null,
+        taggedUser: msg.taggedUser || null,
+        replyTo: msg.replyTo || null,
+      });
+    });
 
     const unreadCount = await applyUnreadOnFetch({
       userId,

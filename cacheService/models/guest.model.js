@@ -24,7 +24,9 @@ const guestScheme = new mongoose.Schema({
     lastSeen: {
         type: Date,
         default: Date.now
-    },   
+    },
+    publicKey: { type: String, default: null },
+    privateKeyEncrypted: { type: String, default: null, select: false },
 },{timestamps:true});
 
 export default mongoose.models.Guest || mongoose.model("Guest", guestScheme);

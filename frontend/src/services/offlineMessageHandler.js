@@ -86,6 +86,7 @@ export const sendPendingMessages = async () => {
             text: pendingMsg.text,
             media: finalMedia,
             uuid: tempId,
+            roomPublicKey: pendingMsg.roomPublicKey || null,
             skipToast: true
           });
         } else if (pendingMsg.type === 'private') {

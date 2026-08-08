@@ -159,7 +159,7 @@ export function appendRoomMessages(roomId, messages) {
     const cached = messageCache.get(key);
     if (!cached) continue;
 
-    const existingIds = new Set(cached.messages.map((m) => String(m.id)));
+    const existingIds = new Set(cached.messages.map((m) => String(m._id || m.id)));
 
     const newMapped = messages
       .filter((msg) => !existingIds.has(String(msg._id || msg.id)))
@@ -177,6 +177,8 @@ export function appendRoomMessages(roomId, messages) {
           formatted.systemType = msg.systemType || null;
         }
         if (msg.media) formatted.media = msg.media;
+        if (msg.iv) formatted.iv = msg.iv;
+        if (msg.wrappedKey) formatted.wrappedKey = msg.wrappedKey;
         return formatted;
       });
 
@@ -203,7 +205,7 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
     const cached = messageCache.get(key);
     if (!cached) continue;
 
-    const existingIds = new Set(cached.messages.map((m) => String(m.id)));
+    const existingIds = new Set(cached.messages.map((m) => String(m._id,m.id)));
 
     const newMapped = messages
       .filter((msg) => !existingIds.has(String(msg._id || msg.id)))
@@ -222,6 +224,10 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
           formatted.isSystemMessage = true;
           formatted.systemType = msg.systemType || null;
         }
+        if (msg.iv) formatted.iv = msg.iv;
+        if (msg.wrappedKey) formatted.wrappedKey = msg.wrappedKey;
+        if (msg.senderKeyWrapped) formatted.senderKeyWrapped = msg.senderKeyWrapped;
+        if (msg.receiverKeyWrapped) formatted.receiverKeyWrapped = msg.receiverKeyWrapped;
         return formatted;
       });
 

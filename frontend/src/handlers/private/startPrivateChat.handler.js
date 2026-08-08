@@ -22,6 +22,8 @@ export const startPrivateChatHandler = async (
   setCurrentRoom(null);
   setShowMembersModal(false);
 
+  messageService._getPublicKey(otherUser.id).catch(() => {});
+
   const cacheKey = `private_${otherUser.id}`;
 
   const inMemory = messageCache.current[cacheKey];
@@ -99,7 +101,9 @@ async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, set
   try {
     let mergedMessages = currentCache.messages;
     let latestTimestamp = mergedMessages?.[mergedMessages.length - 1]?.timestamp;
-    if (!latestTimestamp) return;
+    if (!latestTimestamp) {
+      return;
+    }
 
     let hasMore = true;
     let lastRead = null;
@@ -110,8 +114,8 @@ async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, set
       lastRead = res.lastRead ?? lastRead;
       lastUnreadCount = res.unreadCount;
 
-      const existingIds = new Set(mergedMessages.map(m => String(m.id)));
-      const reallyNew = (res.messages || []).filter(m => !existingIds.has(String(m.id)));
+      const existingIds = new Set(mergedMessages.map(m => String(m.id || m._id)));
+      const reallyNew = (res.messages || []).filter(m => !existingIds.has(String(m.id || m._id)));
 
       if (reallyNew.length) {
         mergedMessages = [...mergedMessages, ...reallyNew];

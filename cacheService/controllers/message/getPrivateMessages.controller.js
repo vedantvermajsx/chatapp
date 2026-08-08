@@ -11,6 +11,10 @@ function mapPrivateMessage(msg) {
     timestamp: msg.timestamp,
     media: msg.media || null,
     taggedUser: msg.taggedUser || null,
+    iv: msg.iv || null,
+    wrappedKey: msg.wrappedKey || null,
+    senderKeyWrapped: msg.senderKeyWrapped || null,
+    receiverKeyWrapped: msg.receiverKeyWrapped || null,
   };
 }
 

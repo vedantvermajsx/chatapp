@@ -9,7 +9,8 @@ const fetchNewerMessagesPage = async (
   messages,
   setMessages,
   messageCache,
-  setUnreadCounts
+  setUnreadCounts,
+  roomPrivateKey = null
 ) => {
   if (!messages || messages.length === 0) {
     return { messages: messages || [], hasMore: false };
@@ -24,7 +25,7 @@ const fetchNewerMessagesPage = async (
   let lastRead = null;
 
   if (type === 'room') {
-    res = await messageService.getRoomMessages(chatId, 20, null, after);
+    res = await messageService.getRoomMessages(chatId, 20, null, after, roomPrivateKey);
   } else {
     res = await messageService.getPrivateMessages(chatId, 20, null, after);
     lastRead = res.lastRead ?? null;
@@ -70,12 +71,13 @@ export const loadNewerMessagesHandler = async (
   setMessages,
   setHasMoreNewerMessages,
   messageCache,
-  setUnreadCounts = null
+  setUnreadCounts = null,
+  roomPrivateKey = null
 ) => {
   if (!messages || messages.length === 0) return;
 
   try {
-    const { hasMore } = await fetchNewerMessagesPage(chatId, type, messages, setMessages, messageCache, setUnreadCounts);
+    const { hasMore } = await fetchNewerMessagesPage(chatId, type, messages, setMessages, messageCache, setUnreadCounts, roomPrivateKey);
     setHasMoreNewerMessages(hasMore);
   } catch (error) {
     console.error('Failed to load newer messages:', error);

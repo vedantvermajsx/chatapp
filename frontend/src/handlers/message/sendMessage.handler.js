@@ -15,7 +15,9 @@ export const sendMessageHandler = async (
   setPrivateChats,
   messageCache,
   selectedFile,
-  setSelectedFile
+  setSelectedFile,
+  taggedUserId,
+  setTaggedUserId
 ) => {
   e.preventDefault();
   const trimmedMessage = (inputMessage || '').trim();
@@ -46,7 +48,8 @@ export const sendMessageHandler = async (
   avatar: user.avatar || null,
   media: pendingMedia,
   uploadProgress: 0,
-  isPending: true
+  isPending: true,
+  taggedUser: currentRoom ? (taggedUserId || null) : null
 };
 
   if (currentRoom) {
@@ -73,6 +76,8 @@ export const sendMessageHandler = async (
 
   setInputMessage('');
   setSelectedFile(null);
+  const messageTaggedUserId = currentRoom ? (taggedUserId || null) : null;
+  setTaggedUserId?.(null);
 
   (async () => {
     try {
@@ -93,6 +98,7 @@ export const sendMessageHandler = async (
       if (currentRoom) {
         pendingMessageData.type = 'room';
         pendingMessageData.roomId = currentRoom._id;
+        pendingMessageData.roomPublicKey = currentRoom.publicKey || null;
       } else if (currentPrivateChat) {
         pendingMessageData.type = 'private';
         pendingMessageData.receiverId = currentPrivateChat.id.toString();
@@ -185,7 +191,9 @@ export const sendMessageHandler = async (
           roomId: currentRoom._id,
           text: trimmedMessage,
           media: finalMediaToUse,
-          uuid: tempId
+          uuid: tempId,
+          roomPublicKey: currentRoom.publicKey,
+          taggedUser: messageTaggedUserId
         });
 
         const newMessageObj = {
@@ -197,7 +205,8 @@ export const sendMessageHandler = async (
           gender: user.gender,
           avatar: user.avatar || null,
           media: finalMediaToUse,
-          isPending: false
+          isPending: false,
+          taggedUser: messageTaggedUserId
         };
 
         setMessages((prev)=>prev.map((msg)=> ((msg.id || msg._id) === tempId || (msg.id || msg._id) === newMessageObj.id? newMessageObj:msg)));
@@ -325,7 +334,8 @@ export const sendStickerHandler = async (
           roomId: currentRoom._id,
           text: '',
           media: finalMedia,
-          uuid: tempId
+          uuid: tempId,
+          roomPublicKey: currentRoom.publicKey
         });
       } else if (currentPrivateChat) {
         response = await messageService.sendPrivateMessage({

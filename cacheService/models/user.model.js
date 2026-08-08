@@ -8,7 +8,10 @@ const userSchema = new mongoose.Schema({
   avatar: { type: String, default: '' },
   role: { type: String, default: 'user' },
   lastSeen: { type: Date, default: Date.now },
-  isOnline: { type: Boolean, default: false }
+  isOnline: { type: Boolean, default: false },
+  publicKey: { type: String, default: null },
+  privateKeyEncrypted: { type: String, default: null, select: false },
+  keySalt: { type: String, default: null, select: false }
 }, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model('User', userSchema);

@@ -38,8 +38,8 @@ class RoomService {
     }
   }
 
-  async createRoom(groupName, groupDescription) {
-    const response = await api.post(`${this.basePath}/create`, { groupName, groupDescription });
+  async createRoom(groupName, groupDescription, publicKey, privateKey) {
+    const response = await api.post(`${this.basePath}/create`, { groupName, groupDescription, publicKey, privateKey });
     return response.data;
   }
 
@@ -54,6 +54,8 @@ class RoomService {
     return response.data;
   }
 
+
+
   async getRoomMembers(roomId, skip = 0, search = '') {
     const response = await api.get(`${this.basePath}/${roomId}/members`, {
       params: { skip, limit: 20, search }
@@ -67,7 +69,8 @@ class RoomService {
       signal,
     });
     const raw = response.data;
-    return Array.isArray(raw) ? raw : (raw.members ?? []);
+    const members = Array.isArray(raw) ? raw : (raw.members ?? []);
+    return members;
   }
 
   async deleteRoom(roomId) {

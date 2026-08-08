@@ -12,7 +12,8 @@ export const loadRoomMessagesHandler = async (
   messageCache,
   CACHE_TTL,
   unreadCount = 0,
-  setUnreadCounts = null
+  setUnreadCounts = null,
+  roomPrivateKey = null
 ) => {
   const cacheKey = `room_${roomId}`;
 
@@ -21,7 +22,7 @@ export const loadRoomMessagesHandler = async (
     setMessages(inMemory.messages);
     setHasMoreMessages(inMemory.hasMore);
     if (unreadCount > 0) {
-      _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+      _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey);
     }
     return;
   }
@@ -38,14 +39,14 @@ export const loadRoomMessagesHandler = async (
     setLoadingMessages(false);
 
     if (unreadCount > 0) {
-      _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+      _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey);
     }
     return;
   }
 
   setLoadingMessages(true);
   try {
-    const res = await messageService.getRoomMessages(roomId, 20);
+    const res = await messageService.getRoomMessages(roomId, 20, null, null, roomPrivateKey);
     messageCache.current[cacheKey] = {
       messages: res.messages,
       hasMore: res.hasMore,
@@ -62,7 +63,7 @@ export const loadRoomMessagesHandler = async (
   }
 };
 
-async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts) {
+async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey = null) {
   try {
     let mergedMessages = currentCache.messages;
     let latestTimestamp = mergedMessages?.[mergedMessages.length - 1]?.timestamp;
@@ -72,14 +73,14 @@ async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages
     let lastUnreadCount = unreadCount;
 
     while (hasMore) {
-      const res = await messageService.getRoomMessages(roomId, 20, null, latestTimestamp);
+      const res = await messageService.getRoomMessages(roomId, 20, null, latestTimestamp, roomPrivateKey);
       lastUnreadCount = res.unreadCount;
       hasMore = res.hasMore || false;
 
       if (!res.messages?.length) break;
 
-      const existingIds = new Set(mergedMessages.map(m => String(m.id)));
-      const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id)));
+      const existingIds = new Set(mergedMessages.map(m => String(m.id || m._id)));
+      const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id || m._id)));
 
       if (reallyNew.length) {
         mergedMessages = [...mergedMessages, ...reallyNew];

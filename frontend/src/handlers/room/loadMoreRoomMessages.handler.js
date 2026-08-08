@@ -8,14 +8,15 @@ export const loadMoreRoomMessagesHandler = async (
   setHasMoreMessages,
   loadingMoreMessages,
   messageCache,
-  setUnreadCounts = null
+  setUnreadCounts = null,
+  roomPrivateKey = null
 ) => {
   if (!messages || messages.length === 0 || loadingMoreMessages.current) return;
   loadingMoreMessages.current = true;
 
   try {
     const earliestTimestamp = messages[0].timestamp;
-    const res = await messageService.getRoomMessages(roomId, 20, earliestTimestamp);
+    const res = await messageService.getRoomMessages(roomId, 20, earliestTimestamp, null, roomPrivateKey);
 
     const merged = [...res.messages, ...messages];
     setMessages(merged);

@@ -4,10 +4,11 @@ import emitNewPrivateMessage from '../../emitters/newPrivateMessage.emitter.js';
 import { enqueueMessage } from '../../utils/queueClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { _addQualities } from '../../utils/addQualities.js';
+import { compact } from '../../utils/compact.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
-    const { receiverId, content, media, isSystemMessage, systemType, replyTo, taggedUser } = req.body;
+    const { receiverId, content, media, isSystemMessage, systemType, replyTo, taggedUser, iv, senderKeyWrapped, receiverKeyWrapped } = req.body;
 
     if (!receiverId) {
       return res.status(400).json({ message: 'receiverId required' });
@@ -40,15 +41,22 @@ export async function sendPrivateMessage(req, res) {
       systemType: systemType || null,
       taggedUser: safeTaggedUser,
       replyTo: replyTo || null,
+      iv: iv || null,
+      senderKeyWrapped: senderKeyWrapped || null,
+      receiverKeyWrapped: receiverKeyWrapped || null,
     };
 
-    const payload = {
+    const payload = compact({
       _id,
       senderId: senderIdStr,
       senderUsername: sender.username,
       username: sender.username,
       receiverId: receiverIdStr,
+      senderId: senderIdStr,
       content: sanitizedContent,
+      iv: iv || null,
+      senderKeyWrapped: senderKeyWrapped || null,
+      receiverKeyWrapped: receiverKeyWrapped || null,
       timestamp,
       gender: sender.gender,
       avatar: sender.avatar,
@@ -59,9 +67,7 @@ export async function sendPrivateMessage(req, res) {
       systemType: systemType || null,
       taggedUser: safeTaggedUser,
       replyTo: replyTo || null,
-    };
-
-    console.log(payload);
+    });
 
     enqueueMessage(messageData);
 
@@ -73,7 +79,7 @@ export async function sendPrivateMessage(req, res) {
         console.error('[sendPrivateMessage] cache append error:', err.message)
       );
 
-    return res.json(messageData);
+    return res.json(compact(messageData));
   } catch (err) {
     console.error('[sendPrivateMessage] error:', err);
     return res.status(500).json({ message: err.message });

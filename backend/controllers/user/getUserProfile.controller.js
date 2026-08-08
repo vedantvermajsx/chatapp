@@ -17,6 +17,7 @@ export async function getUserProfile(req, res) {
       username: user.username,
       bio: user.bio ?? "",
       gender: user.gender,
+      publicKey: user.publicKey ?? null,
     };
 
     return res.status(200).json({ message: "User fetched successfully", user: profile });

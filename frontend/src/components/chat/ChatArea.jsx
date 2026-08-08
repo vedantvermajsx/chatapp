@@ -17,6 +17,8 @@ const ChatArea = memo(function ChatArea({
   setMessages,
   inputMessage,
   setInputMessage,
+  taggedUserId,
+  setTaggedUserId,
   selectedFile,
   onFileSelect,
   onRemoveFile,
@@ -367,7 +369,7 @@ const ChatArea = memo(function ChatArea({
 
         let res;
         if (currentRoom) {
-          res = await messageService.getRoomMessages(currentRoom._id, 100, null, after);
+          res = await messageService.getRoomMessages(currentRoom._id, 100, null, after, currentRoom.privateKey ?? null);
         } else if (currentPrivateChat) {
           res = await messageService.getPrivateMessages(currentPrivateChat.id, 100, null, after);
         }
@@ -524,6 +526,8 @@ const ChatArea = memo(function ChatArea({
           user={user}
           inputMessage={inputMessage}
           setInputMessage={setInputMessage}
+          taggedUserId={taggedUserId}
+          setTaggedUserId={setTaggedUserId}
           selectedFile={selectedFile}
           onFileSelect={onFileSelect}
           onRemoveFile={onRemoveFile}

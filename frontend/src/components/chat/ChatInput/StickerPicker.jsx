@@ -177,7 +177,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
             if (!url) return null;
             return (
               <button
-                key={item.id || i}
+                key={item.id || item._id || i}
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(item)}

@@ -4,6 +4,7 @@ import userCacheClient from '../../database/userCacheClient.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
 import { applyUnreadOnFetch } from '../../utils/applyUnreadOnFetch.js';
+import { compact } from '../../utils/compact.js';
 
 function deletedUserFallback(msg) {
   const gender = msg.gender ?? null;
@@ -70,21 +71,24 @@ export const getPrivateMessages = async (req, res) => {
       const cachedSender = userDetailsMap.get(msg.senderId);
       const senderDetails = cachedSender && cachedSender.username ? cachedSender : deletedUserFallback(msg);
 
-      return {
+      return compact({
         _id: msg._id || msg.id,
         senderId: msg.senderId,
         receiverId: msg.receiverId,
         username: senderDetails.username,
         avatar: senderDetails.avatar,
         gender: senderDetails.gender,
-        isSystemMessage:msg.isSystemMessage,
-        systemType:msg.systemType,  
+        isSystemMessage: msg.isSystemMessage,
+        systemType: msg.systemType,
         text: msg.content || msg.text || '',
+        iv: msg.iv || null,
+        senderKeyWrapped: msg.senderKeyWrapped || null,
+        receiverKeyWrapped: msg.receiverKeyWrapped || null,
         isOwn,
         timestamp: msg.timestamp,
-        media:msg.media?_addQualities(msg.media):null,
+        media: msg.media ? _addQualities(msg.media) : null,
         replyTo: msg.replyTo || null,
-      };
+      });
     });
 
     const unreadCount = await applyUnreadOnFetch({

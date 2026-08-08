@@ -1,7 +1,7 @@
 import { signToken } from '../../utils/tokenGenerator.js';
 import userCacheClient from '../../database/userCacheClient.js';
 
-export async function handleAuthSuccess(res, userDocument, role) {
+export async function handleAuthSuccess(res, userDocument, role, privateKey = null) {
   const userData = {
     _id: userDocument._id.toString(),
     username: userDocument.username,
@@ -11,6 +11,7 @@ export async function handleAuthSuccess(res, userDocument, role) {
     age: userDocument.age,
     bio: userDocument.bio,
     password: userDocument.password,
+    publicKey: userDocument.publicKey ?? null,
     role,
     isOnline: true,
     lastSeen: userDocument.lastSeen ?? new Date(),
@@ -22,6 +23,7 @@ export async function handleAuthSuccess(res, userDocument, role) {
     email: userData.email,
     avatar: userData.avatar,
     gender: userData.gender,
+    publicKey: userData.publicKey,
     role,
   };
 
@@ -45,8 +47,14 @@ export async function handleAuthSuccess(res, userDocument, role) {
     maxAge: 24 * 60 * 60 * 1000,
   });
 
-  res.status(201).json({
+  const response = {
     token,
     user: cacheProfile,
-  });
+  };
+
+  if (privateKey) {
+    response.privateKey = privateKey;
+  }
+
+  res.status(201).json(response);
 }

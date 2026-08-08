@@ -38,12 +38,14 @@ class UserService {
     });
     const data = response.data;
     const list = Array.isArray(data) ? data : (data?.users || data?.data || []);
-    return list.map((u) => ({
+    const mapped = list.map((u) => ({
       id: u.userid || u.id || u._id,
       username: u.username,
       avatar: u.pfp ?? u.avatar ?? '',
       bio: u.bio ?? '',
     }));
+
+    return mapped;
   }
 }
 

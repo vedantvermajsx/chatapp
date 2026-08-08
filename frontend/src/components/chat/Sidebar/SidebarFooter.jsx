@@ -16,7 +16,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
     >
       { }
       <div className="flex items-center gap-2 flex-1 min-w-0 mr-1">
-        <Avatar url={user.avatar} name={user.username} gender={user.gender} size={8} />
+        <Avatar url={user.avatar} name={user.username} gender={user.gender} size={10} />
         <span className="text-xs font-semibold truncate" style={{ color: theme.otherMessageText }}>
           {user.username}
         </span>
@@ -31,7 +31,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
             title="Settings"
             {...getNeumorphicProps(1, 4, 0, 0)}
           >
-            <Settings className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
+            <Settings className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
           </button>
         )}
         <button
@@ -40,7 +40,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
           title="Theme"
           {...getNeumorphicProps(1, 4, 0, 0)}
         >
-          <Palette className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
+          <Palette className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
         </button>
         <button
           onClick={() => setShowSecurityPolicy(true)}
@@ -48,7 +48,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
           title="Security & Policy"
           {...getNeumorphicProps(1, 4, 0, 0)}
         >
-          <ShieldCheck className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
+          <ShieldCheck className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
         </button>
         <button
           onClick={onLogout}
@@ -56,7 +56,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
           title="Logout"
           {...getNeumorphicProps(1, 4, 0, 0)}
         >
-          <LogOut className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
+          <LogOut className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
         </button>
       </div>
 

@@ -41,7 +41,7 @@ export default function MentionDropdown({
             aria-selected={idx === mentionIndex}
             onMouseDown={(e) => {
               e.preventDefault();
-              insertMention(member.username);
+              insertMention(member);
             }}
             onMouseEnter={() => setMentionIndex(idx)}
             className="flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors select-none"

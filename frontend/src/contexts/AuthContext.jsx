@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/auth.service';
 import { dbService } from '../services/indexedDB.service';
+import keyManager from '../services/keyManager';
+import { generateRsaKeyPairPem } from '../utils/crypto';
 
 const AuthContext = createContext();
 
@@ -11,7 +13,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      setUser(JSON.parse(localStorage.getItem('user')));
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      setUser(storedUser);
+      if (storedUser?._id) keyManager.loadSelfPrivateKey(storedUser._id);
     }
     setLoading(false);
   }, []);
@@ -22,6 +26,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
+      if (res.privateKey) await keyManager.setSelfPrivateKey(res.user._id, res.privateKey);
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Login failed' };
@@ -34,6 +39,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
+      if (res.privateKey) await keyManager.setSelfPrivateKey(res.user._id, res.privateKey);
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Registration failed' };
@@ -42,10 +48,12 @@ export const AuthProvider = ({ children }) => {
 
   const guestLogin = async (username, gender) => {
     try {
-      const res = await authService.guestLogin({ username, gender });
+      const { publicKeyPem, privateKeyPem } = await generateRsaKeyPairPem();
+      const res = await authService.guestLogin({ username, gender, publicKey: publicKeyPem });
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
+      await keyManager.setSelfPrivateKey(res.user._id, privateKeyPem);
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Guest login failed' };
@@ -56,6 +64,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    await keyManager.clear();
     try {
       await dbService.clearAllData();
     } catch (err) {
@@ -64,8 +73,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (userData) => {
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+    setUser((prev) => {
+      const merged = { ...prev, ...userData };
+      if (prev?.publicKey && !userData?.publicKey) {
+        merged.publicKey = prev.publicKey;
+      }
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
   };
 
   return (

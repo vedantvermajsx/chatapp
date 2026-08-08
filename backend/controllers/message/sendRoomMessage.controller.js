@@ -5,10 +5,11 @@ import { enqueueMessage } from '../../utils/queueClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { onlineUsers } from '../../socket.js';
 import { _addQualities } from '../../utils/addQualities.js';
+import { compact } from '../../utils/compact.js';
 
 export async function sendRoomMessage(req, res) {
   try {
-    const { roomId, message, media, isSystemMessage, systemType, replyTo, taggedUser } = req.body;
+    const { roomId, message, media, isSystemMessage, systemType, replyTo, taggedUser, iv, wrappedKey } = req.body;
 
     if (!roomId) {
       return res.status(400).json({ message: 'roomId required' });
@@ -37,14 +38,17 @@ export async function sendRoomMessage(req, res) {
       timestamp,
       taggedUser: safeTaggedUser,
       replyTo: replyTo || null,
+      iv: iv || null,
+      wrappedKey: wrappedKey || null,
     };
 
-    const payload = {
+    const payload = compact({
       _id,
       roomId,
       userId: senderIdStr,
       username: sender.username,
       text: content,
+      iv: iv || null,
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
       timestamp,
@@ -52,10 +56,11 @@ export async function sendRoomMessage(req, res) {
       avatar: sender.avatar,
       isOnline: sender.isOnline,
       lastSeen: sender.lastSeen,
-      media: media?_addQualities(media):null,
+      media: media ? _addQualities(media) : null,
       taggedUser: safeTaggedUser,
       replyTo: replyTo || null,
-    };
+      wrappedKey: wrappedKey || null,
+    });
 
     enqueueMessage(messageData);
     emitNewMessage(roomId, payload, senderSocketId);
@@ -66,7 +71,7 @@ export async function sendRoomMessage(req, res) {
         console.error('[sendRoomMessage] cache append error:', err.message)
       );
 
-    return res.status(201).json(messageData);
+    return res.status(201).json(compact(messageData));
   } catch (err) {
     console.error('[sendRoomMessage] error:', err);
     return res.status(500).json({ message: err.message });

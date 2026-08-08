@@ -3,12 +3,13 @@ import { roomCache } from './CacheService.js';
 import UserCacheService from './UserCacheService.js';
 import RoomTrie from './RoomTrie.js';
 
-const MEMBER_PROJECTION = ({ _id, username, gender, isOnline, avatar }) => ({
+const MEMBER_PROJECTION = ({ _id, username, gender, isOnline, avatar, publicKey }) => ({
   _id,
   username,
   gender,
   isOnline,
   avatar: avatar ?? '',
+  publicKey: publicKey ?? null,
 });
 
 async function resolveMembers(ids) {
@@ -139,6 +140,8 @@ class RoomCacheService {
         groupDescription: room.groupDescription,
         groupAdmin: room.groupAdmin,
         groupPic: room.groupPic,
+        publicKey: room.publicKey ?? null,
+        privateKey: room.privateKey ?? null,
         createdAt: room.createdAt,
         updatedAt: room.updatedAt,
         isDeleted: room.isDeleted,
@@ -326,6 +329,8 @@ class RoomCacheService {
       groupDescription: r.groupDescription,
       groupAdmin: r.groupAdmin,
       groupPic: r.groupPic.replace('upload/', 'upload/w_50,h_50,c_fill/'),
+      publicKey: r.publicKey ?? null,
+      privateKey: r.privateKey ?? null,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       memberCount: (r.groupMembers || []).length,
@@ -379,6 +384,8 @@ RoomCacheService.prototype.addUserRoom = async function (userId, roomId, roomDoc
     groupDescription: roomDoc.groupDescription,
     groupAdmin: roomDoc.groupAdmin,
     groupPic: roomDoc.groupPic,
+    publicKey: roomDoc.publicKey ?? null,
+    privateKey: roomDoc.privateKey ?? null,
     createdAt: roomDoc.createdAt,
     updatedAt: roomDoc.updatedAt,
     isDeleted: roomDoc.isDeleted,

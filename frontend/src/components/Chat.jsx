@@ -19,6 +19,7 @@ function Chat() {
     messages, setMessages,
     inputMessage, setInputMessage,
     selectedFile, setSelectedFile,
+    taggedUserId, setTaggedUserId,
     rooms,
     joinedRooms, setJoinedRooms,
     loadingJoinedRooms,
@@ -80,6 +81,7 @@ function Chat() {
     setRoomMembers,
     loadRoomMembers,
     setUnreadCounts,
+    joinedRooms,
     setJoinedRooms,
     setCurrentRoom,
     setHasMoreNewerMessages
@@ -161,10 +163,46 @@ function Chat() {
   const handleBackToList = useCallback(() => {
     setCurrentRoom(null);
     setCurrentPrivateChat(null);
-  }, [setCurrentRoom, setCurrentPrivateChat]);
+    if (socket) socket.emit('clearActiveRoom');
+  }, [setCurrentRoom, setCurrentPrivateChat, socket]);
+
+  // Tells the backend when this user stops actively viewing a room
+  const roomIdRef = useRef(currentRoom?._id);
+  const messagesRef = useRef(messages);
+  const handleChatReadRef = useRef(handleChatRead);
+  useEffect(() => { roomIdRef.current = currentRoom?._id; }, [currentRoom?._id]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { handleChatReadRef.current = handleChatRead; }, [handleChatRead]);
+
+  useEffect(() => {
+    if (!socket || !currentRoom?._id) return undefined;
+    return () => {
+      socket.emit('clearActiveRoom');
+    };
+  }, [socket, currentRoom?._id]);
+
+  useEffect(() => {
+    if (!socket) return undefined;
+    const handleVisibility = () => {
+      const roomId = roomIdRef.current;
+      if (!roomId) return;
+      if (document.visibilityState === 'hidden') {
+        socket.emit('clearActiveRoom');
+      } else if (document.visibilityState === 'visible') {
+        const lastNonOwnMessage = [...messagesRef.current].reverse().find(m => !m.isOwn && !m.isSystemMessage) ?? null;
+        if (lastNonOwnMessage) {
+          handleChatReadRef.current(`room_${roomId}`, lastNonOwnMessage);
+        } else {
+          socket.emit('markRoomRead', { roomId });
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [socket]);
 
   return (
-    <div className="flex w-full h-dvh h-svh max-h-dvh max-h-svh overflow-hidden relative" style={{ backgroundColor: theme.background }}>
+    <div className="flex w-full h-dvh  max-h-dvh overflow-hidden relative" style={{ backgroundColor: theme.background }}>
       <RoomSidebar
         user={user}
         logout={logout}
@@ -201,46 +239,48 @@ function Chat() {
       <CallProvider socket={socket}>
         <CallOverlay />
         <div className={`${hasActiveChat ? 'flex' : 'hidden'} md:flex flex-1 min-w-0 overflow-hidden`}>
-        <ChatArea
-          user={user}
-          currentRoom={currentRoom}
-          currentPrivateChat={currentPrivateChat}
-          setCurrentRoom={setCurrentRoom}
-          messages={messages}
-          setMessages={setMessages}
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          selectedFile={selectedFile}
-          onFileSelect={handleFileSelect}
-          onRemoveFile={handleRemoveFile}
-          sendMessage={(e) => sendMessage(e, socket)}
-          sendSticker={sendSticker}
-          leaveRoomSocket={(roomId) => socket.emit('leaveRoom', roomId)}
-          showMembersModal={showMembersModal}
-          setShowMembersModal={setShowMembersModal}
-          roomMembers={roomMembers}
-          setRoomMembers={setRoomMembers}
-          loadingRoomMembers={loadingRoomMembers}
-          setLoadingRoomMembers={setLoadingRoomMembers}
-          onStartPrivateChat={startPrivateChat}
-          loadingMessages={loadingMessages}
-          hasMoreMessages={hasMoreMessages}
-          hasMoreNewerMessages={hasMoreNewerMessages}
-          setHasMoreNewerMessages={setHasMoreNewerMessages}
-          loadingNewerMessages={loadingNewerMessages}
-          loadMoreMessages={loadMoreMessages}
-          loadNewerMessages={loadNewerMessages}
-          onToggleSidebar={handleBackToList}
-          loadRoomMembers={loadRoomMembers}
-          hasMoreMembers={hasMoreMembers}
-          loadMoreRoomMembers={loadMoreRoomMembers}
-          unreadCounts={unreadCounts}
-          onChatRead={handleChatRead}
-          onLeaveRoom={handleLeaveRoom}
-          socket={socket}
-          typingUsers={typingUsers}
-          messageCache={messageCache}
-        />
+          <ChatArea
+            user={user}
+            currentRoom={currentRoom}
+            currentPrivateChat={currentPrivateChat}
+            setCurrentRoom={setCurrentRoom}
+            messages={messages}
+            setMessages={setMessages}
+            inputMessage={inputMessage}
+            setInputMessage={setInputMessage}
+            taggedUserId={taggedUserId}
+            setTaggedUserId={setTaggedUserId}
+            selectedFile={selectedFile}
+            onFileSelect={handleFileSelect}
+            onRemoveFile={handleRemoveFile}
+            sendMessage={(e) => sendMessage(e, socket)}
+            sendSticker={sendSticker}
+            leaveRoomSocket={(roomId) => socket.emit('leaveRoom', roomId)}
+            showMembersModal={showMembersModal}
+            setShowMembersModal={setShowMembersModal}
+            roomMembers={roomMembers}
+            setRoomMembers={setRoomMembers}
+            loadingRoomMembers={loadingRoomMembers}
+            setLoadingRoomMembers={setLoadingRoomMembers}
+            onStartPrivateChat={startPrivateChat}
+            loadingMessages={loadingMessages}
+            hasMoreMessages={hasMoreMessages}
+            hasMoreNewerMessages={hasMoreNewerMessages}
+            setHasMoreNewerMessages={setHasMoreNewerMessages}
+            loadingNewerMessages={loadingNewerMessages}
+            loadMoreMessages={loadMoreMessages}
+            loadNewerMessages={loadNewerMessages}
+            onToggleSidebar={handleBackToList}
+            loadRoomMembers={loadRoomMembers}
+            hasMoreMembers={hasMoreMembers}
+            loadMoreRoomMembers={loadMoreRoomMembers}
+            unreadCounts={unreadCounts}
+            onChatRead={handleChatRead}
+            onLeaveRoom={handleLeaveRoom}
+            socket={socket}
+            typingUsers={typingUsers}
+            messageCache={messageCache}
+          />
         </div>
       </CallProvider>
     </div>

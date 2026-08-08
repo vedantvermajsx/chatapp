@@ -18,7 +18,7 @@ async function getRoomMembersFromDB(roomId, skip, limit, search) {
     }
 
     const total = await User.countDocuments(query);
-    const users = (await User.find(query, '_id username avatar gender isOnline lastSeen')
+    const users = (await User.find(query, '_id username avatar gender isOnline lastSeen publicKey')
       .sort({ isOnline: -1, lastSeen: -1 })
       .skip(skip)
       .limit(limit)).filter((u) => !!u.username);

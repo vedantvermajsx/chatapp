@@ -8,6 +8,7 @@ import User from '../../models/user.model.js';
 import { isUsernameTaken } from './usernameTaken.js';
 import { bloomFilter } from '../../utils/bloomFilterService.js';
 import { usernameValidationError } from '../../utils/validators.js';
+import { generateKeyPair, encryptPrivateKeyWithPassword } from '../../utils/keyCrypto.js';
 
 const SALT_ROUNDS = 10;
 
@@ -51,6 +52,8 @@ export async function register(req, res) {
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     const userId = new mongoose.Types.ObjectId().toString();
     const resolvedAvatar = avatar || getDefaultAvatar(gender);
+    const { publicKey, privateKey } = generateKeyPair();
+    const { encrypted: privateKeyEncrypted, salt: keySalt } = encryptPrivateKeyWithPassword(privateKey, password);
 
     const userData = {
       _id: userId,
@@ -63,6 +66,9 @@ export async function register(req, res) {
       role: 'user',
       isOnline: true,
       lastSeen: new Date(),
+      publicKey,
+      privateKeyEncrypted,
+      keySalt,
     };
 
     await userCacheClient.addUserToCache(userId, Promise.resolve({
@@ -71,11 +77,12 @@ export async function register(req, res) {
       avatar: userData.avatar,
       gender: userData.gender,
       role: userData.role,
+      publicKey: userData.publicKey,
     }));
 
     enqueueUserRegistration(userData);
 
-    await handleAuthSuccess(res, { _id: userId, ...userData }, 'user');
+    await handleAuthSuccess(res, { _id: userId, ...userData }, 'user', privateKey);
   } catch (err) {
     console.error('[register] unexpected error:', err.message);
     return res.status(500).json({ message: 'Internal server error' });

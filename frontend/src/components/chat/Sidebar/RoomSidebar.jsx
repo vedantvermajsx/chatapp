@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useCallback, useState, useEffect } from 'react';
 import roomService from '../../../services/room.service';
 import userService from '../../../services/user.service';
+import { generateRsaKeyPairPem } from '../../../utils/crypto';
 import RoomList from './RoomList';
 import GlobalRoomList from './GlobalRoomList';
 import PrivateChatList from './PrivateChatList';
@@ -119,7 +120,8 @@ function RoomSidebar({
   const createRoom = useCallback(async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     try {
-      const data = await roomService.createRoom(newRoomName, newRoomDesc);
+      const { publicKeyPem, privateKeyPem } = await generateRsaKeyPairPem();
+      const data = await roomService.createRoom(newRoomName, newRoomDesc, publicKeyPem, privateKeyPem);
       const newRoom = data.room;
       setNewRoomName('');
       setNewRoomDesc('');

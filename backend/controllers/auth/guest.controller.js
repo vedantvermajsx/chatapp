@@ -7,11 +7,11 @@ import { USERNAME_CHARS_REGEX } from '../../utils/validators.js';
 
 export async function createGuest(req, res) {
   try {
-    const { username, gender } = req.body;
+    const { username, gender, publicKey } = req.body;
 
     const refactoredUsername = username?.trim().toLowerCase();
 
-    console.log(username,gender);
+   //console.log(username,gender);
 
     if (!refactoredUsername) {
       return res.status(400).json({ message: 'Username is required' });
@@ -41,6 +41,7 @@ export async function createGuest(req, res) {
       username: refactoredUsername,
       gender: Number(gender),
       avatar: defaultAvatar,
+      publicKey: publicKey || null,
       isOnline: true,
       lastSeen: new Date(),
     };

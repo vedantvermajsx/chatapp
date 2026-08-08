@@ -15,7 +15,7 @@ const SecurityPolicyModal = ({ onClose }) => {
   const accent = theme.primary || '#6366f1';
   const subText = theme.otherUsernameColor;
 
-  const Row = ({ icon: Icon, label, sub, onClick, external }) => (
+  const Row = ({ icon: Icon, label, _, onClick, external }) => (
     <div
       onClick={onClick}
       className={`flex items-center gap-3 p-3.5 ${onClick ? 'cursor-pointer' : ''}`}
@@ -26,14 +26,13 @@ const SecurityPolicyModal = ({ onClose }) => {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold" style={{ color: theme.otherMessageText }}>{label}</p>
-        {sub && <p className="text-xs mt-0.5" style={{ color: subText }}>{sub}</p>}
       </div>
       {external && <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" style={{ color: subText }} />}
     </div>
   );
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center w-full ">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
         className="relative rounded-3xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
@@ -42,7 +41,7 @@ const SecurityPolicyModal = ({ onClose }) => {
         <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: border }}>
           <h2 className="text-base font-bold" style={{ color: theme.otherMessageText }}>Security &amp; Policy</h2>
           <button onClick={onClose} className="p-1.5 rounded-full transition-all">
-            <X className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
+            <X className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
           </button>
         </div>
 
@@ -72,8 +71,7 @@ const SecurityPolicyModal = ({ onClose }) => {
             <p className="text-sm font-bold mb-1.5" style={{ color: theme.otherMessageText }}>How we handle your data</p>
             <p className="text-xs leading-relaxed" style={{ color: subText }}>
               Messages and media are stored to keep your chats in sync across sessions. Cached data lives
-              in this browser and is managed automatically — you can clear it anytime from your browser's
-              site settings. Clearing your browser data removes everything stored locally.
+              in this browser and is managed automatically.
             </p>
           </div>
         </div>

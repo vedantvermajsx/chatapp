@@ -17,6 +17,7 @@ const ActiveCallScreen = () => {
     isMuted,
     toggleMute,
     callConnectedTime,
+    setRemoteMediaElement,
   } = useCall();
 
   const [durationStr, setDurationStr] = useState('00:00:00');
@@ -53,8 +54,9 @@ const ActiveCallScreen = () => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
       remoteVideoRef.current.play().catch((e) => console.warn('Remote play error:', e));
+      setRemoteMediaElement(remoteVideoRef.current);
     }
-  }, [remoteStream, isMinimized]);
+  }, [remoteStream, isMinimized, setRemoteMediaElement]);
 
   if (!activeCall) return null;
 

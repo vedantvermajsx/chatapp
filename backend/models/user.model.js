@@ -8,6 +8,9 @@ const userSchema = new mongoose.Schema({
   bio: { type: String, default: '' },
   avatar: { type: String, required: true },
   password: { type: String, required: true },
+  publicKey: { type: String, default: null },
+  privateKeyEncrypted: { type: String, default: null, select: false },
+  keySalt: { type: String, default: null, select: false },
   role: { type: String, default: 'user' },
   lastSeen: { type: Date, default: Date.now },
   isOnline: { type: Boolean, default: false }

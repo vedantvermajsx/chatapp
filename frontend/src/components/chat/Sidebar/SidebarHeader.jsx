@@ -1,4 +1,4 @@
-import { MessageSquare, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
 const SidebarHeader = ({ showMobileClose, onCloseSidebar }) => {
@@ -12,13 +12,7 @@ const SidebarHeader = ({ showMobileClose, onCloseSidebar }) => {
     >
       { }
       <div className="flex items-center gap-3">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ backgroundColor: theme.background }}
-        >
-          <MessageSquare className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
-        </div>
-        <span className="text-base font-bold tracking-tight" style={{ color: theme.otherMessageText }}>
+        <span className="text-base font-bold tracking-tight max-md:ml-32" style={{ color: theme.otherMessageText }}>
           GatherUp
         </span>
       </div>

@@ -1,12 +1,39 @@
 import React from 'react';
-import { PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Volume2, Volume1, SwitchCamera } from 'lucide-react';
 import { useCall } from '../../../contexts/CallContext';
 
 const CallControls = ({ isVideo }) => {
-  const { endCall, isMuted, isVideoOff, toggleMute, toggleVideo } = useCall();
+  const {
+    endCall,
+    isMuted,
+    isVideoOff,
+    isSpeakerOn,
+    canSwitchSpeaker,
+    canSwitchCamera,
+    toggleMute,
+    toggleVideo,
+    toggleSpeaker,
+    switchCamera,
+  } = useCall();
 
   return (
     <div className="h-24 bg-gray-950/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-center gap-5 px-6 absolute bottom-0 w-full">
+      {canSwitchSpeaker ? (
+        <button
+          onClick={toggleSpeaker}
+          title={isSpeakerOn ? 'Switch to earpiece' : 'Switch to speaker'}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors
+            ${isSpeakerOn
+              ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/35 active:bg-blue-500/50 ring-1 ring-blue-500/40'
+              : 'bg-white/10 text-white hover:bg-white/20 active:bg-white/30'
+            }`}
+        >
+          {isSpeakerOn ? <Volume2 className="w-5 h-5" /> : <Volume1 className="w-5 h-5" />}
+        </button>
+      ) : (
+        <div className="w-12 h-12" />
+      )}
+
       <button
         onClick={toggleMute}
         title={isMuted ? 'Unmute' : 'Mute'}
@@ -38,6 +65,20 @@ const CallControls = ({ isVideo }) => {
             }`}
         >
           {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+        </button>
+      ) : (
+        <div className="w-12 h-12" />
+      )}
+
+      {isVideo && canSwitchCamera ? (
+        <button
+          onClick={switchCamera}
+          title="Switch camera"
+          disabled={isVideoOff}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors
+            ${isVideoOff ? 'bg-white/5 text-white/30 cursor-not-allowed' : 'bg-white/10 text-white hover:bg-white/20 active:bg-white/30'}`}
+        >
+          <SwitchCamera className="w-5 h-5" />
         </button>
       ) : (
         <div className="w-12 h-12" />

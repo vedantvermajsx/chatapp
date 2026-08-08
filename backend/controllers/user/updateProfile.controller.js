@@ -17,6 +17,7 @@ export async function updateProfile(req, res) {
       gender: req.user.gender,
       role: req.user.role || 'user',
       bio: req.user.bio,
+      publicKey: req.user.publicKey ?? null,
     };
 
 
@@ -68,7 +69,8 @@ export async function updateProfile(req, res) {
       username: user.username,
       avatar: user.avatar,
       role: user.role || 'user',
-      bio: user.bio,  
+      bio: user.bio,
+      publicKey: user.publicKey ?? null,
     };
 
     res.json({ message: 'Profile updated', user: userData });

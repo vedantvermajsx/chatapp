@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema(
     role: { type: String, default: 'user' },
     isOnline: { type: Boolean, default: true },
     lastSeen: { type: Date, default: Date.now },
+    publicKey: { type: String, default: null },
+    privateKeyEncrypted: { type: String, default: null, select: false },
+    keySalt: { type: String, default: null, select: false },
   },
   { timestamps: true }
 );
