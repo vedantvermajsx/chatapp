@@ -190,6 +190,7 @@ export const useChatSocket = (user, {
         media: msg?.media || null,
         isPending: false,
         taggedUser: msg?.taggedUser || null,
+        replyTo: msg?.replyTo || null,
         ...(msg?.isSystemMessage && {
           isSystemMessage: true,
           systemType: msg.systemType || null,
@@ -287,6 +288,7 @@ export const useChatSocket = (user, {
         media: msg.media || null,
         isPending: false,
         taggedUser: msg?.taggedUser || null,
+        replyTo: msg?.replyTo || null,
         ...(msg?.isSystemMessage && {
           isSystemMessage: true,
           systemType: msg.systemType || null,

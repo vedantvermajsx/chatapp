@@ -13,7 +13,8 @@ export const loadRoomMessagesHandler = async (
   CACHE_TTL,
   unreadCount = 0,
   setUnreadCounts = null,
-  roomPrivateKey = null
+  roomPrivateKey = null,
+  setLoadingNewerMessages = null
 ) => {
   const cacheKey = `room_${roomId}`;
 
@@ -22,7 +23,9 @@ export const loadRoomMessagesHandler = async (
     setMessages(inMemory.messages);
     setHasMoreMessages(inMemory.hasMore);
     if (unreadCount > 0) {
-      _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey);
+      setLoadingNewerMessages?.(true);
+      _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey)
+        .finally(() => setLoadingNewerMessages?.(false));
     }
     return;
   }
@@ -39,7 +42,9 @@ export const loadRoomMessagesHandler = async (
     setLoadingMessages(false);
 
     if (unreadCount > 0) {
-      _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey);
+      setLoadingNewerMessages?.(true);
+      _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey)
+        .finally(() => setLoadingNewerMessages?.(false));
     }
     return;
   }

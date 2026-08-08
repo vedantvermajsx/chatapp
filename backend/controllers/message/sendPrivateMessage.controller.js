@@ -5,6 +5,7 @@ import { enqueueMessage } from '../../utils/queueClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { compact } from '../../utils/compact.js';
+import { resolveReplyTo } from '../../utils/resolveReplyTo.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
@@ -26,6 +27,7 @@ export async function sendPrivateMessage(req, res) {
     const senderIdStr = String(sender._id);
     const receiverIdStr = String(receiverId);
     const safeTaggedUser = taggedUser ? String(taggedUser) : null;
+    const resolvedReplyTo = await resolveReplyTo(replyTo);
 
 
     const messageData = {
@@ -40,7 +42,7 @@ export async function sendPrivateMessage(req, res) {
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
       taggedUser: safeTaggedUser,
-      replyTo: replyTo || null,
+      replyTo: resolvedReplyTo,
       iv: iv || null,
       senderKeyWrapped: senderKeyWrapped || null,
       receiverKeyWrapped: receiverKeyWrapped || null,
@@ -66,7 +68,7 @@ export async function sendPrivateMessage(req, res) {
       isSystemMessage: isSystemMessage || false,
       systemType: systemType || null,
       taggedUser: safeTaggedUser,
-      replyTo: replyTo || null,
+      replyTo: resolvedReplyTo,
     });
 
     enqueueMessage(messageData);

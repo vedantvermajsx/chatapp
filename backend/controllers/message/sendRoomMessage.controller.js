@@ -6,6 +6,7 @@ import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { onlineUsers } from '../../socket.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { compact } from '../../utils/compact.js';
+import { resolveReplyTo } from '../../utils/resolveReplyTo.js';
 
 export async function sendRoomMessage(req, res) {
   try {
@@ -26,6 +27,7 @@ export async function sendRoomMessage(req, res) {
     const senderSocketId = senderEntry?.socketId || null;
 
     const safeTaggedUser = taggedUser ? String(taggedUser) : null;
+    const resolvedReplyTo = await resolveReplyTo(replyTo);
     const messageData = {
       _id,
       content,
@@ -37,7 +39,7 @@ export async function sendRoomMessage(req, res) {
       media: media || null,
       timestamp,
       taggedUser: safeTaggedUser,
-      replyTo: replyTo || null,
+      replyTo: resolvedReplyTo,
       iv: iv || null,
       wrappedKey: wrappedKey || null,
     };
@@ -58,7 +60,7 @@ export async function sendRoomMessage(req, res) {
       lastSeen: sender.lastSeen,
       media: media ? _addQualities(media) : null,
       taggedUser: safeTaggedUser,
-      replyTo: replyTo || null,
+      replyTo: resolvedReplyTo,
       wrappedKey: wrappedKey || null,
     });
 

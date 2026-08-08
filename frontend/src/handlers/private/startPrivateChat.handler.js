@@ -16,7 +16,8 @@ export const startPrivateChatHandler = async (
   messageCache,
   CACHE_TTL,
   unreadCount = 0,
-  setUnreadCounts = null
+  setUnreadCounts = null,
+  setLoadingNewerMessages = null
 ) => {
   setCurrentPrivateChat(otherUser);
   setCurrentRoom(null);
@@ -33,7 +34,9 @@ export const startPrivateChatHandler = async (
     setLoadingMessages(false);
     _refreshLastReadStatus(otherUser.id, cacheKey, messageCache, setMessages);
     if (unreadCount > 0) {
-      _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+      setLoadingNewerMessages?.(true);
+      _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts)
+        .finally(() => setLoadingNewerMessages?.(false));
     }
     return;
   }
@@ -50,7 +53,9 @@ export const startPrivateChatHandler = async (
     };
     _refreshLastReadStatus(otherUser.id, cacheKey, messageCache, setMessages);
     if (unreadCount > 0) {
-      _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts);
+      setLoadingNewerMessages?.(true);
+      _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts)
+        .finally(() => setLoadingNewerMessages?.(false));
     }
     return;
   }

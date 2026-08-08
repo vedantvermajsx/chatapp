@@ -352,7 +352,8 @@ export const useChatState = (user) => {
       CACHE_TTL,
       unreadCounts[`room_${roomId}`] || 0,
       setUnreadCounts,
-      roomObject?.privateKey ?? null
+      roomObject?.privateKey ?? null,
+      (val) => { if (currentSwitchId.current === switchId) setLoadingNewerMessages(val); }
     );
     setShowSidebar(false);
   }, [joinedRooms, user, CACHE_TTL, setRoomMembers, currentRoom, clearUnread, setJoinedRooms, loadJoinedRooms, unreadCounts]);
@@ -374,7 +375,8 @@ export const useChatState = (user) => {
       messageCache,
       CACHE_TTL,
       unreadCounts[`private_${otherUser.id}`] || 0,
-      setUnreadCounts
+      setUnreadCounts,
+      (val) => { if (currentSwitchId.current === switchId) setLoadingNewerMessages(val); }
     );
     setShowSidebar(false);
   }, [user, CACHE_TTL, clearUnread, unreadCounts]);
