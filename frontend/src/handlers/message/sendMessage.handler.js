@@ -17,11 +17,18 @@ export const sendMessageHandler = async (
   selectedFile,
   setSelectedFile,
   taggedUserId,
-  setTaggedUserId
+  setTaggedUserId,
+  replyingTo,
+  setReplyingTo
 ) => {
   e.preventDefault();
   const trimmedMessage = (inputMessage || '').trim();
   if (!trimmedMessage && !selectedFile) return;
+
+  const replySnapshot = replyingTo
+    ? { messageId: replyingTo.id || replyingTo._id, text: replyingTo.text, username: replyingTo.username, media: replyingTo.media, senderId: replyingTo.senderId }
+    : null;
+  setReplyingTo?.(null);
 
   const tempId = crypto.randomUUID();
   let pendingMedia = null;
@@ -41,6 +48,7 @@ export const sendMessageHandler = async (
   const optimisticMessage = {
   id: tempId,
   username: user.username,
+  senderId: user._id || user.id,
   text: trimmedMessage,
   isOwn: true,
   timestamp: new Date().toISOString(),
@@ -49,7 +57,8 @@ export const sendMessageHandler = async (
   media: pendingMedia,
   uploadProgress: 0,
   isPending: true,
-  taggedUser: currentRoom ? (taggedUserId || null) : null
+  taggedUser: replySnapshot?.senderId || (currentRoom ? (taggedUserId || null) : null),
+  replyTo: replySnapshot
 };
 
   if (currentRoom) {
@@ -76,7 +85,7 @@ export const sendMessageHandler = async (
 
   setInputMessage('');
   setSelectedFile(null);
-  const messageTaggedUserId = currentRoom ? (taggedUserId || null) : null;
+  const messageTaggedUserId = replySnapshot?.senderId || (currentRoom ? (taggedUserId || null) : null);
   setTaggedUserId?.(null);
 
   (async () => {
@@ -193,12 +202,14 @@ export const sendMessageHandler = async (
           media: finalMediaToUse,
           uuid: tempId,
           roomPublicKey: currentRoom.publicKey,
-          taggedUser: messageTaggedUserId
+          taggedUser: messageTaggedUserId,
+          replyTo: replySnapshot?.messageId
         });
 
         const newMessageObj = {
           id: response._id,
           username: user.username,
+          senderId: user._id || user.id,
           text: trimmedMessage,
           isOwn: true,
           timestamp: response.timestamp,
@@ -206,7 +217,8 @@ export const sendMessageHandler = async (
           avatar: user.avatar || null,
           media: finalMediaToUse,
           isPending: false,
-          taggedUser: messageTaggedUserId
+          taggedUser: messageTaggedUserId,
+          replyTo: replySnapshot
         };
 
         setMessages((prev)=>prev.map((msg)=> ((msg.id || msg._id) === tempId || (msg.id || msg._id) === newMessageObj.id? newMessageObj:msg)));
@@ -230,19 +242,24 @@ export const sendMessageHandler = async (
           receiverModel: currentPrivateChat.role === 'guest' ? 'Guest' : 'User',
           content: trimmedMessage,
           media: finalMediaToUse,
-          uuid: tempId
+          uuid: tempId,
+          replyTo: replySnapshot?.messageId,
+          taggedUser: messageTaggedUserId
         });
 
         const newMessageObj = {
           id: response._id,
           username: user.username,
+          senderId: user._id || user.id,
           text: trimmedMessage,
           isOwn: true,
           timestamp: response.timestamp,
           gender: user.gender,
           avatar: user.avatar || null,
           media: finalMediaToUse,
-          isPending: false
+          isPending: false,
+          taggedUser: messageTaggedUserId,
+          replyTo: replySnapshot
         };
         
         setMessages((prev) => prev.map((msg) => (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg));

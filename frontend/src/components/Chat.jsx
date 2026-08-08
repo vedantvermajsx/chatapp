@@ -20,6 +20,7 @@ function Chat() {
     inputMessage, setInputMessage,
     selectedFile, setSelectedFile,
     taggedUserId, setTaggedUserId,
+    replyingTo, setReplyingTo,
     rooms,
     joinedRooms, setJoinedRooms,
     loadingJoinedRooms,
@@ -250,6 +251,8 @@ function Chat() {
             setInputMessage={setInputMessage}
             taggedUserId={taggedUserId}
             setTaggedUserId={setTaggedUserId}
+            replyingTo={replyingTo}
+            setReplyingTo={setReplyingTo}
             selectedFile={selectedFile}
             onFileSelect={handleFileSelect}
             onRemoveFile={handleRemoveFile}

@@ -86,10 +86,10 @@ class MessageService {
     }));
   }
 
-  async sendRoomMessage({ roomId, text, media, uuid, roomPublicKey, skipToast = false }) {
+  async sendRoomMessage({ roomId, text, media, uuid, roomPublicKey, replyTo, taggedUser, skipToast = false }) {
     try {
       const strippedMedia = media ? { url: media.url, type: media.type } : null;
-      const body = { roomId, media: strippedMedia, uuid };
+      const body = { roomId, media: strippedMedia, uuid, replyTo: replyTo || null, taggedUser: taggedUser || null };
 
       if (text && roomPublicKey) {
         const { content, iv, wrappedKey } = await encryptForRoom(text, roomPublicKey);
@@ -110,7 +110,7 @@ class MessageService {
     }
   }
 
-  async sendPrivateMessage({ receiverId, content, receiverModel = 'User', media, uuid, isSystemMessage, systemType, skipToast = false }) {
+  async sendPrivateMessage({ receiverId, content, receiverModel = 'User', media, uuid, isSystemMessage, systemType, replyTo, taggedUser, skipToast = false }) {
     try {
       const strippedMedia = media ? { url: media.url, type: media.type } : null;
       const body = {
@@ -118,6 +118,8 @@ class MessageService {
         receiverModel,
         media: strippedMedia,
         uuid,
+        replyTo: replyTo || null,
+        taggedUser: taggedUser || null,
         ...(isSystemMessage && { isSystemMessage: true, systemType }),
       };
 

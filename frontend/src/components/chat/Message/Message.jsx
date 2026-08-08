@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Loader } from 'lucide-react';
+import { Loader, Reply } from 'lucide-react';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { formatSeenAt, formatMessageTime } from '../../../utils/dateUtils';
@@ -7,7 +7,9 @@ import StickerMessage from './StickerMessage';
 import MediaContent from './MediaContent';
 import TextContent from './TextContent';
 
-const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false, progress = 0, isTagged = false }) {
+const REPLY_MEDIA_LABELS = { image: 'Photo', video: 'Video', audio: 'Voice message', sticker: 'Sticker', gif: 'GIF' };
+
+const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false, progress = 0, isTagged = false, onReplyClick, onReplyQuoteClick }) {
   const { theme } = useTheme();
 
   const bubbleBg = isOwn
@@ -19,6 +21,9 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
   const usernameColor = isOwn
     ? (msg.isPending ? `${theme.myUsernameColor}CC` : theme.myUsernameColor)
     : theme.otherUsernameColor;
+
+  const replyTo = msg.replyTo;
+  const replyMediaLabel = replyTo?.media ? REPLY_MEDIA_LABELS[replyTo.media.type] || 'Attachment' : null;
 
   if (msg?.media?.type === 'sticker') {
     return (
@@ -63,6 +68,25 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
             </p>
           )}
 
+          {replyTo && (
+            <button
+              type="button"
+              onClick={() => onReplyQuoteClick?.(replyTo)}
+              className="w-full text-left mb-1.5 px-2 py-1 rounded-lg border-l-2 truncate"
+              style={{
+                backgroundColor: isOwn ? 'rgba(0,0,0,0.12)' : (theme.isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)'),
+                borderLeftColor: usernameColor,
+              }}
+            >
+              <p className="text-[11px] font-bold truncate" style={{ color: usernameColor }}>
+                {replyTo.username || 'Unknown'}
+              </p>
+              <p className="text-[11px] truncate" style={{ color: textColor, opacity: 0.85 }}>
+                {replyMediaLabel || replyTo.text || 'Message'}
+              </p>
+            </button>
+          )}
+
           {msg?.media && (
             <MediaContent msg={msg} isOwn={isOwn} theme={theme} />
           )}
@@ -71,12 +95,22 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
 
         </div>
 
-        <div className={`flex items-center gap-1 h-0 overflow-visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 pt-1`}>
+        <div className={`flex items-center gap-2 h-0 overflow-visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 pt-1 ${isOwn ? 'flex-row-reverse' : ''}`}>
           <span className="text-[10px] font-medium whitespace-nowrap mt-2" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }}>
             {formatMessageTime(msg.timestamp)}
           </span>
           {msg.isPending && (
             <Loader className="w-3 h-3 animate-spin flex-shrink-0" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }} />
+          )}
+          {!msg.isPending && (
+            <button
+              type="button"
+              onClick={() => onReplyClick?.(msg)}
+              className="mt-2 p-0.5 rounded-full hover:bg-black/10"
+              title="Reply"
+            >
+              <Reply className="w-3 h-3" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }} />
+            </button>
           )}
         </div>
       </div>

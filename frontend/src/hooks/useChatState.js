@@ -24,6 +24,7 @@ export const useChatState = (user) => {
   const [inputMessage, setInputMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [taggedUserId, setTaggedUserId] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [joinedRooms, setJoinedRooms] = useState([]);
   const [loadingJoinedRooms, setLoadingJoinedRooms] = useState(false);
@@ -253,9 +254,11 @@ export const useChatState = (user) => {
       selectedFile,
       setSelectedFile,
       taggedUserId,
-      setTaggedUserId
+      setTaggedUserId,
+      replyingTo,
+      setReplyingTo
     );
-  }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile, hasMoreNewerMessages, messages, taggedUserId]);
+  }, [currentRoom, currentPrivateChat, user, inputMessage, privateChats, selectedFile, hasMoreNewerMessages, messages, taggedUserId, replyingTo]);
 
   const sendSticker = useCallback(async (stickerEmoji) => {
     if (hasMoreNewerMessages && messages.length > 0) {
@@ -480,6 +483,7 @@ export const useChatState = (user) => {
     inputMessage, setInputMessage,
     selectedFile, setSelectedFile,
     taggedUserId, setTaggedUserId,
+    replyingTo, setReplyingTo,
     rooms, setRooms,
     joinedRooms, setJoinedRooms,
     loadingJoinedRooms,

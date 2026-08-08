@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef } from 'react';
 import Message from './Message';
+import SwipeToReply from './SwipeToReply';
 import SystemMessage from './SystemMessage';
 import Spinner from '../../common/Spinner';
 import TypingIndicator from './TypingIndicator';
@@ -22,6 +23,8 @@ const MessageList = ({
   onFirstMessageVisible,
   typingIndicator,
   isFetchingOlder,
+  onReplyClick,
+  onReplyQuoteClick,
 }) => {
   const { theme } = useTheme();
   const observerRef = useRef(null);
@@ -166,6 +169,7 @@ const MessageList = ({
           {messages.map((msg, idx) => (
             <div
               key={Date.now + idx}
+              data-msg-id={msg.id || msg._id}
               ref={(el) => {
                 if (idx === lastNonOwnIndex) lastMsgElRef.current = el;
                 if (idx === firstMessageIndex) firstMsgElRef.current = el;
@@ -174,15 +178,19 @@ const MessageList = ({
               className={idx === messages.length - 1 ? 'animate-bubble-in' : ''}
             >
               {msg?.isSystemMessage ? <SystemMessage msg={msg} isPrivateChat={isPrivateChat} /> :
-                <Message
-                  msg={msg}
-                  isOwn={msg.isOwn}
-                  senderAvatar={msg.avatar}
-                  gender={msg.gender}
-                  isPrivateChat={isPrivateChat}
-                  progress={msg.uploadProgress}
-                  isTagged={msg.taggedUser && currentUser && (msg.taggedUser === currentUser._id || msg.taggedUser === currentUser.id)}
-                />
+                <SwipeToReply disabled={msg.isPending} isOwn={msg.isOwn} onReply={() => onReplyClick?.(msg)}>
+                  <Message
+                    msg={msg}
+                    isOwn={msg.isOwn}
+                    senderAvatar={msg.avatar}
+                    gender={msg.gender}
+                    isPrivateChat={isPrivateChat}
+                    progress={msg.uploadProgress}
+                    isTagged={msg.taggedUser && currentUser && (msg.taggedUser === currentUser._id || msg.taggedUser === currentUser.id)}
+                    onReplyClick={onReplyClick}
+                    onReplyQuoteClick={onReplyQuoteClick}
+                  />
+                </SwipeToReply>
               }
             </div>
           ))}

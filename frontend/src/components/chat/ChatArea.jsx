@@ -19,6 +19,8 @@ const ChatArea = memo(function ChatArea({
   setInputMessage,
   taggedUserId,
   setTaggedUserId,
+  replyingTo,
+  setReplyingTo,
   selectedFile,
   onFileSelect,
   onRemoveFile,
@@ -434,6 +436,21 @@ const ChatArea = memo(function ChatArea({
     await sendMessage(e);
   }, [sendMessage]);
 
+  const handleReplyClick = useCallback((msg) => {
+    setReplyingTo?.(msg);
+    chatInputRef.current?.focus?.();
+  }, [setReplyingTo]);
+
+  const handleJumpToReply = useCallback((replyTo) => {
+    if (!replyTo?.messageId) return;
+    const el = messagesContainerRef.current?.querySelector(`[data-msg-id="${replyTo.messageId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('reply-jump-highlight');
+      setTimeout(() => el.classList.remove('reply-jump-highlight'), 1200);
+    }
+  }, []);
+
   useEffect(() => {
     const handleOpenZoom = (e) => {
       setZoomImageUrl(e.detail.url);
@@ -495,6 +512,8 @@ const ChatArea = memo(function ChatArea({
           hasMoreNewerMessages={hasMoreNewerMessages}
           loadingNewerMessages={loadingNewerMessages}
           isFetchingOlder={isFetchingOlder}
+          onReplyClick={handleReplyClick}
+          onReplyQuoteClick={handleJumpToReply}
         />
 
         {showNewMsgBanner && (
@@ -537,6 +556,8 @@ const ChatArea = memo(function ChatArea({
           socket={socket}
           currentRoom={currentRoom}
           currentPrivateChat={currentPrivateChat}
+          replyingTo={replyingTo}
+          onCancelReply={() => setReplyingTo?.(null)}
         />
       </div>
 

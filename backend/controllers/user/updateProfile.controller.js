@@ -4,6 +4,7 @@ import userModel from '../../models/user.model.js';
 import { usernameValidationError } from '../../utils/validators.js';
 import { isUsernameTaken } from '../auth/usernameTaken.js';
 import { bloomFilter } from '../../utils/bloomFilterService.js';
+import { signTokenWithExpiry } from '../../utils/tokenGenerator.js';
 
 export async function updateProfile(req, res) {
   try {
@@ -73,7 +74,38 @@ export async function updateProfile(req, res) {
       publicKey: user.publicKey ?? null,
     };
 
-    res.json({ message: 'Profile updated', user: userData });
+    
+    //jwt reissue
+    let newToken = null;
+    if (req.user.exp) {
+      const now = Math.floor(Date.now() / 1000);
+      const remainingSeconds = req.user.exp - now;
+
+      if (remainingSeconds > 0) {
+        newToken = signTokenWithExpiry(
+          {
+            _id: userId,
+            role: user.role || 'user',
+            username: user.username,
+            avatar: user.avatar,
+            gender: req.user.gender,
+            isOnline: req.user.isOnline,
+            lastSeen: req.user.lastSeen,
+          },
+          req.user.exp
+        );
+
+        const isProduction = process.env.NODE_ENV === 'production';
+        res.cookie('token', newToken, {
+          httpOnly: true,
+          sameSite: isProduction ? 'none' : 'strict',
+          secure: isProduction,
+          maxAge: remainingSeconds * 1000,
+        });
+      }
+    }
+
+    res.json({ message: 'Profile updated', user: userData, ...(newToken ? { token: newToken } : {}) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

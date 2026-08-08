@@ -21,6 +21,7 @@ export const authenticate = async (req, res, next) => {
       role: decoded.role || 'user',
       isOnline: decoded.isOnline,
       lastSeen: decoded.lastSeen,
+      exp: decoded.exp,
     };
     next();
   } catch (err) {

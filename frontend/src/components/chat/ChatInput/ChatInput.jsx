@@ -1,4 +1,4 @@
-import { Send, Paperclip, Sticker } from 'lucide-react';
+import { Send, Paperclip, Sticker, X } from 'lucide-react';
 import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
 import { toast } from 'sonner';
 import Avatar from '../../common/Avatar';
@@ -26,7 +26,9 @@ const ChatInput = memo(forwardRef(({
   socket,
   currentRoom,
   currentPrivateChat,
-  roomMembers = []
+  roomMembers = [],
+  replyingTo,
+  onCancelReply,
 
 }, ref) => {
   const inputRef = useRef(null);
@@ -395,6 +397,30 @@ const ChatInput = memo(forwardRef(({
         onRemoveFile={onRemoveFile}
         theme={theme}
       />
+
+      {replyingTo && (
+        <div
+          className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg border-l-2"
+          style={{
+            backgroundColor: theme.isLight ? '#f3f4f6' : '#1f2937',
+            borderLeftColor: theme.myMessageBubble || theme.primary || '#008080',
+          }}
+        >
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold truncate" style={{ color: theme.myMessageBubble || theme.primary || '#008080' }}>
+              Replying to {replyingTo.username || 'message'}
+            </p>
+            <p className="text-xs truncate" style={{ color: theme.otherMessageText }}>
+              {replyingTo.media
+                ? { image: 'Photo', video: 'Video', audio: 'Voice message', sticker: 'Sticker', gif: 'GIF' }[replyingTo.media.type] || 'Attachment'
+                : replyingTo.text || 'Message'}
+            </p>
+          </div>
+          <button type="button" onClick={onCancelReply} className="p-1 rounded-full hover:bg-black/10 flex-shrink-0">
+            <X className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
+          </button>
+        </div>
+      )}
 
       {showStickerPicker && (
         <StickerPicker
