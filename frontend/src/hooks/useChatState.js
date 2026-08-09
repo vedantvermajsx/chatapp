@@ -98,6 +98,11 @@ export const useChatState = (user) => {
   }, [currentRoom?._id, currentPrivateChat?.id]);
 
   useEffect(() => {
+    setReplyingTo(null);
+    setTaggedUserId(null);
+  }, [currentRoom?._id, currentPrivateChat?.id]);
+
+  useEffect(() => {
     setOfflineHandlerDependencies({
       messageCache,
       setUnreadCounts,

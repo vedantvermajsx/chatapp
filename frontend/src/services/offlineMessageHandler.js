@@ -71,12 +71,39 @@ export const sendPendingMessages = async () => {
         if (pendingMsg.mediaType && pendingMsg.mediaId) {
           const file = await dbService.getFile(pendingMsg.mediaId);
           if (file) {
-            const uploadResult = await messageService.uploadFile(file, 'data', true);
+            const isCurrentChat =
+              (pendingMsg.type === 'room' && dependencies.currentRoom?._id === pendingMsg.roomId) ||
+              (pendingMsg.type === 'private' && dependencies.currentPrivateChat?.id === pendingMsg.receiverId);
+
+            const updateProgress = (progress) => {
+              if (dependencies.messageCache?.current?.[cacheKey]) {
+                dependencies.messageCache.current[cacheKey] = {
+                  ...dependencies.messageCache.current[cacheKey],
+                  messages: dependencies.messageCache.current[cacheKey].messages.map((msg) =>
+                    (msg.id || msg._id) === tempId ? { ...msg, uploadProgress: progress } : msg
+                  )
+                };
+              }
+              if (isCurrentChat && dependencies.setMessages) {
+                dependencies.setMessages((prev) =>
+                  prev.map((msg) =>
+                    (msg.id || msg._id) === tempId ? { ...msg, uploadProgress: progress } : msg
+                  )
+                );
+              }
+            };
+
+            // Reflect that the upload is actively resuming rather than stuck at 0%
+            updateProgress(0);
+
+            const uploadResult = await messageService.uploadFile(file, 'data', true, updateProgress);
             finalMedia = {
               type: uploadResult.type,
               url: uploadResult.url,
               isPending: false
             };
+
+            updateProgress(null);
           }
         }
 
