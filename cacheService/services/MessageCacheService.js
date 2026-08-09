@@ -182,6 +182,10 @@ export function invalidatePrivateMessages(userA, userB) {
 }
 
 export function appendRoomMessages(roomId, messages) {
+  // Store each message under its own direct key immediately, regardless of
+  // whether the paginated first-page cache below is warm — this is what
+  // lets replies resolve the quoted message right away instead of racing
+  // the (batched, slower) MongoDB write.
   for (const msg of messages) {
     const msgId = msg._id || msg.id;
     if (!msgId) continue;

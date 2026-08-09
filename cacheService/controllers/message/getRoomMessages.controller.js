@@ -9,6 +9,7 @@ function mapRoomMessage(msg) {
     taggedUser: msg.taggedUser || null,
     iv: msg.iv || null,
     wrappedKey: msg.wrappedKey || null,
+    replyTo: msg.replyTo || null,
   };
   if (msg.media){
     formatted.media = msg.media;

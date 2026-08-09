@@ -15,6 +15,7 @@ function mapPrivateMessage(msg) {
     wrappedKey: msg.wrappedKey || null,
     senderKeyWrapped: msg.senderKeyWrapped || null,
     receiverKeyWrapped: msg.receiverKeyWrapped || null,
+    replyTo: msg.replyTo || null,
   };
 }
 
