@@ -47,21 +47,49 @@ class MessageService {
     return null;
   }
 
+  async _decryptReplyPreviewForRoom(replyTo, roomPrivateKeyPem) {
+    if (!replyTo?.iv || !replyTo?.wrappedKey || !roomPrivateKeyPem) return replyTo;
+    const { iv, wrappedKey, ...clean } = replyTo;
+    try {
+      const text = await decryptForRoom(replyTo.text, iv, wrappedKey, roomPrivateKeyPem);
+      return { ...clean, text };
+    } catch (err) {
+      console.error('[messageService] room replyTo decrypt failed:', err.message);
+      return { ...clean, text: 'Unable to decrypt message' };
+    }
+  }
+
   async _decryptRoomMessages(messages, roomPrivateKeyPem) {
     if (!messages?.length) return messages;
     if (!roomPrivateKeyPem) return messages;
 
     return Promise.all(messages.map(async (msg) => {
-      if (!msg.iv || !msg.wrappedKey) return msg;
+      const replyTo = msg.replyTo ? await this._decryptReplyPreviewForRoom(msg.replyTo, roomPrivateKeyPem) : msg.replyTo;
+      if (!msg.iv || !msg.wrappedKey) return { ...msg, replyTo };
       const { iv, wrappedKey, ...clean } = msg;
       try {
         const text = await decryptForRoom(msg.text, iv, wrappedKey, roomPrivateKeyPem);
-        return { ...clean, text };
+        return { ...clean, text, replyTo };
       } catch (err) {
         console.error('[messageService] room decrypt failed:', err.message);
-        return { ...clean, text: 'Unable to decrypt message' };
+        return { ...clean, text: 'Unable to decrypt message', replyTo };
       }
     }));
+  }
+
+  async _decryptReplyPreviewForPrivate(replyTo, selfId, privateKeyPem) {
+    if (!replyTo?.iv) return replyTo;
+    const { iv, senderKeyWrapped, receiverKeyWrapped, ...clean } = replyTo;
+    const isOwn = String(replyTo.senderId) === String(selfId);
+    const wrappedKeyForMe = isOwn ? senderKeyWrapped : receiverKeyWrapped;
+    if (!wrappedKeyForMe) return { ...clean, text: '🔒 Unable to decrypt message' };
+    try {
+      const text = await decryptPrivateMessage(replyTo.text, iv, wrappedKeyForMe, privateKeyPem);
+      return { ...clean, text };
+    } catch (err) {
+      console.error('[messageService] private replyTo decrypt failed:', err.message);
+      return { ...clean, text: '🔒 Unable to decrypt message' };
+    }
   }
 
   async _decryptPrivateMessages(messages, otherUserId) {
@@ -71,14 +99,15 @@ class MessageService {
     if (!privateKeyPem) return messages;
 
     return Promise.all(messages.map(async (msg) => {
-      if (!msg.iv) return msg;
+      const replyTo = msg.replyTo ? await this._decryptReplyPreviewForPrivate(msg.replyTo, selfId, privateKeyPem) : msg.replyTo;
+      if (!msg.iv) return { ...msg, replyTo };
       const { iv, senderKeyWrapped, receiverKeyWrapped, ...clean } = msg;
       const isOwn = String(msg.senderId) === String(selfId);
       const wrappedKeyForMe = isOwn ? senderKeyWrapped : receiverKeyWrapped;
-      if (!wrappedKeyForMe) return { ...clean, text: '🔒 Unable to decrypt message' };
+      if (!wrappedKeyForMe) return { ...clean, text: '🔒 Unable to decrypt message', replyTo };
       try {
         const text = await decryptPrivateMessage(msg.text, iv, wrappedKeyForMe, privateKeyPem);
-        return { ...clean, text };
+        return { ...clean, text, replyTo };
       } catch (err) {
         console.error('[messageService] private decrypt failed:', err.message);
         return { ...clean, text: '🔒 Unable to decrypt message' };

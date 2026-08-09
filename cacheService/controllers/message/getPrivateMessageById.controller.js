@@ -15,7 +15,7 @@ export const getPrivateMessageByIdController = async (req, res) => {
         receiverId: otherUserId,
         roomId: null,
       },
-      { _id: 1, senderId: 1, receiverId: 1, timestamp: 1 }
+      { _id: 1, senderId: 1, receiverId: 1, timestamp: 1, content: 1, media: 1, iv: 1, senderKeyWrapped: 1, receiverKeyWrapped: 1 }
     ).lean();
 
     if (!message) return res.status(404).json({ message: 'Message not found' });
@@ -25,14 +25,14 @@ export const getPrivateMessageByIdController = async (req, res) => {
       senderId: message.senderId,
       receiverId: message.receiverId,
       timestamp: message.timestamp,
+      text: message.content || '',
+      media: message.media || null,
+      iv: message.iv || null,
+      senderKeyWrapped: message.senderKeyWrapped || null,
+      receiverKeyWrapped: message.receiverKeyWrapped || null,
     };
 
-    storePrivateMessageDirect({
-      senderId: message.senderId,
-      receiverId: message.receiverId,
-      messageId: message._id,
-      timestamp: message.timestamp,
-    });
+    storePrivateMessageDirect(result);
 
     res.json(result);
   } catch (error) {

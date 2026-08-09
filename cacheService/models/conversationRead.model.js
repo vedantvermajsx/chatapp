@@ -13,5 +13,7 @@ const conversationReadSchema = new mongoose.Schema(
 
 conversationReadSchema.index({ senderId: 1, receiverId: 1 }, { unique: true });
 
+conversationReadSchema.index({ receiverId: 1 });
+
 export default mongoose.models.ConversationRead ||
   mongoose.model('ConversationRead', conversationReadSchema);

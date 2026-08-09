@@ -27,7 +27,9 @@ export async function sendRoomMessage(req, res) {
     const senderSocketId = senderEntry?.socketId || null;
 
     const safeTaggedUser = taggedUser ? String(taggedUser) : null;
-    const resolvedReplyTo = await resolveReplyTo(replyTo);
+    const resolvedReplyTo = replyTo
+      ? await resolveReplyTo(replyTo, { type: 'room', roomId })
+      : null;
     const messageData = {
       _id,
       content,

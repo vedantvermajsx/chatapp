@@ -5,14 +5,42 @@ import { dbService } from '../services/indexedDB.service.js';
 import keyManager from '../services/keyManager.js';
 import { decryptForRoom, decryptPrivateMessage } from '../utils/crypto.js';
 
+async function decryptReplyPreviewForRoom(replyTo, roomPrivateKeyPem) {
+  if (!replyTo?.iv || !replyTo?.wrappedKey || !roomPrivateKeyPem) return replyTo;
+  const { iv, wrappedKey, ...clean } = replyTo;
+  try {
+    const text = await decryptForRoom(replyTo.text, iv, wrappedKey, roomPrivateKeyPem);
+    return { ...clean, text };
+  } catch (err) {
+    console.error('[socket] room replyTo decrypt failed:', err.message);
+    return { ...clean, text: 'Unable to decrypt message' };
+  }
+}
+
 async function decryptRoomSocketMessage(msg, roomPrivateKeyPem) {
   if (!msg?.iv || !msg?.wrappedKey || !roomPrivateKeyPem) return msg;
   const { iv, wrappedKey, ...clean } = msg;
+  const replyTo = clean.replyTo ? await decryptReplyPreviewForRoom(clean.replyTo, roomPrivateKeyPem) : clean.replyTo;
   try {
     const text = await decryptForRoom(msg.text, iv, wrappedKey, roomPrivateKeyPem);
-    return { ...clean, text };
+    return { ...clean, text, replyTo };
   } catch (err) {
     console.error('[socket] room decrypt failed:', err.message);
+    return { ...clean, text: 'Unable to decrypt message', replyTo };
+  }
+}
+
+async function decryptReplyPreviewForPrivate(replyTo, selfId, privateKeyPem) {
+  if (!replyTo?.iv) return replyTo;
+  const { iv, senderKeyWrapped, receiverKeyWrapped, ...clean } = replyTo;
+  const isOwn = String(replyTo.senderId) === String(selfId);
+  const wrappedKeyForMe = isOwn ? senderKeyWrapped : receiverKeyWrapped;
+  if (!wrappedKeyForMe || !privateKeyPem) return { ...clean, text: 'Unable to decrypt message' };
+  try {
+    const text = await decryptPrivateMessage(replyTo.text, iv, wrappedKeyForMe, privateKeyPem);
+    return { ...clean, text };
+  } catch (err) {
+    console.error('[socket] private replyTo decrypt failed:', err.message);
     return { ...clean, text: 'Unable to decrypt message' };
   }
 }
@@ -23,13 +51,14 @@ async function decryptPrivateSocketMessage(msg, selfId) {
   try {
     const isOwn = String(msg.senderId) === String(selfId);
     const wrappedKeyForMe = isOwn ? senderKeyWrapped : receiverKeyWrapped;
-    if (!wrappedKeyForMe) return { ...clean, content: 'Unable to decrypt message' };
-
     const privateKeyPem = await keyManager.getSelfPrivateKey();
-    if (!privateKeyPem) return msg;
+    const replyTo = clean.replyTo ? await decryptReplyPreviewForPrivate(clean.replyTo, selfId, privateKeyPem) : clean.replyTo;
+    if (!wrappedKeyForMe) return { ...clean, content: 'Unable to decrypt message', replyTo };
+
+    if (!privateKeyPem) return { ...msg, replyTo };
 
     const text = await decryptPrivateMessage(msg.content, iv, wrappedKeyForMe, privateKeyPem);
-    return { ...clean, content: text };
+    return { ...clean, content: text, replyTo };
   } catch (err) {
     console.error('[socket] private decrypt failed:', err.message);
     return { ...clean, content: 'Unable to decrypt message' };

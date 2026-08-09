@@ -27,7 +27,9 @@ export async function sendPrivateMessage(req, res) {
     const senderIdStr = String(sender._id);
     const receiverIdStr = String(receiverId);
     const safeTaggedUser = taggedUser ? String(taggedUser) : null;
-    const resolvedReplyTo = await resolveReplyTo(replyTo);
+    const resolvedReplyTo = replyTo
+      ? await resolveReplyTo(replyTo, { type: 'private', userA: senderIdStr, userB: receiverIdStr })
+      : null;
 
 
     const messageData = {

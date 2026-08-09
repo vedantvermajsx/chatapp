@@ -11,4 +11,6 @@ const userRoomSchema = new mongoose.Schema({
   }]
 });
 
+userRoomSchema.index({ userId: 1 }, { unique: true });
+
 export default mongoose.models.UserRoom || mongoose.model('UserRoom', userRoomSchema);

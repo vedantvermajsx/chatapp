@@ -31,18 +31,27 @@ const messageSchema = new mongoose.Schema(
     },
 
     iv: { type: String, default: null },
-
-    senderKeyWrapped: { type: String, default: null },
-    receiverKeyWrapped: { type: String, default: null },
-    wrappedKey: { type: String, default: null },
+    encKey: { type: String, default: null },
 
     taggedUser: {
       type: String,
       default: null
     },
     replyTo: {
-      type: String,
-      ref: 'Message',
+      type: new mongoose.Schema(
+        {
+          messageId: { type: String, default: null },
+          senderId: { type: String, default: null },
+          username: { type: String, default: null },
+          text: { type: String, default: null },
+          media: { type: mongoose.Schema.Types.Mixed, default: null },
+          iv: { type: String, default: null },
+          senderKeyWrapped: { type: String, default: null },
+          receiverKeyWrapped: { type: String, default: null },
+          wrappedKey: { type: String, default: null },
+        },
+        { _id: false }
+      ),
       default: null
     },
 

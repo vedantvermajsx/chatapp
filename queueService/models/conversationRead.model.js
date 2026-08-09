@@ -45,5 +45,7 @@ conversationReadSchema.index(
   }
 );
 
+conversationReadSchema.index({ receiverId: 1 });
+
 export default mongoose.models.ConversationRead ||
   mongoose.model('ConversationRead', conversationReadSchema);

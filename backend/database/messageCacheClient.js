@@ -42,6 +42,11 @@ class MessageCacheClient {
     return response.data;
   }
 
+  async getRoomMessage(roomId, messageId) {
+    const response = await this.client.get(`/messages/room/${roomId}/msg/${messageId}`);
+    return response.data;
+  }
+
   async getPrivateChats(userId) {
     const response = await this.client.get(`/messages/private-chats/${userId}`);
     return response.data.chats;

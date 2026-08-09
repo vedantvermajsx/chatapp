@@ -35,6 +35,10 @@ function privateMessageDirectKey(senderId, receiverId, messageId) {
   return `messages:private:${senderId}:${receiverId}:msg:${messageId}`;
 }
 
+function roomMessageDirectKey(roomId, messageId) {
+  return `messages:room:${roomId}:msg:${messageId}`;
+}
+
 export async function getRoomMessages({ roomId, userId, limit, before, after, mapMessage }) {
   const numericLimit = Math.max(1, parseInt(limit, 10) || 20);
 
@@ -154,6 +158,27 @@ export function invalidatePrivateMessages(userA, userB) {
 }
 
 export function appendRoomMessages(roomId, messages) {
+  // Store each message under its own direct key immediately, regardless of
+  // whether the paginated first-page cache below is warm — this is what
+  // lets replies resolve the quoted message right away instead of racing
+  // the (batched, slower) MongoDB write.
+  for (const msg of messages) {
+    const msgId = msg._id || msg.id;
+    if (!msgId) continue;
+    const direct = {
+      id: msgId,
+      senderId: msg.senderId,
+      roomId,
+      username: msg.username,
+      text: msg.content ?? msg.text ?? '',
+      media: msg.media || null,
+      timestamp: msg.timestamp,
+    };
+    if (msg.iv) direct.iv = msg.iv;
+    if (msg.wrappedKey) direct.wrappedKey = msg.wrappedKey;
+    messageCache.set(roomMessageDirectKey(roomId, msgId), direct, DIRECT_MESSAGE_TTL_SECONDS);
+  }
+
   for (const limit of COMMON_LIMITS) {
     const key = roomFirstPageKey(roomId, limit);
     const cached = messageCache.get(key);
@@ -193,9 +218,21 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
   const msg = messages[0];
   if (msg) {
     const msgId = msg._id || msg.id;
+    const direct = {
+      id: msgId,
+      senderId: msg.senderId,
+      receiverId: msg.receiverId,
+      username: msg.username,
+      text: msg.content ?? msg.text ?? '',
+      media: msg.media || null,
+      timestamp: msg.timestamp,
+    };
+    if (msg.iv) direct.iv = msg.iv;
+    if (msg.senderKeyWrapped) direct.senderKeyWrapped = msg.senderKeyWrapped;
+    if (msg.receiverKeyWrapped) direct.receiverKeyWrapped = msg.receiverKeyWrapped;
     messageCache.set(
       privateMessageDirectKey(msg.senderId, msg.receiverId, msgId),
-      { id: msgId, senderId: msg.senderId, receiverId: msg.receiverId, timestamp: msg.timestamp },
+      direct,
       DIRECT_MESSAGE_TTL_SECONDS
     );
   }
@@ -205,7 +242,7 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
     const cached = messageCache.get(key);
     if (!cached) continue;
 
-    const existingIds = new Set(cached.messages.map((m) => String(m._id,m.id)));
+    const existingIds = new Set(cached.messages.map((m) => String(m._id || m.id)));
 
     const newMapped = messages
       .filter((msg) => !existingIds.has(String(msg._id || msg.id)))
@@ -249,10 +286,19 @@ export function getPrivateMessageById(senderId, receiverId, messageId) {
   return null;
 }
 
-export function storePrivateMessageDirect({ senderId, receiverId, messageId, timestamp }) {
+export function getRoomMessageById(roomId, messageId) {
+  const key = roomMessageDirectKey(roomId, messageId);
+  const cached = messageCache.get(key);
+  if (cached) return cached;
+
+  return null;
+}
+
+export function storePrivateMessageDirect(message) {
+  const { id, messageId, senderId, receiverId } = message;
   messageCache.set(
-    privateMessageDirectKey(senderId, receiverId, messageId),
-    { id: messageId, senderId, receiverId, timestamp },
+    privateMessageDirectKey(senderId, receiverId, id || messageId),
+    message,
     DIRECT_MESSAGE_TTL_SECONDS
   );
 }
