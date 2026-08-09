@@ -39,16 +39,37 @@ function roomMessageDirectKey(roomId, messageId) {
   return `messages:room:${roomId}:msg:${messageId}`;
 }
 
+const MAX_CACHE_LIMIT = Math.max(...COMMON_LIMITS);
+
+function _enrichWithCache(messages, cachedList) {
+  if (!cachedList?.length) return messages;
+  const cacheById = new Map(cachedList.map((m) => [String(m._id || m.id), m]));
+  return messages.map((m) => {
+    const c = cacheById.get(String(m._id || m.id));
+    if (!c) return m;
+    return {
+      ...m,
+      iv: m.iv || c.iv || null,
+      wrappedKey: m.wrappedKey || c.wrappedKey || null,
+      senderKeyWrapped: m.senderKeyWrapped || c.senderKeyWrapped || null,
+      receiverKeyWrapped: m.receiverKeyWrapped || c.receiverKeyWrapped || null,
+    };
+  });
+}
+
 export async function getRoomMessages({ roomId, userId, limit, before, after, mapMessage }) {
   const numericLimit = Math.max(1, parseInt(limit, 10) || 20);
 
   if (after) {
-    return fetchMessagesAfter({
+    const result = await fetchMessagesAfter({
       query: { roomId },
       limit: numericLimit,
       after,
       mapMessage,
     });
+    const cached = messageCache.get(roomFirstPageKey(roomId, MAX_CACHE_LIMIT));
+    result.messages = _enrichWithCache(result.messages, cached?.messages);
+    return result;
   }
 
   const isFirstPage = !before;
@@ -107,12 +128,15 @@ export async function getPrivateMessages({ userId, otherUserId, limit, before, a
   };
 
   if (after) {
-    return fetchMessagesAfter({
+    const result = await fetchMessagesAfter({
       query: privateQuery,
       limit: numericLimit,
       after,
       mapMessage,
     });
+    const cached = messageCache.get(privateFirstPageKey(userId, otherUserId, MAX_CACHE_LIMIT));
+    result.messages = _enrichWithCache(result.messages, cached?.messages);
+    return result;
   }
 
   const isFirstPage = !before;
@@ -158,10 +182,6 @@ export function invalidatePrivateMessages(userA, userB) {
 }
 
 export function appendRoomMessages(roomId, messages) {
-  // Store each message under its own direct key immediately, regardless of
-  // whether the paginated first-page cache below is warm — this is what
-  // lets replies resolve the quoted message right away instead of racing
-  // the (batched, slower) MongoDB write.
   for (const msg of messages) {
     const msgId = msg._id || msg.id;
     if (!msgId) continue;

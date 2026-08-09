@@ -31,7 +31,9 @@ const messageSchema = new mongoose.Schema(
     },
 
     iv: { type: String, default: null },
-    encKey: { type: String, default: null },
+    senderKeyWrapped: { type: String, default: null },
+    receiverKeyWrapped: { type: String, default: null },
+    wrappedKey: { type: String, default: null },
 
     taggedUser: {
       type: String,

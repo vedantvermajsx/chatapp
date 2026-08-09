@@ -59,7 +59,8 @@ export const sendPendingMessages = async () => {
             setMessagesForCache(),
             dependencies.setHasMoreNewerMessages,
             dependencies.messageCache,
-            dependencies.setUnreadCounts
+            dependencies.setUnreadCounts,
+            type === 'room' ? (dependencies.currentRoom?.privateKey ?? null) : null
           );
           caughtUpChats.add(cacheKey);
         }

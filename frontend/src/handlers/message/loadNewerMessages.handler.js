@@ -91,7 +91,8 @@ export const catchUpNewerMessagesHandler = async (
   setMessages,
   setHasMoreNewerMessages,
   messageCache,
-  setUnreadCounts = null
+  setUnreadCounts = null,
+  roomPrivateKey = null
 ) => {
   if (!messages || messages.length === 0) return messages;
 
@@ -100,7 +101,7 @@ export const catchUpNewerMessagesHandler = async (
 
   try {
     while (hasMore) {
-      const result = await fetchNewerMessagesPage(chatId, type, currentMessages, setMessages, messageCache, setUnreadCounts);
+      const result = await fetchNewerMessagesPage(chatId, type, currentMessages, setMessages, messageCache, setUnreadCounts, roomPrivateKey);
       currentMessages = result.messages;
       hasMore = result.hasMore;
     }

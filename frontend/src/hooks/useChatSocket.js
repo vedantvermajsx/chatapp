@@ -178,9 +178,11 @@ export const useChatSocket = (user, {
         const cacheKey = `room_${activeRoomId}`;
         const data = cache[cacheKey];
         if (data?.messages?.length) {
+          const activeRoom = currentRoomRef.current;
           await catchUpNewerMessagesHandler(
             activeRoomId, 'room', data.messages,
-            setMessages, setHasMoreNewerMessages, messageCacheRef, setUnreadCounts
+            setMessages, setHasMoreNewerMessages, messageCacheRef, setUnreadCounts,
+            activeRoom?.privateKey ?? null
           );
         }
       } else if (activePrivateChatId) {
