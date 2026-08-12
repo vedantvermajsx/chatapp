@@ -159,9 +159,9 @@ class RoomCacheClient {
     }
   }
 
-  async addRoomMember(roomId, userId) {
+  async addRoomMember(roomId, userId, memberData = null) {
     try {
-      const response = await this.client.post(`/rooms/${roomId}/members/add`, { userId }, { timeout: 30000 });
+      const response = await this.client.post(`/rooms/${roomId}/members/add`, { userId, memberData }, { timeout: 30000 });
       return response.data?.room ?? null;
     } catch (err) {
       console.error(`[RoomCacheClient] Error in addRoomMember for room ${roomId}:`, err.message);

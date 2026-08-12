@@ -4,11 +4,11 @@ import { readStateCache } from '../../services/CacheService.js';
 
 export const addRoomMember = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId, memberData } = req.body;
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
     const roomId = req.params.id;
-    await roomCacheService.addRoomMember(roomId, userId);
+    await roomCacheService.addRoomMember(roomId, userId, memberData || null);
 
     
     const roomDoc = await roomCacheService.getRoomById(roomId);

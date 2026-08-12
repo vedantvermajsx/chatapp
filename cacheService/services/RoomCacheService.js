@@ -21,7 +21,8 @@ async function resolveMembers(ids) {
   return results.filter(Boolean);
 }
 
-const MEMBERS_PAGE_TTL_SECONDS = null;
+const MEMBERS_PAGE_TTL_SECONDS = 24 * 60 * 60; // 24h
+const MEMBERS_PAGE_SIZE = 20;
 const NAME_LOOKUP_TTL_SECONDS = null;
 
 const inFlight = new Map();
@@ -347,14 +348,15 @@ class RoomCacheService {
 
 export default new RoomCacheService();
 
-RoomCacheService.prototype.addRoomMember = async function (roomId, userId) {
+RoomCacheService.prototype.addRoomMember = async function (roomId, userId, memberData = null) {
   const id = String(roomId);
   const uid = String(userId);
 
   const room = await this.getRoomById(id);
   if (!room) return null;
 
-  if (!room.groupMembers.includes(uid)) {
+  const alreadyMember = room.groupMembers.includes(uid);
+  if (!alreadyMember) {
     room.groupMembers = [...room.groupMembers, uid];
     this.roomsById.set(id, room);
   }
@@ -364,9 +366,32 @@ RoomCacheService.prototype.addRoomMember = async function (roomId, userId) {
   }
   this.roomsByUser.get(uid).add(id);
 
-  this.invalidateRoomMembers(id);
+  if (!alreadyMember) {
+    if (memberData) UserCacheService.seedUser({ _id: uid, ...memberData });
+    await this.invalidateRoomMembers(id);
+    await this.seedNewMemberIntoCache(id, uid);
+  }
 
   return room;
+};
+
+RoomCacheService.prototype.seedNewMemberIntoCache = async function (roomId, newMemberId) {
+  const room = this.roomsById.get(String(roomId));
+  if (!room) return;
+
+  const memberIds = (room.groupMembers || []).map(String);
+  const total = memberIds.length;
+
+  const lastPageSkip = Math.floor((total - 1) / MEMBERS_PAGE_SIZE) * MEMBERS_PAGE_SIZE;
+  const pageIds = memberIds.slice(lastPageSkip, lastPageSkip + MEMBERS_PAGE_SIZE);
+  const members = await resolveMembers(pageIds);
+
+  const cacheKey = `roommembers:${roomId}:${lastPageSkip}:${MEMBERS_PAGE_SIZE}`;
+  roomCache.set(cacheKey, {
+    members,
+    total,
+    hasMore: lastPageSkip + MEMBERS_PAGE_SIZE < total,
+  }, MEMBERS_PAGE_TTL_SECONDS);
 };
 
 RoomCacheService.prototype.addUserRoom = async function (userId, roomId, roomDoc) {

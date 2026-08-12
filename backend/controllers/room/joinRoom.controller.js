@@ -25,7 +25,13 @@ export async function joinRoom(req, res) {
       return res.json({ alreadyMember: true });
     }
 
-    const roomData = await roomCacheClient.addRoomMember(roomId, userId);
+    const roomData = await roomCacheClient.addRoomMember(roomId, userId, {
+      username,
+      gender: req.user.gender,
+      avatar: req.user.avatar,
+      isOnline: true,
+      publicKey: req.user.publicKey ?? null,
+    });
 
     const _id = new mongoose.Types.ObjectId();
     const content = `${username} joined the group`;
