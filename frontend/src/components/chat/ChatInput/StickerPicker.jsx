@@ -2,10 +2,7 @@ import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Loader2, X } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
-
-const API_KEY = import.meta.env.VITE_KLIPY_API_KEY;
-const STICKER_BASE = `https://api.klipy.com/api/v1/${API_KEY}/stickers`;
-const GIF_BASE = `https://api.klipy.com/api/v1/${API_KEY}/gifs`;
+import apiClient from '../../../services/api';
 
 
 const getMediaUrl = (file) => {
@@ -33,18 +30,19 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
   const searchTimeoutRef = useRef(null);
   const currentQueryRef = useRef('');
 
-  const base = activeTab === 'stickers' ? STICKER_BASE : GIF_BASE;
+  const base = activeTab === 'stickers' ? 'stickers' : 'gifs';
 
   const fetchItems = useCallback(async (q, pg, reset, tabBase) => {
     if (loading) return;
     setLoading(true);
     try {
-      const url = q
-        ? `${tabBase}/search?q=${encodeURIComponent(q)}&page=${pg}&per_page=12`
-        : `${tabBase}/trending?page=${pg}&per_page=12`;
-
-      const res = await fetch(url);
-      const json = await res.json();
+      const endpoint = q ? 'search' : 'trending';
+      const res = await apiClient.get(`/media/${tabBase}/${endpoint}`, {
+        params: q
+          ? { q, page: pg, per_page: 12 }
+          : { page: pg, per_page: 12 },
+      });
+      const json = res.data;
 
       const list = json?.data?.data || [];
       const next = json?.data?.has_next ?? false;
@@ -53,7 +51,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
       setHasNext(next);
       setPage(pg);
     } catch (e) {
-      console.error('Klipy fetch error:', e);
+      console.error('Sticker fetch error:', e);
     } finally {
       setLoading(false);
     }
@@ -67,7 +65,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
     setSearchQuery('');
     setMode('trending');
     currentQueryRef.current = '';
-    fetchItems('', 1, true, activeTab === 'stickers' ? STICKER_BASE : GIF_BASE);
+    fetchItems('', 1, true, activeTab === 'stickers' ? 'stickers' : 'gifs');
 
   }, [activeTab]);
 

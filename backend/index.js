@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.routes.js';
 import roomRoutes from './routes/room.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import userRoutes from './routes/user.routes.js';
+import mediaRoutes from './routes/media.routes.js';
 import { requestLogger } from './middleware/logger.js';
 import { globalLimiter, authLimiter, uploadLimiter } from './middleware/rateLimiter.js';
 import {bloomFilter} from './utils/bloomFilterService.js';
@@ -55,6 +56,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/messages/upload-signature', uploadLimiter);
 app.use('/api/messages', messageRoutes);
+app.use('/api/media', mediaRoutes);
 app.get('/health', (_, res) => res.status(200).json({ ok: true }));
 
 
