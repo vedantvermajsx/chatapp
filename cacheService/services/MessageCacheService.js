@@ -1,11 +1,21 @@
 import { paginateMessages, fetchMessagesAfter } from './MessagePaginationService.js';
 import { messageCache } from './CacheService.js';
 import Message from '../models/message.model.js';
+import { publish, on as onBroker } from '../broker.js';
 
 const PAGE_TTL_SECONDS = null;
 const CHAT_LIST_TTL_SECONDS = null;
 const DIRECT_MESSAGE_TTL_SECONDS = null; 
 const COMMON_LIMITS = [10, 20, 25, 50];
+
+function _invalidateChatListLocal(userA, userB) {
+  messageCache.delete(chatListKey(userA));
+  messageCache.delete(chatListKey(userB));
+}
+
+onBroker('cache:invalidate:chatlist', ({ userA, userB }) => {
+  _invalidateChatListLocal(userA, userB);
+});
 
 const inFlight = new Map();
 
@@ -177,15 +187,11 @@ export function invalidatePrivateMessages(userA, userB) {
   for (const limit of COMMON_LIMITS) {
     messageCache.delete(privateFirstPageKey(userA, userB, limit));
   }
-  messageCache.delete(chatListKey(userA));
-  messageCache.delete(chatListKey(userB));
+  _invalidateChatListLocal(userA, userB);
+  publish('cache:invalidate:chatlist', { userA, userB });
 }
 
 export function appendRoomMessages(roomId, messages) {
-  // Store each message under its own direct key immediately, regardless of
-  // whether the paginated first-page cache below is warm — this is what
-  // lets replies resolve the quoted message right away instead of racing
-  // the (batched, slower) MongoDB write.
   for (const msg of messages) {
     const msgId = msg._id || msg.id;
     if (!msgId) continue;
@@ -298,8 +304,8 @@ export function appendPrivateMessages(senderId, receiverId, messages) {
     messageCache.set(key, { ...cached, messages: updatedMessages }, PAGE_TTL_SECONDS);
   }
 
-  messageCache.delete(chatListKey(senderId));
-  messageCache.delete(chatListKey(receiverId));
+  _invalidateChatListLocal(senderId, receiverId);
+  publish('cache:invalidate:chatlist', { userA: senderId, userB: receiverId });
 }
 
 export function getPrivateMessageById(senderId, receiverId, messageId) {
