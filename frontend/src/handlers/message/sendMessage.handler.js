@@ -2,6 +2,22 @@ import messageService from '../../services/message.service.js';
 import { updatePrivateChatOptimistically } from '../private/updatePrivateChatOptimistically.handler.js';
 import { dbService } from '../../services/indexedDB.service.js';
 
+function replaceAndDedupe(prev, tempId, finalMessage) {
+  const finalId = finalMessage.id ?? finalMessage._id;
+  const replaced = prev.map((msg) => {
+    const msgId = msg.id ?? msg._id;
+    return msgId === tempId || msgId === finalId ? finalMessage : msg;
+  });
+  const seen = new Set();
+  return replaced.filter((msg) => {
+    const key = msg.id ?? msg._id;
+    if (key == null) return true;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export const sendMessageHandler = async (
   e,
   currentRoom,
@@ -221,7 +237,7 @@ export const sendMessageHandler = async (
           replyTo: replySnapshot
         };
 
-        setMessages((prev)=>prev.map((msg)=> ((msg.id || msg._id) === tempId || (msg.id || msg._id) === newMessageObj.id? newMessageObj:msg)));
+        setMessages((prev) => replaceAndDedupe(prev, tempId, newMessageObj));
 
         const cacheKey = `room_${currentRoom._id}`;
         if (messageCache.current[cacheKey]) {
@@ -262,7 +278,7 @@ export const sendMessageHandler = async (
           replyTo: replySnapshot
         };
         
-        setMessages((prev) => prev.map((msg) => (msg.id === tempId || msg.id === newMessageObj.id) ? newMessageObj : msg));
+        setMessages((prev) => replaceAndDedupe(prev, tempId, newMessageObj));
 
         const cacheKey = `private_${currentPrivateChat.id}`;
         if (messageCache.current[cacheKey]) {
@@ -378,9 +394,7 @@ export const sendStickerHandler = async (
         isPending: false
       };
 
-      setMessages((prev) => prev.map((msg) =>
-        (msg.id || msg._id) === tempId || (msg.id || msg._id) === newMessageObj.id ? newMessageObj : msg
-      ));
+      setMessages((prev) => replaceAndDedupe(prev, tempId, newMessageObj));
 
       if (currentRoom) {
         const cacheKey = `room_${currentRoom._id}`;

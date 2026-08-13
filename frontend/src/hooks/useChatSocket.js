@@ -231,9 +231,12 @@ export const useChatSocket = (user, {
       if (isActiveRoom) {
         setMessages((prev) => {
           if ((msg._id || msg.id) && prev.some(m => String(m.id || m._id) === String(msg._id || msg.id))) return prev;
-          const existingOptimisticIndex = prev.findIndex(m =>
+          let existingOptimisticIndex = prev.findIndex(m =>
             m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
           );
+          if (isOwnMessage && existingOptimisticIndex === -1) {
+            existingOptimisticIndex = prev.findIndex(m => m.isOwn && m.isPending && (!!m.media === !!newMessage.media));
+          }
           if (isOwnMessage && existingOptimisticIndex !== -1) {
             const newMessages = [...prev];
             newMessages[existingOptimisticIndex] = newMessage;
@@ -248,9 +251,12 @@ export const useChatSocket = (user, {
       if (isActiveRoom) {
         if (messageCache.current[cacheKey]) {
           const prevMessages = messageCache.current[cacheKey].messages;
-          const existingOptimisticIndex = prevMessages.findIndex(m =>
+          let existingOptimisticIndex = prevMessages.findIndex(m =>
             m.isOwn && m.isPending && m.text === newMessage.text && (!!m.media === !!newMessage.media)
           );
+          if (isOwnMessage && existingOptimisticIndex === -1) {
+            existingOptimisticIndex = prevMessages.findIndex(m => m.isOwn && m.isPending && (!!m.media === !!newMessage.media));
+          }
           const alreadyInCache = prevMessages.some((m) => String(m.id) === String(newMessage.id));
           let newCacheMessages;
           if (!alreadyInCache) {
@@ -331,9 +337,12 @@ export const useChatSocket = (user, {
       if (isActiveChat) {
         if (messageCache.current[cacheKey]) {
           const prevMessages = messageCache.current[cacheKey].messages;
-          const existingOptimisticIndex = prevMessages.findIndex(m =>
+          let existingOptimisticIndex = prevMessages.findIndex(m =>
             m.isOwn && m.isPending && m.text === newMessageObj.text && (!!m.media === !!newMessageObj.media)
           );
+          if (isOwnMessage && existingOptimisticIndex === -1) {
+            existingOptimisticIndex = prevMessages.findIndex(m => m.isOwn && m.isPending && (!!m.media === !!newMessageObj.media));
+          }
           let newCacheMessages;
           if (isOwnMessage && existingOptimisticIndex !== -1) {
             newCacheMessages = [...prevMessages];
@@ -357,9 +366,12 @@ export const useChatSocket = (user, {
 
         setMessages((prev) => {
           if (msg._id && prev.some(m => String(m.id) === String(msg._id))) return prev;
-          const existingOptimisticIndex = newMessageObj.isSystemMessage ? -1 : prev.findIndex(m =>
+          let existingOptimisticIndex = newMessageObj.isSystemMessage ? -1 : prev.findIndex(m =>
             m.isOwn && m.isPending && m.text === newMessageObj.text && (!!m.media === !!newMessageObj.media)
           );
+          if (isOwnMessage && !newMessageObj.isSystemMessage && existingOptimisticIndex === -1) {
+            existingOptimisticIndex = prev.findIndex(m => m.isOwn && m.isPending && (!!m.media === !!newMessageObj.media));
+          }
           if (isOwnMessage && existingOptimisticIndex !== -1) {
             const newMessages = [...prev];
             newMessages[existingOptimisticIndex] = newMessageObj;
