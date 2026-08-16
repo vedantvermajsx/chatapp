@@ -9,6 +9,7 @@ import messageCountRoutes from './routes/messageCount.routes.js';
 import userRoutes from './routes/user.routes.js';
 import unreadRoutes from './routes/unread.routes.js';
 import lastReadRoutes from './routes/lastRead.routes.js';
+import deviceTokenRoutes from './routes/deviceToken.routes.js';
 import cache from './services/CacheService.js';
 import { connectDB } from './database/db.js';
 import { internalLimiter } from './middleware/rateLimiter.js';
@@ -62,6 +63,7 @@ app.use('/rooms', roomRoutes);
 app.use('/users', userRoutes);
 app.use('/unread', unreadRoutes);
 app.use('/last-read', lastReadRoutes);
+app.use('/device-tokens', deviceTokenRoutes);
 app.use('/message-count', messageCountRoutes);
 
 

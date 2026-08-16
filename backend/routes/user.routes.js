@@ -6,6 +6,8 @@ import { authenticate } from '../middleware/auth.middleware.js';
 import getActivityStatus from '../controllers/user/getActivityStatus.controller.js';
 import { searchUsers } from '../controllers/user/searchUsers.controller.js';
 import { getUserProfile } from '../controllers/user/getUserProfile.controller.js';
+import { registerDeviceToken } from '../controllers/user/registerDeviceToken.controller.js';
+import { removeDeviceToken } from '../controllers/user/removeDeviceToken.controller.js';
 
 
 const router = Router();
@@ -15,6 +17,8 @@ router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfile);
 router.get('/search', authenticate, searchUsers);
 router.get('/activity-status', authenticate, getActivityStatus);
+router.post('/device-token', authenticate, registerDeviceToken);
+router.delete('/device-token', authenticate, removeDeviceToken);
 router.get('/:userId/profile', authenticate, getUserProfile);
 router.delete('/:userId', authenticate, deleteUser);
 

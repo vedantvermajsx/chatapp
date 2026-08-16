@@ -12,6 +12,18 @@ export const THEMES = [
     otherUsernameColor: '#008080',
     isLight: true
   },
+{
+  id: 'monochrome-dark',
+  name: 'Monochrome Dark',
+  background: '#121212',
+  myMessageBubble: '#f5f5f5',
+  myMessageText: '#121212',
+  myUsernameColor: '#f5f5f5',
+  otherMessageBubble: '#2a2a2a',
+  otherMessageText: '#eeeeee',
+  otherUsernameColor: '#bdbdbd',
+  isLight: false
+},
   {
     id: 'one-dark-pro',
     name: 'One Dark Pro',
