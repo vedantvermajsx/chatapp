@@ -117,6 +117,13 @@ class RoomCacheService {
     });
   }
 
+  async getRoomMemberIds(id) {
+    const room = await this.getRoomById(id);
+    if (!room) return null;
+
+    return (room.groupMembers || []).map(String);
+  }
+
   async getRoomsByUserId(userId) {
     const rooms = this.roomsByUser.get(String(userId));
 

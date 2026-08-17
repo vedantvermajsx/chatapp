@@ -18,5 +18,6 @@ const userSchema = new mongoose.Schema({
 
 userSchema.index({ isOnline: 1 });
 userSchema.index({ lastSeen: -1 });
+userSchema.index({ isOnline: -1, lastSeen: -1 });
 
 export default mongoose.models.User || mongoose.model('User', userSchema);

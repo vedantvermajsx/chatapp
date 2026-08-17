@@ -5,10 +5,12 @@ let firebaseApp = null;
 let initTried = false;
 
 function getFirebaseApp() {
-  if (initTried) return firebaseApp;
+  if (firebaseApp) return firebaseApp;
+  if (initTried) return null;
   initTried = true;
 
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+
   if (!raw) {
     console.warn('[push] FIREBASE_SERVICE_ACCOUNT not set — push notifications are disabled');
     return null;
@@ -71,6 +73,8 @@ export async function sendPushToUser(userId, { title, body, data = {} } = {}) {
     });
 
     response.responses.forEach((res, i) => {
+
+      console.log(res);
       if (res.success) return;
       const code = res.error?.code;
       if (
