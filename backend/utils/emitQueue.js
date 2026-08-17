@@ -2,6 +2,13 @@ import { getIO, activeRooms, onlineUsers } from '../socket.js';
 import { publish } from './messageBroker.js';
 import unreadCacheClient from '../database/unreadCacheClient.js';
 import messageCountCacheClient from '../database/messageCountCacheClient.js';
+import roomCacheClient from '../database/roomCacheClient.js';
+import { sendPushToUser, sendPushToUsers } from './pushNotifications.js';
+
+function pushPreviewText(payload = {}) {
+  if (payload.media) return '📎 Sent an attachment';
+  return payload.content || payload.text || 'Sent a message';
+}
 
 const queue = [];
 let workerRunning = false;
@@ -41,6 +48,11 @@ async function processItem(item) {
     } catch (err) {
       console.error('[emitQueue] newMessage cache warm error:', err.message);
     }
+    if (!payload.isSystemMessage) {
+      _pushForRoomMessage(roomId, payload).catch((err) =>
+        console.error('[emitQueue] push newMessage error:', err.message)
+      );
+    }
 
   } else if (type === 'newPrivateMessage') {
     const { senderId, receiverId, payload } = data;
@@ -59,6 +71,17 @@ async function processItem(item) {
       } catch (err) {
         console.error('[emitQueue] newPrivateMessage cache warm error:', err.message);
       }
+
+      sendPushToUser(receiverStr, {
+        title: payload.senderUsername || payload.username || 'New message',
+        body: pushPreviewText(payload),
+        data: {
+          type: 'private',
+          senderId: senderStr,
+          receiverId: receiverStr,
+          messageId: payload._id || '',
+        },
+      }).catch((err) => console.error('[emitQueue] push newPrivateMessage error:', err.message));
     }
 
   } else if (type === 'newRoom') {
@@ -148,6 +171,41 @@ function _warmCacheForRoomMessage(roomId, senderId, isSystemMessage) {
       console.error('[emitQueue] unreadCache decrement error:', err.message)
     );
   }
+}
+
+async function _pushForRoomMessage(roomId, payload) {
+  const senderId = String(payload.userId);
+
+  const activeViewerIds = new Set([senderId]);
+  for (const [userId, viewingRoomId] of activeRooms.entries()) {
+    if (viewingRoomId === String(roomId)) activeViewerIds.add(String(userId));
+  }
+
+  const memberIds = await roomCacheClient.getRoomMemberIds(roomId);
+  if (!memberIds?.length) return;
+
+  const recipientIds = memberIds
+    .map(String)
+    .filter((id) => !activeViewerIds.has(id));
+  if (!recipientIds.length) return;
+
+  let roomName = 'New message';
+  try {
+    const room = await roomCacheClient.getRoomById(roomId);
+    roomName = room?.groupName || room?.name || roomName;
+  } catch {
+    // fall back to default title
+  }
+
+  await sendPushToUsers(recipientIds, {
+    title: roomName,
+    body: `${payload.username || 'Someone'}: ${pushPreviewText(payload)}`,
+    data: {
+      type: 'room',
+      roomId: String(roomId),
+      messageId: payload._id || '',
+    },
+  });
 }
 
 function _warmCacheForPrivateMessage(senderId, receiverId) {
