@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '../services/auth.service';
 import { dbService } from '../services/indexedDB.service';
 import keyManager from '../services/keyManager';
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (username, password) => {
+  const login = useCallback(async (username, password) => {
     try {
       const res = await authService.login({ username, password });
       localStorage.setItem('token', res.token);
@@ -31,9 +31,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Login failed' };
     }
-  };
+  }, []);
 
-  const register = async (username, email, gender, password) => {
+  const register = useCallback(async (username, email, gender, password) => {
     try {
       const res = await authService.register({ username, email, gender, password });
       localStorage.setItem('token', res.token);
@@ -44,9 +44,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Registration failed' };
     }
-  };
+  }, []);
 
-  const guestLogin = async (username, gender) => {
+  const guestLogin = useCallback(async (username, gender) => {
     try {
       const { publicKeyPem, privateKeyPem } = await generateRsaKeyPairPem();
       const res = await authService.guestLogin({ username, gender, publicKey: publicKeyPem });
@@ -58,9 +58,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Guest login failed' };
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
@@ -70,9 +70,9 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error('Error clearing IndexedDB on logout:', err);
     }
-  };
+  }, []);
 
-  const updateUser = (userData) => {
+  const updateUser = useCallback((userData) => {
     setUser((prev) => {
       const merged = { ...prev, ...userData };
       if (prev?.publicKey && !userData?.publicKey) {
@@ -81,10 +81,15 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(merged));
       return merged;
     });
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ user, loading, login, register, guestLogin, logout, updateUser }),
+    [user, loading, login, register, guestLogin, logout, updateUser]
+  );
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, guestLogin, logout, updateUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

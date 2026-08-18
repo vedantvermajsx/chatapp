@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { MessageSquare } from 'lucide-react';
 import Admin from './Admin';
 import Avatar from '../../common/Avatar';
@@ -9,7 +10,7 @@ const getGenderLabel = (gender) => {
     return labels[gender] || 'Unknown';
 };
 
-function Member({
+const Member = memo(function Member({
     admin,
     member,
     currentUserId,
@@ -64,6 +65,6 @@ function Member({
             )}
         </div>
     );
-}
+});
 
 export default Member;

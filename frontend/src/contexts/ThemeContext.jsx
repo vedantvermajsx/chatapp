@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { THEMES } from './THEMES';
 
 const ThemeContext = createContext();
@@ -22,8 +22,10 @@ export const ThemeProvider = ({ children }) => {
     localStorage.setItem('chatTheme', JSON.stringify(theme));
   }, [theme]);
 
+  const value = useMemo(() => ({ theme, setTheme, THEMES }), [theme]);
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, THEMES }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );
