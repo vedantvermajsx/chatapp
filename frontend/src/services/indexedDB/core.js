@@ -26,8 +26,19 @@ export const openDB = () => {
       reject(request.error);
     };
 
+    request.onblocked = () => {
+      console.warn('IndexedDB open blocked by another connection');
+    };
+
     request.onsuccess = () => {
       dbInstance = request.result;
+      dbInstance.onversionchange = () => {
+        dbInstance?.close();
+        dbInstance = null;
+      };
+      dbInstance.onclose = () => {
+        dbInstance = null;
+      };
       resolve(dbInstance);
     };
 
@@ -99,6 +110,25 @@ export const promisifyRequest = (request) =>
   });
 
 export const deleteDB = () => {
+  return clearAllStores();
+};
+
+export const clearAllStores = async () => {
+  const storeNames = Object.values(STORES);
+  const db = await openDB();
+  const existing = storeNames.filter(name => db.objectStoreNames.contains(name));
+  if (existing.length === 0) return;
+
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(existing, 'readwrite');
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+    existing.forEach(name => tx.objectStore(name).clear());
+  });
+};
+
+export const hardResetDB = () => {
   return new Promise((resolve, reject) => {
     if (dbInstance) {
       dbInstance.close();
@@ -107,6 +137,6 @@ export const deleteDB = () => {
     const request = indexedDB.deleteDatabase(DB_NAME);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
-    request.onblocked = () => resolve(); 
+    request.onblocked = () => resolve();
   });
 };
