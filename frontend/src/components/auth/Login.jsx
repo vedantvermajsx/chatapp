@@ -2,122 +2,96 @@ import { useState } from 'react';
 import LoginForm from './LoginForm';
 import GuestForm from './GuestForm';
 import RegisterForm from './RegisterForm';
-import { MessageCircle, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 const COPY = {
-  0: {
-    heading: 'Welcome back',
-    sub: 'Sign in to pick up where you left off.',
-  },
-  1: {
-    heading: 'Join as a guest',
-    sub: 'Jump into a conversation, no account needed.',
-  },
-  2: {
-    heading: 'Create your account',
-    sub: 'Set up your space in less than a minute.',
-  },
+  0: { heading: 'Welcome back' },
+  1: { heading: 'Join as a guest' },
+  2: { heading: 'Create an account' },
 };
+
+const BG =
+  'radial-gradient(ellipse 90% 70% at 60% 0%, rgba(0,180,140,0.13) 0%, transparent 55%), radial-gradient(ellipse 70% 50% at 0% 100%, rgba(99,50,220,0.10) 0%, transparent 50%), #f7f8fa';
 
 function Login() {
   const [currForm, setCurrForm] = useState(0);
-  const { heading, sub } = COPY[currForm];
+  const { heading } = COPY[currForm];
 
   return (
-    <div className="min-h-dvh w-full flex bg-white">
-      <div className="hidden lg:flex lg:w-[44%] xl:w-[40%] relative flex-col justify-between bg-[#060a04] text-white p-12 xl:p-14 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(0,128,128,0.5),transparent_55%)]" />
-
-        <div className="relative">
-          <h1
-            className="text-[2.35rem] leading-[1.12] text-white/80  font-semibold  mt-56 tracking-tight mb-4 max-w-sm"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+    <div
+      className="min-h-dvh w-full flex flex-col items-center justify-center px-4 py-10 overflow-y-auto"
+      style={{ background: BG }}
+    >
+      <div
+        className="w-full max-w-[420px]"
+        style={{ animation: 'panelIn 0.35s cubic-bezier(0.22,1,0.36,1) both' }}
+      >
+        <div className="flex items-center gap-2.5 mb-10 justify-center">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden"
           >
-            Quick and reliable, messaging app.
-          </h1>
-
-          <div className="flex flex-col gap-2.5 max-w-[300px]">
-            <div className="flex justify-start">
-              <div
-                className="bg-white/[0.08] border border-white/10 px-4 py-2.5 rounded-2xl rounded-bl-md text-[13.5px] text-white/85 opacity-50"
-              >
-                did you see the new design room?
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <div
-                className="bg-[#008080] px-4 py-2.5 rounded-2xl rounded-br-md text-[13.5px] text-white opacity-30"
-              >
-                just joined
-              </div>
-            </div>
-            <div className="flex justify-start">
-              <div
-                className="bg-white/[0.08] border border-white/10 px-4 py-2.5 rounded-2xl rounded-bl-md text-[13.5px] text-white/85 opacity-20"
-              >
-                perfect timing, we're gathering up now
-              </div>
-            </div>
+            <img src="/icon.png" alt="GatherUp" className="w-10 h-10 object-contain" />
           </div>
+          <span
+            className="text-gray-900 font-bold text-[16px]"
+            style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
+          >
+            GatherUp
+          </span>
         </div>
 
-        <p className="relative text-white/35 text-xs">
-          © {new Date().getFullYear()} GatherUp. All rights reserved.
-        </p>
-      </div>
-
-      <div className="flex-1 min-h-dvh overflow-y-auto flex items-start sm:items-center justify-center px-4 pt-10 sm:pt-16 sm:p-10">
-        <div
-          className="w-full max-w-[380px] pb-4 sm:pb-0"
-          style={{ animation: 'panelIn 0.4s ease both' }}
-        >
-
-
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-8 py-8">
           {currForm === 1 ? (
             <button
               onClick={() => setCurrForm(0)}
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-6"
+              className="flex items-center gap-1.5 text-[13.5px] text-gray-400 hover:text-gray-700 transition-colors mb-7"
+              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5" />
               Back to sign in
             </button>
           ) : (
-            <div className="flex gap-1 p-1 mb-8 bg-gray-100 rounded-lg">
-              <button
-                onClick={() => setCurrForm(0)}
-                className={`flex-1 py-2 rounded-md text-sm font-semibold transition-all ${currForm === 0
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-                  }`}
-              >
-                Sign in
-              </button>
-              <button
-                onClick={() => setCurrForm(2)}
-                className={`flex-1 py-2 rounded-md text-sm font-semibold transition-all ${currForm === 2
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-                  }`}
-              >
-                Create account
-              </button>
+            <div className="flex gap-1 p-1 mb-8 rounded-xl" style={{ background: '#f1f3f5' }}>
+              {[{ label: 'Sign in', idx: 0 }, { label: 'Create account', idx: 2 }].map(({ label, idx }) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrForm(idx)}
+                  className="flex-1 py-2 rounded-lg text-[13.5px] font-semibold transition-all"
+                  style={{
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    background: currForm === idx ? 'white' : 'transparent',
+                    color: currForm === idx ? '#111827' : '#9ca3af',
+                    boxShadow: currForm === idx ? '0 1px 3px rgba(0,0,0,0.09)' : 'none',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           )}
 
-          <h2
-            className="text-2xl font-semibold text-gray-900 tracking-tight mb-1.5"
-            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          <h1
+            className="text-[1.4rem] font-bold text-gray-700 tracking-tight mb-2"
+            style={{ fontFamily: "'Bricolage Grotesque', sans-serif" }}
           >
             {heading}
-          </h2>
-          <p className="text-gray-500 text-[14.5px] mb-7">{sub}</p>
+          </h1>
+
 
           {currForm === 0 && <LoginForm setCurrForm={setCurrForm} />}
           {currForm === 1 && <GuestForm setCurrForm={setCurrForm} />}
           {currForm === 2 && <RegisterForm setCurrForm={setCurrForm} />}
         </div>
+
+        <p
+          className="text-center text-[12px] text-gray-400 mt-6"
+          style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >
+          © {new Date().getFullYear()} GatherUp. All rights reserved.
+        </p>
       </div>
     </div>
   );
 }
+
 export default Login;
