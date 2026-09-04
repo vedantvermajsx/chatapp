@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Tag, Loader2, Check, X } from 'lucide-react';
+import { User, Tag, Loader2, Check, X, AlertCircle } from 'lucide-react';
 import authService from '../../services/auth.service';
 import { sanitizeUsernameInput, isValidUsername, USERNAME_HINT } from '../../utils/validation';
-
-const F = "'Plus Jakarta Sans', sans-serif";
-
-const inputClass =
-    'w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/8 transition-all outline-none disabled:opacity-50';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Checkbox } from '../ui/checkbox';
 
 function GuestForm({ setCurrForm }) {
     const navigate = useNavigate();
@@ -59,7 +58,7 @@ function GuestForm({ setCurrForm }) {
     };
 
     const statusCfg = {
-        checking: { cls: 'text-gray-400', icon: <Loader2 className="w-3 h-3 animate-spin" />, text: 'Checking...' },
+        checking: { cls: 'text-muted-foreground', icon: <Loader2 className="w-3 h-3 animate-spin" />, text: 'Checking...' },
         available: { cls: 'text-emerald-600', icon: <Check className="w-3 h-3" />, text: 'Available' },
         taken: { cls: 'text-red-500', icon: <X className="w-3 h-3" />, text: 'Already taken' },
         invalid: { cls: 'text-red-500', icon: null, text: 'Minimum 2 characters' },
@@ -68,19 +67,18 @@ function GuestForm({ setCurrForm }) {
     return (
         <>
             {error && (
-                <p
-                    className="text-red-600 text-[13.5px] text-center mb-4 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5"
-                    style={{ fontFamily: F }}
-                >
-                    {error}
-                </p>
+                <div role="alert" className="alert alert-error bg-red-50 border border-red-100 text-red-600 text-[13.5px] py-2.5 px-3 mb-4 rounded-xl">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="font-sans">{error}</span>
+                </div>
             )}
 
-            <form onSubmit={handleGuestSubmit} className="flex flex-col gap-3">
-                <div>
+            <form onSubmit={handleGuestSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="guest-username">Username</Label>
                     <div className="relative">
-                        <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-gray-400" />
-                        <input
+                        <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
+                        <Input
                             id="guest-username"
                             name="username"
                             type="text"
@@ -91,30 +89,28 @@ function GuestForm({ setCurrForm }) {
                             required
                             minLength={2}
                             maxLength={30}
-                            style={{ fontFamily: F }}
-                            className={inputClass}
+                            className="pl-10"
                         />
                     </div>
                     {guestUsername.length === 0 && (
-                        <p className="text-[12px] text-gray-400 mt-1.5 ml-0.5" style={{ fontFamily: F }}>{USERNAME_HINT}</p>
+                        <p className="text-[12px] text-muted-foreground mt-1.5 ml-0.5 font-sans">{USERNAME_HINT}</p>
                     )}
                     {usernameStatus && statusCfg[usernameStatus] && (
-                        <p className={`text-[12px] mt-1.5 ml-0.5 flex items-center gap-1 ${statusCfg[usernameStatus].cls}`} style={{ fontFamily: F }}>
+                        <p className={`text-[12px] mt-1.5 ml-0.5 flex items-center gap-1 font-sans ${statusCfg[usernameStatus].cls}`}>
                             {statusCfg[usernameStatus].icon}{statusCfg[usernameStatus].text}
                         </p>
                     )}
                 </div>
 
-                <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-gray-400 pointer-events-none" />
+                <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="guest-gender">Gender</Label>
                     <select
                         id="guest-gender"
                         name="gender"
                         value={guestGender}
                         onChange={(e) => setGuestGender(parseInt(e.target.value))}
                         disabled={isLoading}
-                        style={{ fontFamily: F }}
-                        className={`${inputClass} appearance-none`}
+                        className="select select-bordered w-full h-11 min-h-11 rounded-xl bg-secondary/60 border-input text-[14px] font-sans focus:outline-primary"
                     >
                         <option value={0}>Male</option>
                         <option value={1}>Female</option>
@@ -123,18 +119,16 @@ function GuestForm({ setCurrForm }) {
                 </div>
 
                 <label
-                    className="flex items-start gap-2.5 mt-0.5 text-[13px] text-gray-500 select-none cursor-pointer"
-                    style={{ fontFamily: F }}
+                    htmlFor="guest-terms"
+                    className="flex items-start gap-2.5 mt-0.5 text-[13px] text-muted-foreground select-none cursor-pointer font-sans"
                 >
-                    <input
+                    <Checkbox
                         id="guest-terms"
-                        name="agreedToTerms"
-                        type="checkbox"
                         checked={agreedToTerms}
-                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        onCheckedChange={(v) => setAgreedToTerms(v === true)}
                         disabled={isLoading}
                         required
-                        className="mt-0.5 w-4 h-4 rounded accent-[#008080] shrink-0 cursor-pointer"
+                        className="mt-0.5"
                     />
                     <span>
                         I agree to the{' '}
@@ -142,32 +136,27 @@ function GuestForm({ setCurrForm }) {
                             to="/terms"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-semibold text-[#008080] hover:underline"
+                            className="font-semibold text-primary hover:underline"
                         >
                             Terms and Conditions
                         </Link>
                     </span>
                 </label>
 
-                <button
-                    type="submit"
-                    disabled={isLoading || !agreedToTerms}
-                    className="w-full mt-1 py-2.5 rounded-xl text-white text-[14px] font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.985]"
-                    style={{ fontFamily: F, background: '#008080' }}
-                >
+                <Button type="submit" disabled={isLoading || !agreedToTerms} className="w-full mt-1">
                     {isLoading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
                     ) : (
                         'Continue as guest'
                     )}
-                </button>
+                </Button>
             </form>
 
-            <p className="text-center text-gray-400 mt-6 text-[13.5px]" style={{ fontFamily: F }}>
+            <p className="text-center text-muted-foreground mt-6 text-[13.5px] font-sans">
                 Want a full account?{' '}
                 <button
                     onClick={() => setCurrForm(2)}
-                    className="font-semibold text-[#008080] hover:underline"
+                    className="font-semibold text-primary hover:underline"
                 >
                     Register
                 </button>

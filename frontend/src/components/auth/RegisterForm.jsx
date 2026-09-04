@@ -1,21 +1,20 @@
-import { User, Mail, Lock, UserPlus, Loader2, Check, X } from 'lucide-react';
+import { User, Mail, Lock, UserPlus, Loader2, Check, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import authService from '../../services/auth.service';
 import { sanitizeUsernameInput, USERNAME_HINT } from '../../utils/validation';
-
-const F = "'Plus Jakarta Sans', sans-serif";
-
-const inputClass =
-  'w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-[#008080] focus:ring-4 focus:ring-[#008080]/8 transition-all outline-none disabled:opacity-50';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Checkbox } from '../ui/checkbox';
 
 function UsernameHint({ status, empty }) {
-  if (empty) return <p className="text-[12px] text-gray-400 mt-1.5 ml-0.5" style={{ fontFamily: F }}>{USERNAME_HINT}</p>;
-  if (status === 'checking') return <p className="text-[12px] text-gray-400 mt-1.5 ml-0.5 flex items-center gap-1" style={{ fontFamily: F }}><Loader2 className="w-3 h-3 animate-spin" /> Checking...</p>;
-  if (status === 'available') return <p className="text-[12px] text-emerald-600 mt-1.5 ml-0.5 flex items-center gap-1" style={{ fontFamily: F }}><Check className="w-3 h-3" /> Available</p>;
-  if (status === 'taken') return <p className="text-[12px] text-red-500 mt-1.5 ml-0.5 flex items-center gap-1" style={{ fontFamily: F }}><X className="w-3 h-3" /> Already taken</p>;
-  if (status === 'invalid') return <p className="text-[12px] text-red-500 mt-1.5 ml-0.5" style={{ fontFamily: F }}>Minimum 2 characters</p>;
+  if (empty) return <p className="text-[12px] text-muted-foreground mt-1.5 ml-0.5 font-sans">{USERNAME_HINT}</p>;
+  if (status === 'checking') return <p className="text-[12px] text-muted-foreground mt-1.5 ml-0.5 flex items-center gap-1 font-sans"><Loader2 className="w-3 h-3 animate-spin" /> Checking...</p>;
+  if (status === 'available') return <p className="text-[12px] text-emerald-600 mt-1.5 ml-0.5 flex items-center gap-1 font-sans"><Check className="w-3 h-3" /> Available</p>;
+  if (status === 'taken') return <p className="text-[12px] text-red-500 mt-1.5 ml-0.5 flex items-center gap-1 font-sans"><X className="w-3 h-3" /> Already taken</p>;
+  if (status === 'invalid') return <p className="text-[12px] text-red-500 mt-1.5 ml-0.5 font-sans">Minimum 2 characters</p>;
   return null;
 }
 
@@ -25,6 +24,7 @@ function RegisterForm({ setCurrForm }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [gender, setGender] = useState(0);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState('');
@@ -68,52 +68,53 @@ function RegisterForm({ setCurrForm }) {
   return (
     <>
       {error && (
-        <p
-          className="text-red-600 text-[13.5px] text-center mb-4 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5"
-          style={{ fontFamily: F }}
-        >
-          {error}
-        </p>
+        <div role="alert" className="alert alert-error bg-red-50 border border-red-100 text-red-600 text-[13.5px] py-2.5 px-3 mb-4 rounded-xl">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span className="font-sans">{error}</span>
+        </div>
       )}
 
-      <form onSubmit={handleRegister} className="flex flex-col gap-3">
-        <div>
+      <form onSubmit={handleRegister} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="register-username">Username</Label>
           <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-gray-400" />
-            <input
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
+            <Input
               id="register-username"
               name="username"
               type="text"
-              placeholder="Username"
+              placeholder="Choose a username"
               value={username}
               onChange={(e) => setUsername(sanitizeUsernameInput(e.target.value))}
               disabled={isLoading}
               required
-              style={{ fontFamily: F }}
-              className={inputClass}
+              className="pl-10"
             />
           </div>
           <UsernameHint status={usernameStatus} empty={username.length === 0} />
         </div>
 
-        <div className="relative">
-          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-gray-400" />
-          <input
-            id="register-email"
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
-            required
-            style={{ fontFamily: F }}
-            className={inputClass}
-          />
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="register-email">Email</Label>
+          <div className="relative">
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
+            <Input
+              id="register-email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              required
+              className="pl-10"
+            />
+          </div>
         </div>
 
-        <div className="relative">
-          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-gray-400 pointer-events-none" />
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="register-gender">Gender</Label>
+          {/* daisyUI select */}
           <select
             id="register-gender"
             name="gender"
@@ -121,8 +122,7 @@ function RegisterForm({ setCurrForm }) {
             onChange={(e) => setGender(parseInt(e.target.value))}
             disabled={isLoading}
             required
-            style={{ fontFamily: F }}
-            className={`${inputClass} appearance-none`}
+            className="select select-bordered w-full h-11 min-h-11 rounded-xl bg-secondary/60 border-input text-[14px] font-sans focus:outline-primary"
           >
             <option value={0}>Male</option>
             <option value={1}>Female</option>
@@ -130,37 +130,46 @@ function RegisterForm({ setCurrForm }) {
           </select>
         </div>
 
-        <div className="relative">
-          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-gray-400" />
-          <input
-            id="register-password"
-            name="password"
-            type="password"
-            placeholder="Password (6–50 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={isLoading}
-            required
-            minLength={6}
-            maxLength={50}
-            style={{ fontFamily: F }}
-            className={inputClass}
-          />
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="register-password">Password</Label>
+          <div className="relative">
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
+            <Input
+              id="register-password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="6–50 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              required
+              minLength={6}
+              maxLength={50}
+              className="pl-10 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              tabIndex={-1}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-[15px] h-[15px]" /> : <Eye className="w-[15px] h-[15px]" />}
+            </button>
+          </div>
         </div>
 
         <label
-          className="flex items-start gap-2.5 mt-0.5 text-[13px] text-gray-500 select-none cursor-pointer"
-          style={{ fontFamily: F }}
+          htmlFor="register-terms"
+          className="flex items-start gap-2.5 mt-0.5 text-[13px] text-muted-foreground select-none cursor-pointer font-sans"
         >
-          <input
+          <Checkbox
             id="register-terms"
-            name="agreedToTerms"
-            type="checkbox"
             checked={agreedToTerms}
-            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            onCheckedChange={(v) => setAgreedToTerms(v === true)}
             disabled={isLoading}
             required
-            className="mt-0.5 w-4 h-4 rounded accent-[#008080] shrink-0 cursor-pointer"
+            className="mt-0.5"
           />
           <span>
             I agree to the{' '}
@@ -168,41 +177,28 @@ function RegisterForm({ setCurrForm }) {
               to="/terms"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[#008080] hover:underline"
+              className="font-semibold text-primary hover:underline"
             >
               Terms and Conditions
             </Link>
           </span>
         </label>
 
-        <button
-          type="submit"
-          disabled={isLoading || !agreedToTerms}
-          className="w-full mt-1 py-2.5 rounded-xl text-white text-[14px] font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.985]"
-          style={{ fontFamily: F, background: '#008080' }}
-        >
+        <Button type="submit" disabled={isLoading || !agreedToTerms} className="w-full mt-1">
           {isLoading ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</>
           ) : (
             <><UserPlus className="w-4 h-4" /> Create account</>
           )}
-        </button>
+        </Button>
       </form>
 
-      <div className="flex items-center my-5">
-        <div className="flex-1 h-px bg-gray-100" />
-        <span className="px-3 text-[11px] text-gray-400 uppercase tracking-widest" style={{ fontFamily: F }}>or</span>
-        <div className="flex-1 h-px bg-gray-100" />
-      </div>
+      <div className="divider text-[11px] text-muted-foreground uppercase tracking-widest my-5 before:bg-border after:bg-border">or</div>
 
-      <button
-        onClick={() => setCurrForm(1)}
-        className="w-full py-2.5 bg-white text-gray-600 text-[14px] font-medium rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-[0.985]"
-        style={{ fontFamily: F }}
-      >
-        <User className="w-[15px] h-[15px] text-gray-400" />
+      <Button type="button" variant="outline" onClick={() => setCurrForm(1)} className="w-full">
+        <User className="w-[15px] h-[15px] text-muted-foreground" />
         Continue as guest
-      </button>
+      </Button>
     </>
   );
 }
