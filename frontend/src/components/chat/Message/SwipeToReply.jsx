@@ -6,9 +6,6 @@ import { useTheme } from '../../../contexts/ThemeContext';
 const SWIPE_TRIGGER = 56;
 const MAX_SWIPE = 76;
 
-// Touch/pointer equivalent of the RN PanResponder-based SwipeToReply.
-// Wraps a message row; swiping past SWIPE_TRIGGER fires onReply, mirroring
-// RN's swipe-to-reply gesture (swipe right on others' messages, left on your own).
 export default function SwipeToReply({ children, onReply, disabled, isOwn }) {
   const { theme } = useTheme();
   const x = useMotionValue(0);

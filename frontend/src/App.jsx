@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './contexts/AuthContext';
@@ -9,6 +9,7 @@ import Spinner from './components/common/Spinner';
 const Login = lazy(() => import('./components/auth/Login'));
 const Chat = lazy(() => import('./components/Chat'));
 const TermsAndConditions = lazy(() => import('./components/auth/TermsAndConditions'));
+const LandingPage = lazy(() => import('./components/landing/LandingPage'));
 
 function App() {
   return (
@@ -30,7 +31,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/terms" element={<TermsAndConditions />} />
               <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-              <Route path="/" element={<Navigate to="/chat" />} />
+              <Route path="/" element={<LandingPage />} />
             </Routes>
           </Suspense>
         </HashRouter>
