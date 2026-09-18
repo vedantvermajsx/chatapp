@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-const F_HEADING = "'Bricolage Grotesque', sans-serif";
-const F_BODY = "'Plus Jakarta Sans', sans-serif";
+const F_HEADING = "'Manrope', sans-serif";
+const F_BODY = "'DM Sans', sans-serif";
 
 const sections = [
   {
@@ -83,7 +83,7 @@ export default function TermsAndConditions() {
 
         <div className="mb-8">
           <p
-            className="text-[12px] font-semibold text-[#008080] uppercase tracking-widest mb-3"
+            className="text-[12px] font-semibold text-[#16a34a] uppercase tracking-widest mb-3"
             style={{ fontFamily: F_BODY }}
           >
             Legal
@@ -116,7 +116,7 @@ export default function TermsAndConditions() {
               className="flex items-start gap-5 py-6 border-b border-gray-100 last:border-b-0"
             >
               <span
-                className="text-[11.5px] font-bold tabular-nums text-[#008080] shrink-0 mt-0.5 w-6 text-right"
+                className="text-[11.5px] font-bold tabular-nums text-[#16a34a] shrink-0 mt-0.5 w-6 text-right"
                 style={{ fontFamily: F_BODY }}
               >
                 {String(index + 1).padStart(2, '0')}

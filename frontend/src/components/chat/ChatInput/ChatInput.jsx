@@ -403,11 +403,11 @@ const ChatInput = memo(forwardRef(({
           className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg border-l-2"
           style={{
             backgroundColor: theme.isLight ? '#f3f4f6' : '#1f2937',
-            borderLeftColor: theme.myMessageBubble || theme.primary || '#008080',
+            borderLeftColor: theme.myMessageBubble || theme.primary || '#16a34a',
           }}
         >
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold truncate" style={{ color: theme.myMessageBubble || theme.primary || '#008080' }}>
+            <p className="text-xs font-bold truncate" style={{ color: theme.myMessageBubble || theme.primary || '#16a34a' }}>
               Replying to {replyingTo.username || 'message'}
             </p>
             <p className="text-xs truncate" style={{ color: theme.otherMessageText }}>

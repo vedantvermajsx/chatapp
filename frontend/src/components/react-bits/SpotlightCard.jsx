@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
 // React Bits–style "Spotlight Card": a radial highlight follows the cursor over the card surface.
-function SpotlightCard({ children, className = '', spotlightColor = 'rgba(0,128,128,0.15)' }) {
+function SpotlightCard({ children, className = '', spotlightColor = 'rgba(22,163,74,0.15)' }) {
   const ref = useRef(null);
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const [opacity, setOpacity] = useState(0);

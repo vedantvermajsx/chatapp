@@ -42,8 +42,8 @@ apiClient.interceptors.response.use(
       dbService.clearAllData().catch(console.error);
       toast.error('Session expired or invalid. Please log in again.');
       
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      if (window.location.hash !== '#/login') {
+        window.location.hash = '#/login';
       }
       return Promise.reject(error);
     }

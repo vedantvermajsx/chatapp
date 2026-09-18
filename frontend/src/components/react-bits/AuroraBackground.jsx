@@ -4,7 +4,7 @@ function SoftBackground({ className = '' }) {
       className={`pointer-events-none absolute inset-0 ${className}`}
       style={{
         background:
-          'radial-gradient(ellipse 80% 55% at 50% -10%, rgba(0,128,128,0.06) 0%, transparent 60%)',
+          'radial-gradient(ellipse 80% 55% at 50% -10%, rgba(22,163,74,0.08) 0%, transparent 60%)',
       }}
     />
   );

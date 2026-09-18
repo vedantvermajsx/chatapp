@@ -1,37 +1,13 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  MessageCircle, Lock, Palette, Zap, Users, ShieldCheck, ArrowRight, ExternalLink,
+  MessageCircle, Lock, ShieldCheck, ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 import FadeIn from '../react-bits/FadeIn';
 import VideoHero from '../react-bits/VideoHero';
-import { THEMES } from '../../contexts/THEMES';
-
-const FEATURES = [
-  {
-    icon: Lock,
-    title: 'End-to-end encrypted',
-    desc: 'Messages are encrypted with per-device keys, so only you and the recipient can read them.',
-  },
-  {
-    icon: Zap,
-    title: 'Real-time everywhere',
-    desc: 'Built on WebSockets and WebRTC for instant delivery, typing indicators, and live calls.',
-  },
-  {
-    icon: Palette,
-    title: `${THEMES.length}+ themes`,
-    desc: 'Restyle your whole chat in one tap — from Tokyo Night to Cherry Blossom.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Guest access',
-    desc: 'Let people jump in instantly with a guest session — no email or signup required.',
-  },
-];
 
 function LandingPage() {
   const { user } = useAuth();
@@ -40,17 +16,11 @@ function LandingPage() {
 
   const scrollRef = useRef(null);
   const heroRef = useRef(null);
-  const featuresRef = useRef(null);
-  const themesRef = useRef(null);
   const [scrolledPastHero, setScrolledPastHero] = useState(false);
 
   const handleScroll = () => {
     const heroHeight = heroRef.current?.offsetHeight ?? 0;
     setScrolledPastHero((scrollRef.current?.scrollTop ?? 0) > heroHeight - 60);
-  };
-
-  const scrollToSection = (ref) => {
-    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
@@ -74,14 +44,6 @@ function LandingPage() {
               GatherUp
             </span>
           </Link>
-          <nav className={cn('hidden md:flex items-center gap-8 text-[13.5px]', scrolledPastHero ? 'text-muted-foreground' : 'text-white/80')}>
-            <button onClick={() => scrollToSection(featuresRef)} className="hover:opacity-80 transition-opacity">
-              Features
-            </button>
-            <button onClick={() => scrollToSection(themesRef)} className="hover:opacity-80 transition-opacity">
-              Themes
-            </button>
-          </nav>
           <div className="flex items-center gap-2">
             {!user && (
               <Button
@@ -109,36 +71,11 @@ function LandingPage() {
 
         <FadeIn delay={0.05}>
           <p className="mt-5 text-[16px] text-white/80 max-w-lg mx-auto leading-relaxed">
-            A real-time messenger with end-to-end encryption, live calls, and {THEMES.length}+
-            themes. Sign up in seconds, or jump in as a guest.
+            A real-time messenger with end-to-end encryption and live calls.
+            Sign up in seconds, or jump in as a guest.
           </p>
         </FadeIn>
       </VideoHero>
-
-      <section ref={featuresRef} className="max-w-5xl mx-auto px-6 py-20 border-t border-border">
-        <FadeIn className="max-w-lg mb-14">
-          <h2 className="text-[1.75rem] font-bold tracking-tight font-display">
-            Everything a modern chat needs
-          </h2>
-          <p className="mt-2.5 text-muted-foreground text-[14.5px]">
-            No bloat, no ads — just fast, secure messaging.
-          </p>
-        </FadeIn>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
-          {FEATURES.map(({ icon: Icon, title, desc }, i) => (
-            <FadeIn key={title} delay={i * 0.04} className='c-card'>
-              <div className="w-9 h-9 rounded-lg bg-secondary text-primary flex items-center justify-center mb-3.5">
-                <Icon className="w-[18px] h-[18px]" />
-              </div>
-              <h3 className="font-semibold text-[14.5px] mb-1.5 font-display">{title}</h3>
-              <p className="text-[13.5px] text-muted-foreground leading-relaxed">{desc}</p>
-            </FadeIn>
-
-          ))}
-        </div>
-      </section>
-
 
       {/* Security */}
       <section className="max-w-5xl mx-auto px-6 py-20 border-t border-border">
@@ -192,12 +129,6 @@ function LandingPage() {
           <p className="text-[12px] text-muted-foreground">© {new Date().getFullYear()} GatherUp. All rights reserved.</p>
           <div className="flex items-center gap-4 text-muted-foreground">
             <Link to="/terms" className="text-[12px] hover:text-foreground transition-colors">Terms</Link>
-            <button
-              onClick={() => scrollToSection(featuresRef)}
-              className="flex items-center gap-1 text-[12px] hover:text-foreground transition-colors"
-            >
-              Learn more <ExternalLink className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </footer>

@@ -1,15 +1,39 @@
 
 export const THEMES = [
   {
-    id: 'default',
-    name: 'Default',
-    background: '#e6e6e6',
-    myMessageBubble: '#008080',
+    id: 'white',
+    name: 'White',
+    background: '#ffffff',
+    myMessageBubble: '#000000',
     myMessageText: '#ffffff',
     myUsernameColor: '#ffffff',
-    otherMessageBubble: '#d3d3d3',
-    otherMessageText: '#333333',
-    otherUsernameColor: '#008080',
+    otherMessageBubble: '#f0f0f0',
+    otherMessageText: '#000000',
+    otherUsernameColor: '#000000',
+    isLight: true
+  },
+  {
+    id: 'black',
+    name: 'Black',
+    background: '#000000',
+    myMessageBubble: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
+    otherMessageBubble: '#1a1a1a',
+    otherMessageText: '#ffffff',
+    otherUsernameColor: '#ffffff',
+    isLight: false
+  },
+  {
+    id: 'default',
+    name: 'Fresh Campus',
+    background: '#f6faf7',
+    myMessageBubble: '#16a34a',
+    myMessageText: '#ffffff',
+    myUsernameColor: '#ffffff',
+    otherMessageBubble: '#eaf4ec',
+    otherMessageText: '#0d1a14',
+    otherUsernameColor: '#15803d',
     isLight: true
   },
 {

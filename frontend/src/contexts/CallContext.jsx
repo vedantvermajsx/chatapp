@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useAuth } from './AuthContext';
-import ringtoneAudio from '../../assets/music.mp3';
+import ringtoneAudio from '../assets/music.mp3';
 
 const CallContext = createContext();
 

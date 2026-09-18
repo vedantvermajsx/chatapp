@@ -148,7 +148,7 @@ const ChatHeader = memo(function ChatHeader({
               <div className="flex-shrink-0 relative">
                 <Avatar url={currentPrivateChat.avatar} name={currentPrivateChat.username} gender={currentPrivateChat.gender} size={10} mdSize={12} />
                 {currentPrivateChat.isOnline && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#00ff00] rounded-full border-2 border-white dark:border-gray-800"></span>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#16a34a] rounded-full border-2 border-white dark:border-gray-800"></span>
                 )}
               </div>
               <div className="min-w-0">

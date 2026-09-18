@@ -20,8 +20,8 @@ function Admin({
         <div key={admin._id}
             className="flex items-center gap-3 p-3 rounded-2xl"
             style={{
-                backgroundColor: theme.isLight ? 'rgba(0, 128, 128, 0.15)' : 'rgba(96, 165, 250, 0.15)',
-                boxShadow: theme.isLight ? '0px 0px 1px rgba(0,0,0,0.2), 0px 0px 0px rgba(0,128,128,0.3)' : '0px 0px 1px rgba(0,0,0,0.5), 0px 0px 0px rgba(96, 165, 250,0.3)'
+                backgroundColor: theme.isLight ? 'rgba(22, 163, 74, 0.15)' : 'rgba(96, 165, 250, 0.15)',
+                boxShadow: theme.isLight ? '0px 0px 1px rgba(0,0,0,0.2), 0px 0px 0px rgba(22,163,74,0.3)' : '0px 0px 1px rgba(0,0,0,0.5), 0px 0px 0px rgba(96, 165, 250,0.3)'
             }}
         >
             <Avatar url={admin.avatar} name={admin.username} gender={admin.gender} size={10} isOnline={isOnline} />
@@ -48,7 +48,7 @@ function Admin({
                     onClick={() => onStartPrivateChat({ ...admin, id: admin.id || admin._id })}
                     className="p-2 rounded-full transition-all"
                     style={{
-                        backgroundColor: theme.isLight ? 'rgba(0, 128, 128, 0.15)' : 'rgba(96, 165, 250, 0.15)'
+                        backgroundColor: theme.isLight ? 'rgba(22, 163, 74, 0.15)' : 'rgba(96, 165, 250, 0.15)'
                     }}
                     title="Private Chat"
                 >

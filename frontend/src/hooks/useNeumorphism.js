@@ -36,7 +36,7 @@ export const useNeumorphism = () => {
       transition: 'border-color 0.15s ease'
     },
     onFocus: (e) => {
-      e.target.style.borderColor = theme.myMessageBubble || '#008080';
+      e.target.style.borderColor = theme.myMessageBubble || '#16a34a';
     },
     onBlur: (e) => {
       e.target.style.borderColor = theme.isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
