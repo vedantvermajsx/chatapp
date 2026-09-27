@@ -7,6 +7,7 @@ import { ImageZoomModal } from './Modals/ImageZoomModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dbService } from '../../services/indexedDB.service.js';
 import messageService from '../../services/message.service.js';
+import { MessageSquare } from 'lucide-react';
 
 const ChatArea = memo(function ChatArea({
   user,
@@ -490,6 +491,24 @@ const ChatArea = memo(function ChatArea({
           unreadCounts={unreadCounts}
         />
       </div>
+
+      {!currentRoom && !currentPrivateChat && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 px-6 text-center"
+          style={{ backgroundColor: theme.background }}
+        >
+          <div
+            className="relative flex h-14 w-14 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: theme.primary ? `${theme.primary}14` : 'rgba(0,0,0,0.05)' }}
+          >
+            <MessageSquare className="h-6 w-6 opacity-60" strokeWidth={1.75} />
+          </div>
+          <div className="relative space-y-1">
+            <p className="text-[15px] font-semibold opacity-80">No conversation selected</p>
+            <p className="text-[13px] opacity-50">Pick a room or a person from the sidebar to start chatting.</p>
+          </div>
+        </div>
+      )}
 
       <div
         className="flex-1 min-h-0 relative"

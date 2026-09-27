@@ -129,6 +129,7 @@ function LandingPage() {
           <p className="text-[12px] text-muted-foreground">© {new Date().getFullYear()} GatherUp. All rights reserved.</p>
           <div className="flex items-center gap-4 text-muted-foreground">
             <Link to="/terms" className="text-[12px] hover:text-foreground transition-colors">Terms</Link>
+            <Link to="/cookie-policy" className="text-[12px] hover:text-foreground transition-colors">Cookies</Link>
           </div>
         </div>
       </footer>

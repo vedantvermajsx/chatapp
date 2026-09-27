@@ -98,6 +98,32 @@
     }
 }
 
+/* Global reduced-motion safety net (tiered, not a kill switch): neutralize
+   runaway/large-area motion by default. 0.01ms (not 0s) so transitionend/
+   animationend still fire for JS relying on them; iteration-count 1 stops
+   infinite spins/marquees; scroll-behavior forced instant. Components that
+   intentionally keep Tier-3 motion (opacity/color fades, spinners, focus
+   rings) layer their own override on top of this net where needed. */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Tier 3 exception: in-place rotation (loading spinners) isn't a
+       vestibular trigger the way large-area motion is, and losing it would
+       remove essential "still working" feedback — so restore it. */
+    .animate-spin {
+        animation-duration: 1s !important;
+        animation-iteration-count: infinite !important;
+    }
+}
+
 [contenteditable]:empty:-moz-only-whitespace::before,
 [contenteditable]:empty::before {
     content: attr(data-placeholder);
