@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -243,4 +241,29 @@ body,
     padding: 20px;
     border-radius: 20px;
     background: rgba(0, 0, 0, 0.03);
+}
+
+/* Route enter crossfade — plain CSS keyframes so the very first paint
+   never waits on framer-motion (it's a keyed remount, so the animation
+   just plays automatically whenever a new route element mounts). */
+@keyframes route-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.route-fade-in {
+    animation: route-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .route-fade-in {
+        animation: none;
+    }
 }

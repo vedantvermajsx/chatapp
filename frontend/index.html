@@ -19,6 +19,15 @@
     <link rel="icon" type="image/png" href="/icon.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
+    <!-- Discovered immediately by the HTML parser and fetched in parallel
+         with everything else, instead of being hidden inside the CSS
+         (an @import there can't start until the whole stylesheet has
+         downloaded and been parsed). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <link rel="canonical" href="https://GatherUp.onrender.com">
 
     <meta property="og:type" content="website">
@@ -39,7 +48,25 @@
 
 <body>
 
-    <div id="root"></div>
+    <!-- Static skeleton, shown the instant the CSS arrives — before the
+         JS bundle has even finished downloading, let alone executed.
+         React's createRoot(...).render() replaces this automatically
+         once the app mounts, so there's nothing else to wire up. -->
+    <div id="root">
+        <div class="h-dvh w-full flex items-center justify-center bg-[#0b0c0e]">
+            <div class="flex flex-col items-center gap-5">
+                <div class="relative w-14 h-14">
+                    <div class="absolute inset-0 rounded-full border-2 border-white/10"></div>
+                    <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-white animate-spin"></div>
+                    <img src="/icon.png" alt="" aria-hidden="true"
+                        class="absolute inset-0 m-auto w-6 h-6 object-contain opacity-90">
+                </div>
+                <p class="text-white/40 text-[12.5px] font-medium tracking-wide" style="font-family: 'DM Sans', sans-serif;">
+                    Loading GatherUp…
+                </p>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="./src/main.jsx"></script>
 </body>

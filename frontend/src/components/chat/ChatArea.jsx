@@ -7,6 +7,7 @@ import { ImageZoomModal } from './Modals/ImageZoomModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dbService } from '../../services/indexedDB.service.js';
 import messageService from '../../services/message.service.js';
+import AsciiField from '../common/AsciiField';
 import { MessageSquare } from 'lucide-react';
 
 const ChatArea = memo(function ChatArea({
@@ -497,6 +498,11 @@ const ChatArea = memo(function ChatArea({
           className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 px-6 text-center"
           style={{ backgroundColor: theme.background }}
         >
+          <AsciiField
+            className="absolute inset-0 text-[8px] md:text-[9px] text-current"
+            cols={72}
+            opacity={0.06}
+          />
           <div
             className="relative flex h-14 w-14 items-center justify-center rounded-2xl"
             style={{ backgroundColor: theme.primary ? `${theme.primary}14` : 'rgba(0,0,0,0.05)' }}

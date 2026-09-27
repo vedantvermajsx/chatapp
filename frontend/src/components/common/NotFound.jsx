@@ -15,8 +15,8 @@ export default function NotFound() {
     <div className="relative h-dvh w-full overflow-hidden bg-[#0b0c0e] text-white flex items-center justify-center px-6">
       <AsciiField
         className="absolute inset-0 text-[9px] md:text-[10px] text-white"
-        cols={1000}
-        opacity={0.05}
+        cols={90}
+        opacity={0.14}
       />
       <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_40%,rgba(255,255,255,0.06),transparent_70%)]" />
 
