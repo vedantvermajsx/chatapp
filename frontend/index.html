@@ -25,8 +25,16 @@
          downloaded and been parsed). -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <!-- media="print" + onload swap = non-blocking: a slow or blocked font
+         host can no longer hold up first paint or delay the app JS. -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
+            rel="stylesheet">
+    </noscript>
 
     <link rel="canonical" href="https://GatherUp.onrender.com">
 
@@ -53,22 +61,17 @@
          React's createRoot(...).render() replaces this automatically
          once the app mounts, so there's nothing else to wire up. -->
     <div id="root">
-        <div class="h-dvh w-full flex items-center justify-center bg-[#0b0c0e]">
-            <div class="flex flex-col items-center gap-5">
-                <div class="relative w-14 h-14">
-                    <div class="absolute inset-0 rounded-full border-2 border-white/10"></div>
-                    <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-white animate-spin"></div>
-                    <img src="/icon.png" alt="" aria-hidden="true"
-                        class="absolute inset-0 m-auto w-6 h-6 object-contain opacity-90">
-                </div>
-                <p class="text-white/40 text-[12.5px] font-medium tracking-wide" style="font-family: 'DM Sans', sans-serif;">
-                    Loading GatherUp…
-                </p>
-            </div>
-        </div>
     </div>
 
     <script type="module" src="./src/main.jsx"></script>
+    <script>
+        setTimeout(function () {
+            var el = document.getElementById('boot-skeleton');
+            if (!el) return;
+            var p = el.querySelector('p');
+            if (p) p.innerHTML = 'Taking longer than expected. <a href="" onclick="location.reload();return false" style="color:#fff;text-decoration:underline">Reload</a>';
+        }, 15000);
+    </script>
 </body>
 
 </html>

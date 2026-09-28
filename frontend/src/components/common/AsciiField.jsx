@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 
 const RAMP = ' .:-=+*#%@';
 
-
 export default function AsciiField({ className = '', cols = 64, opacity = 1 }) {
   const preRef = useRef(null);
 
@@ -40,7 +39,7 @@ export default function AsciiField({ className = '', cols = 64, opacity = 1 }) {
     const start = () => {
       if (raf) cancelAnimationFrame(raf);
       if (mq.matches) {
-        render(0); // reduced motion: one settled frame, no rAF loop
+        render(0);
       } else {
         raf = requestAnimationFrame(loop);
       }

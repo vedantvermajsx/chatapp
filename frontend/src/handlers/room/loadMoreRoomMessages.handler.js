@@ -19,10 +19,6 @@ export const loadMoreRoomMessagesHandler = async (
     const earliestTimestamp = messages[0].timestamp;
     const res = await messageService.getRoomMessages(roomId, 20, earliestTimestamp, null, roomPrivateKey);
 
-    // The boundary message (or several messages sharing the exact same
-    // `earliestTimestamp`) can come back from the server again — dedupe
-    // by id so we never render/store the same message twice, matching
-    // the guard every other merge path in this app already uses.
     const existingIds = new Set(messages.map(m => String(m.id || m._id)));
     const reallyOlder = (res.messages || []).filter(m => !existingIds.has(String(m.id || m._id)));
 
@@ -30,11 +26,6 @@ export const loadMoreRoomMessagesHandler = async (
     setMessages(merged);
     setHasMoreMessages(res.hasMore);
 
-    // Older messages were only ever landing in React state — the
-    // in-memory cache and IndexedDB still held the pre-scroll snapshot,
-    // so switching chats and back (or a refresh) would silently drop
-    // everything just loaded. Persist both, the same way every other
-    // message-merge path in this app already does.
     const cacheKey = `room_${roomId}`;
     if (messageCache?.current) {
       messageCache.current[cacheKey] = {

@@ -259,7 +259,10 @@ body,
 }
 
 .route-fade-in {
-    animation: route-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+    /* `backwards` (not `both`): don't keep a transform on the wrapper after the
+       animation ends, or position:fixed children (modals, call overlay, mobile
+       full-screen layouts) get sized to the wrapper instead of the viewport. */
+    animation: route-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

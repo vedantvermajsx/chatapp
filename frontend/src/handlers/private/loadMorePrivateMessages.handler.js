@@ -20,9 +20,6 @@ export const loadMoreMessagesHandler = async (
     const earliestTimestamp = messages[0].timestamp;
     const res = await messageService.getPrivateMessages(otherUser.id, 20, earliestTimestamp);
 
-    // Same boundary-duplicate guard used everywhere else messages get
-    // merged in this app — avoids re-adding the cursor message itself
-    // (or siblings sharing its exact timestamp) a second time.
     const existingIds = new Set(messages.map(m => String(m.id || m._id)));
     const reallyOlder = (res.messages || []).filter(m => !existingIds.has(String(m.id || m._id)));
 

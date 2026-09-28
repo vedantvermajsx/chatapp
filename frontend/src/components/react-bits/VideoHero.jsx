@@ -11,9 +11,6 @@ function VideoHero({ poster = '/demo-poster.jpg', className = '', sectionRef, ch
     setMuted(videoRef.current.muted);
   };
 
-  // Cursor-lean parallax on the video layer only — the same "living
-  // key-art" feel as the marketing site's hero, kept subtle so it never
-  // fights with the headline copy sitting on top.
   useEffect(() => {
     const section = sectionRef?.current;
     const video = videoRef.current;

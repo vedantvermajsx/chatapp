@@ -167,7 +167,6 @@ function Chat() {
     if (socket) socket.emit('clearActiveRoom');
   }, [setCurrentRoom, setCurrentPrivateChat, socket]);
 
-  // Tells the backend when this user stops actively viewing a room
   const roomIdRef = useRef(currentRoom?._id);
   const messagesRef = useRef(messages);
   const handleChatReadRef = useRef(handleChatRead);

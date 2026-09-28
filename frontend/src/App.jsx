@@ -1,7 +1,7 @@
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { lazy, Suspense, useEffect } from 'react';
+import { Component, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'sonner';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PageLoader from './components/common/PageLoader';
@@ -13,16 +13,41 @@ const TermsAndConditions = lazy(() => import('./components/auth/TermsAndConditio
 const CookiePolicy = lazy(() => import('./components/auth/CookiePolicy'));
 const LandingPage = lazy(() => import('./components/landing/LandingPage'));
 
-function useIdlePrefetch() {
+function IdlePrefetch() {
+  const { user } = useAuth();
+
   useEffect(() => {
-    const schedule = window.requestIdleCallback || ((cb) => setTimeout(cb, 300));
+    const conn = navigator.connection;
+    if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ''))) return;
+
+    const schedule = window.requestIdleCallback || ((cb) => setTimeout(cb, 1500));
     const cancel = window.cancelIdleCallback || clearTimeout;
     const id = schedule(() => {
-      import('./components/auth/Login');
-      schedule(() => import('./components/Chat'));
+      const target = user ? import('./components/Chat') : import('./components/auth/Login');
+      target.catch(() => { });
     });
     return () => cancel(id);
-  }, []);
+  }, [user]);
+
+  return null;
+}
+class ChunkErrorBoundary extends Component {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center gap-4 bg-[#0b0c0e] text-white/70 px-6 text-center">
+        <p className="text-sm">Something went wrong while loading the page.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 rounded-full bg-white text-black text-sm font-medium"
+        >
+          Reload
+        </button>
+      </div>
+    );
+  }
 }
 
 function AnimatedRoutes() {
@@ -44,7 +69,6 @@ function AnimatedRoutes() {
 }
 
 function App() {
-  useIdlePrefetch();
   return (
     <AuthProvider>
       <ThemeProvider>
@@ -55,9 +79,12 @@ function App() {
             closeButton
             duration={3000}
           />
-          <Suspense fallback={<PageLoader />}>
-            <AnimatedRoutes />
-          </Suspense>
+          <IdlePrefetch />
+          <ChunkErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
+              <AnimatedRoutes />
+            </Suspense>
+          </ChunkErrorBoundary>
         </HashRouter>
       </ThemeProvider>
     </AuthProvider>

@@ -1,7 +1,12 @@
-
+/**
+ * Full-screen branded loader shown while a lazy route chunk loads.
+ * The ring keeps spinning under reduced-motion (in-place rotation is
+ * exempted globally in index.css as essential "still working" feedback),
+ * everything else here is static.
+ */
 export default function PageLoader() {
   return (
-    <div className="h-dvh w-full flex items-center justify-center bg-[#0b0c0e]">
+    <div className="h-full w-full flex items-center justify-center bg-[#0b0c0e]">
       <div className="flex flex-col items-center gap-5">
         <div className="relative w-14 h-14">
           <div className="absolute inset-0 rounded-full border-2 border-white/10" />
