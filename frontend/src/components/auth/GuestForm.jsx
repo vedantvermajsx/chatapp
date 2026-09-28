@@ -77,7 +77,7 @@ function GuestForm({ setCurrForm }) {
                 <div className="flex flex-col gap-1.5">
                     <Label htmlFor="guest-username">Username</Label>
                     <div className="relative">
-                        <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
+                        <Tag className="absolute left-3.5 top-1/2 w-[15px] h-[15px] text-muted-foreground" />
                         <Input
                             id="guest-username"
                             name="username"
