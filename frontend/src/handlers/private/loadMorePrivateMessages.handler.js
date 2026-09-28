@@ -27,10 +27,6 @@ export const loadMoreMessagesHandler = async (
     setMessages(merged);
     setHasMoreMessages(res.hasMore);
 
-    // Persist the merged window, not just component state — otherwise
-    // the older messages a user just scrolled up to see vanish again
-    // the moment the in-memory/IndexedDB cache is restored (chat
-    // switch, refresh, etc.).
     const cacheKey = `private_${otherUser.id}`;
     if (messageCache?.current) {
       messageCache.current[cacheKey] = {
