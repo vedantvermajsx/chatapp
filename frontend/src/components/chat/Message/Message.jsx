@@ -91,7 +91,7 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
             <MediaContent msg={msg} isOwn={isOwn} theme={theme} />
           )}
 
-          <TextContent text={msg?.text} textColor={textColor} bubbleBg={bubbleBg} />
+          <TextContent text={msg?.text} textColor={textColor} bubbleBg={bubbleBg} isOwn={isOwn} />
 
         </div>
 

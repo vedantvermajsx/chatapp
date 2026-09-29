@@ -1,4 +1,5 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +9,8 @@ import { useChatState } from '../hooks/useChatState';
 import { useChatSocket } from '../hooks/useChatSocket';
 import { CallProvider } from '../contexts/CallContext';
 import CallOverlay from './chat/Call/CallOverlay';
+import ChessWindow from './chat/Chess/ChessWindow';
+import { sendMessageHandler } from '../handlers/message/sendMessage.handler.js';
 
 function Chat() {
   const { user, logout } = useAuth();
@@ -58,6 +61,74 @@ function Chat() {
     unreadCounts,
     setUnreadCounts
   } = chatState;
+
+  const [showChess, setShowChess] = useState(false);
+  const [chessJoinCode, setChessJoinCode] = useState(null);
+  const [chessKey, setChessKey] = useState(0);
+  const chessBusyRef = useRef(false);
+  const showChessRef = useRef(false);
+  showChessRef.current = showChess;
+
+  // "Join game" button inside an invite message -> open chess window joined to that code
+  useEffect(() => {
+    const onOpenChess = (e) => {
+      const code = e.detail?.code;
+      if (!code) return;
+      if (showChessRef.current && chessBusyRef.current) {
+        toast.error('Finish or close your current chess game first.');
+        return;
+      }
+      setChessJoinCode(code);
+      setChessKey((k) => k + 1); // remount so the iframe reloads with ?join=code
+      setShowChess(true);
+    };
+    window.addEventListener('open-chess', onOpenChess);
+    return () => window.removeEventListener('open-chess', onOpenChess);
+  }, []);
+  const lastInvitedCodeRef = useRef(null);
+  const chessCtxRef = useRef({});
+  chessCtxRef.current = { currentRoom, currentPrivateChat, user, socket, setMessages, privateChats, setPrivateChats, messageCache };
+
+  // When a chess game is created, post its code in the chat that is open.
+  const handleChessCreated = useCallback((code) => {
+    if (!code || lastInvitedCodeRef.current === code) return;
+    const c = chessCtxRef.current;
+    if (!c.user || !(c.currentRoom || c.currentPrivateChat)) return;
+    lastInvitedCodeRef.current = code;
+    sendMessageHandler(
+      { preventDefault() {} },
+      c.currentRoom,
+      c.currentPrivateChat,
+      c.user,
+      `Join the chess game with code: ${code}`,
+      () => {},            // don't touch what the user is typing
+      c.socket,
+      c.setMessages,
+      c.privateChats,
+      c.setPrivateChats,
+      c.messageCache,
+      null,
+      () => {},
+      null,
+      () => {},
+      null,
+      () => {}
+    );
+  }, []);
+
+  // Typing "/start-chess" in the chat input opens the chess window instead of
+  // sending a message.
+  const handleSendMessage = (e) => {
+    if ((inputMessage || '').trim().toLowerCase() === '/start-chess' && !selectedFile) {
+      e.preventDefault();
+      setInputMessage('');
+      setChessJoinCode(null);
+      if (!showChess) setChessKey((k) => k + 1);
+      setShowChess(true);
+      return;
+    }
+    return sendMessage(e, socket);
+  };
 
   const handleFileSelect = (file) => {
     setSelectedFile(file);
@@ -255,7 +326,7 @@ function Chat() {
             selectedFile={selectedFile}
             onFileSelect={handleFileSelect}
             onRemoveFile={handleRemoveFile}
-            sendMessage={(e) => sendMessage(e, socket)}
+            sendMessage={handleSendMessage}
             sendSticker={sendSticker}
             leaveRoomSocket={(roomId) => socket.emit('leaveRoom', roomId)}
             showMembersModal={showMembersModal}
@@ -285,6 +356,17 @@ function Chat() {
           />
         </div>
       </CallProvider>
+
+      {showChess && (
+        <ChessWindow
+          key={chessKey}
+          username={user?.username}
+          joinCode={chessJoinCode}
+          onGameCreated={handleChessCreated}
+          onActiveChange={(active) => { chessBusyRef.current = active; }}
+          onClose={() => { chessBusyRef.current = false; setShowChess(false); }}
+        />
+      )}
     </div>
   );
 }
