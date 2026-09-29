@@ -22,6 +22,11 @@ export const ThemeProvider = ({ children }) => {
     localStorage.setItem('chatTheme', JSON.stringify(theme));
     document.body.style.backgroundColor = theme.background;
     document.body.style.color = theme.isLight ? '#000000' : '#ffffff';
+
+    let metaThemeColor = document.querySelector("meta[name='theme-color']");
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute("content", theme.background);
+    }
   }, [theme]);
 
   const value = useMemo(() => ({ theme, setTheme, THEMES }), [theme]);

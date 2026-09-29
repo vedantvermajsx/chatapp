@@ -14,19 +14,13 @@
         content="GatherUp, chat, real-time chat, messaging, rooms, guest chat, private messages, online chat">
     <meta name="author" content="GatherUp">
     <meta name="robots" content="index, follow">
-    <meta name="theme-color" content="#e6e6e6">
+    <meta name="theme-color" content="#2b2d31">
 
     <link rel="icon" type="image/png" href="/icon.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
-    <!-- Discovered immediately by the HTML parser and fetched in parallel
-         with everything else, instead of being hidden inside the CSS
-         (an @import there can't start until the whole stylesheet has
-         downloaded and been parsed). -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- media="print" + onload swap = non-blocking: a slow or blocked font
-         host can no longer hold up first paint or delay the app JS. -->
     <link
         href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet" media="print" onload="this.media='all'">
@@ -56,10 +50,6 @@
 
 <body>
 
-    <!-- Static skeleton, shown the instant the CSS arrives — before the
-         JS bundle has even finished downloading, let alone executed.
-         React's createRoot(...).render() replaces this automatically
-         once the app mounts, so there's nothing else to wire up. -->
     <div id="root">
     </div>
 
