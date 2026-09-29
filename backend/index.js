@@ -11,7 +11,8 @@ import messageRoutes from './routes/message.routes.js';
 import userRoutes from './routes/user.routes.js';
 import mediaRoutes from './routes/media.routes.js';
 import { requestLogger } from './middleware/logger.js';
-import { globalLimiter, authLimiter, uploadLimiter } from './middleware/rateLimiter.js';
+import { globalLimiter, authLimiter, messagingLimiter, uploadLimiter } from './middleware/rateLimiter.js';
+import { createChessRouter, setupChessSocket } from './games/chess/index.js';
 import {bloomFilter} from './utils/bloomFilterService.js';
 import { setupGuestChangeStream } from './models/guest.model.js';
 
@@ -47,15 +48,19 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(requestLogger);
-app.use(globalLimiter);
+
+app.use(createChessRouter());
+
+app.use('/api/messages/upload-signature', uploadLimiter);
+app.use('/api/messages', messagingLimiter, messageRoutes); 
+
+app.use(globalLimiter); 
 
 
 
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authLimiter, authRoutes); // 20 req/5min
 app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
-app.use('/api/messages/upload-signature', uploadLimiter);
-app.use('/api/messages', messageRoutes);
 app.use('/api/media', mediaRoutes);
 app.get('/health', (_, res) => res.status(200).json({ ok: true }));
 
@@ -90,6 +95,7 @@ connectDB().then(async () => {
 
   const io = setupSocket(server);
   app.set('io', io);
+  setupChessSocket(io);
   server.listen(currentPort, () => console.log(`Server running on port ${currentPort}`));
 
   

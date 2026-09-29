@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ChessClone</title>
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1' || window.self !== window.top) {
+  document.documentElement.classList.add('embed');
+}
+</script>
+<link rel="stylesheet" href="/games/chess/style.css" />
+</head>
+<body>
+
+<div id="loader" class="loader" role="status" aria-live="polite">
+  <div class="loader-inner">
+    <div class="loader-knight">♞</div>
+    <div class="loader-bar"><span></span></div>
+    <p id="loaderText" class="loader-text">Loading…</p>
+  </div>
+</div>
+
+<div id="screen-home" class="screen active">
+  <div class="card home-card">
+    <h1 class="logo">♞ ChessClone</h1>
+    <p class="subtitle">Play chess online with a friend — pick a time, share a code.</p>
+
+    <div class="section">
+      <label class="section-label">Time control</label>
+      <div class="time-options" id="timeOptions">
+        <button class="time-btn selected" data-time="5">
+          <span class="time-num">5</span><span class="time-unit">min</span>
+        </button>
+        <button class="time-btn" data-time="10">
+          <span class="time-num">10</span><span class="time-unit">min</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <label class="section-label"><input type="checkbox" id="allowUndo" /> Allow undo (Back button)</label>
+    </div>
+
+    <div class="section">
+      <label class="section-label">Your name</label>
+      <input id="nameInput" class="text-input" maxlength="20" placeholder="Enter your name" />
+    </div>
+
+    <div class="actions">
+      <button id="createBtn" class="primary-btn">Create Game</button>
+
+      <div class="divider"><span>or</span></div>
+
+      <div class="join-row">
+        <input id="joinCodeInput" class="text-input code-input" maxlength="4" inputmode="numeric" placeholder="4-digit code" />
+        <button id="joinBtn" class="secondary-btn">Join Game</button>
+      </div>
+      <p id="joinError" class="error-text"></p>
+    </div>
+  </div>
+</div>
+
+<div id="screen-waiting" class="screen">
+  <div class="card waiting-card">
+    <h2>Waiting for opponent…</h2>
+    <div class="spinner"></div>
+    <p class="hint">Share this code with your friend:</p>
+    <div class="code-display" id="codeDisplay">----</div>
+    <button id="copyCodeBtn" class="secondary-btn small">Copy Code</button>
+    <button id="cancelWaitBtn" class="link-btn">Cancel</button>
+  </div>
+</div>
+
+<div id="screen-game" class="screen">
+  <div class="game-wrap">
+    <div class="player-bar top">
+      <span class="player-name" id="topName">Opponent</span>
+      <span class="player-clock" id="topClock">05:00</span>
+    </div>
+
+    <div class="board-shell">
+      <div id="board" class="board"></div>
+      <div id="promoModal" class="promo-modal hidden">
+        <div class="promo-box">
+          <p>Promote to:</p>
+          <div class="promo-choices" id="promoChoices"></div>
+        </div>
+      </div>
+      <div id="overModal" class="over-modal hidden">
+        <div class="over-box">
+          <h2 id="overTitle">Game Over</h2>
+          <p id="overDesc"></p>
+          <button id="newGameBtn" class="primary-btn">New Game</button>
+        </div>
+      </div>
+      <div id="resignModal" class="over-modal hidden">
+        <div class="over-box">
+          <h2>Resign this game?</h2>
+          <p class="hint">Your opponent will be declared the winner.</p>
+          <div class="confirm-row">
+            <button id="resignYesBtn" class="primary-btn danger-btn">Resign</button>
+            <button id="resignNoBtn" class="secondary-btn">Keep playing</button>
+          </div>
+        </div>
+      </div>
+      <div id="reconnectModal" class="over-modal hidden">
+        <div class="over-box">
+          <div class="spinner"></div>
+          <h2>Connection lost</h2>
+          <p>Reconnect within <span id="reconnectCountdown">60</span>s or you'll forfeit the game.</p>
+          <p class="hint">Game code: <strong id="reconnectCode">----</strong></p>
+          <button id="rejoinBtn" class="primary-btn">Rejoin Now</button>
+        </div>
+      </div>
+      <div id="waitingReconnectBanner" class="reconnect-banner hidden">
+        Opponent disconnected — waiting <span id="oppReconnectCountdown">60</span>s for them to return…
+      </div>
+    </div>
+
+    <div class="player-bar bottom">
+      <span class="player-name" id="bottomName">You</span>
+      <span class="player-clock" id="bottomClock">05:00</span>
+    </div>
+
+    <div class="game-footer">
+      <div class="status-text" id="statusText">Waiting…</div>
+      <div class="game-code-tag">Game #<span id="activeCodeTag">----</span></div>
+      <button id="backBtn" class="link-btn" hidden>⟵ Back</button>
+      <button id="resignBtn" class="link-btn danger">Resign</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script type="module" src="/games/chess/app.js"></script>
+</body>
+</html>
