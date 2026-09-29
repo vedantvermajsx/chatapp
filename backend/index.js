@@ -49,16 +49,20 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(requestLogger);
 
-app.use(createChessRouter());
+// Chess and messaging are mounted ahead of globalLimiter so they use their
+// own per-minute limiters instead of the 200-req/15min limit applied to the
+// rest of the API (that 15-minute window would otherwise choke a 200/min or
+// 100/min budget down to a small fraction of its intended rate).
+app.use(createChessRouter()); // chess play: 200 req/min (games/chess/chess.limiter.js)
 
 app.use('/api/messages/upload-signature', uploadLimiter);
-app.use('/api/messages', messagingLimiter, messageRoutes); 
+app.use('/api/messages', messagingLimiter, messageRoutes); // messaging: 100 req/min
 
-app.use(globalLimiter); 
+app.use(globalLimiter); // everything else: 200 req/15min
 
 
 
-app.use('/api/auth', authLimiter, authRoutes); // 20 req/5min
+app.use('/api/auth', authLimiter, authRoutes); // login/signup: 20 req/5min
 app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/media', mediaRoutes);

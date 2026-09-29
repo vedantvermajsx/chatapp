@@ -29,6 +29,11 @@ socket.on('connect', hideLoader);
 socket.on('connect_error', () => setLoaderText("Can't reach the server — retrying…"));
 setTimeout(() => { if (!loaderHidden) setLoaderText('Still connecting…'); }, 5000);
 
+function notifyParent(event, data) {
+  if (window.parent === window) return;
+  window.parent.postMessage({ type: 'chess-embed:' + event, ...data }, '*');
+}
+
 if (EMBEDDED && window.parent !== window) {
   const postHeight = () => {
     const height = Math.ceil(document.body.getBoundingClientRect().height);
@@ -167,8 +172,42 @@ document.getElementById('timeOptions').addEventListener('click', (e) => {
   selectedTime = Number(btn.dataset.time);
 });
 
-const nameParam = new URLSearchParams(location.search).get('name');
+// Start options, passed by the frontend in the iframe URL:
+//   ?name=Alice            prefill player name
+//   &time=5|10             time control (minutes)
+//   &undo=1                allow undo
+//   &action=create         create a game as soon as the socket connects
+//   &join=1234             join game 1234 as soon as the socket connects
+const urlParams = new URLSearchParams(location.search);
+const nameParam = urlParams.get('name');
 if (nameParam) document.getElementById('nameInput').value = nameParam.slice(0, 20);
+
+const timeParam = Number(urlParams.get('time'));
+if (timeParam === 5 || timeParam === 10) {
+  selectedTime = timeParam;
+  document.querySelectorAll('.time-btn').forEach((b) =>
+    b.classList.toggle('selected', Number(b.dataset.time) === timeParam));
+}
+if (urlParams.get('undo') === '1') document.getElementById('allowUndo').checked = true;
+
+let autoStarted = false;
+function autoStart() {
+  if (autoStarted) return;
+  autoStarted = true;
+  const joinCode = (urlParams.get('join') || '').trim();
+  if (/^\d{4}$/.test(joinCode)) {
+    const saved = loadSession(joinCode);
+    socket.emit('joinGame', { id: joinCode, name: getName(), token: saved ? saved.token : null });
+  } else if (urlParams.get('action') === 'create') {
+    socket.emit('createGame', {
+      timeControl: selectedTime,
+      name: getName(),
+      allowUndo: document.getElementById('allowUndo').checked,
+    });
+  }
+}
+if (socket.connected) autoStart();
+else socket.once('connect', autoStart);
 
 function getName() {
   const v = document.getElementById('nameInput').value.trim();
@@ -235,12 +274,14 @@ socket.on('gameCreated', ({ id, color, token }) => {
   saveSession(id, token, color, getName());
   document.getElementById('codeDisplay').textContent = id;
   showScreen('screen-waiting');
+  notifyParent('created', { id });
 });
 
 socket.on('joinError', (msg) => {
   clearBusy();
   document.getElementById('joinError').textContent = msg;
   flashStatus(msg);
+  notifyParent('error', { message: msg });
 });
 
 socket.on('yourToken', ({ token, color }) => {
@@ -264,6 +305,7 @@ socket.on('gameStart', ({ id, names, timeControl, state }) => {
   document.getElementById('statusText').textContent =
     myColor === 'w' ? "White to move — it's your turn" : 'White to move';
   showScreen('screen-game');
+  notifyParent('started', { id, color: myColor });
 });
 
 socket.on('resynced', ({ id, color, names, timeControl, state }) => {
@@ -358,6 +400,7 @@ socket.on('gameOver', (result) => {
   document.getElementById('resignModal').classList.add('hidden');
   if (gameId) clearSession(gameId);
   showGameOver(result);
+  notifyParent('over', { id: gameId, result });
 });
 
 socket.on('disconnect', () => {

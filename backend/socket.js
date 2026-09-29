@@ -41,6 +41,8 @@ export const setupSocket = (server) => {
   registerBrokerBridge(io, onlineUsers);
 
   setupEvents(io);
+
+  return io;
 }
 
 export const getIO = () => io;

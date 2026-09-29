@@ -18,7 +18,12 @@
     var maxWidth = holder.getAttribute('data-max-width') || '640px';
 
     var iframe = document.createElement('iframe');
-    iframe.src = base + '/start-chess?embed=1';
+    var qs = ['embed=1'];
+    ['name', 'time', 'undo', 'action', 'join'].forEach(function (k) {
+      var v = holder.getAttribute('data-' + k);
+      if (v) qs.push(k + '=' + encodeURIComponent(v));
+    });
+    iframe.src = base + '/start-chess?' + qs.join('&');
     iframe.title = 'Chess';
     iframe.allow = 'clipboard-write; fullscreen';
     if (!fixedHeight) iframe.setAttribute('scrolling', 'no');
