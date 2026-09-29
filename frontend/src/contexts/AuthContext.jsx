@@ -13,9 +13,16 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      const storedUser = JSON.parse(localStorage.getItem('user'));
-      setUser(storedUser);
-      if (storedUser?._id) keyManager.loadSelfPrivateKey(storedUser._id);
+      const userStr = localStorage.getItem('user');
+      if (userStr && userStr !== 'undefined') {
+        try {
+          const storedUser = JSON.parse(userStr);
+          setUser(storedUser);
+          if (storedUser?._id) keyManager.loadSelfPrivateKey(storedUser._id);
+        } catch (e) {
+          console.error('Failed to parse user from localStorage:', e);
+        }
+      }
     }
     setLoading(false);
   }, []);
