@@ -5,41 +5,51 @@ export const useNeumorphism = () => {
 
   const getShadow = (isLight, inset, size, blur) => {
     if (inset) {
-      const c = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.35)';
-      return `inset 0 0 0 1.5px ${c}`;
+      const c = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(0,0,0,0.25)';
+      return `inset 0 0 0 1px ${c}`;
     }
-    const c = isLight ? 'rgba(20,20,20,0.08)' : 'rgba(0,0,0,0.45)';
+    const c = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(0,0,0,0.28)';
     return `0 1px 2px ${c}`;
   };
 
-  const getNeumorphicProps = (baseSize, baseBlur, hoverSize, hoverBlur, isInsetBase = false, isInsetHover = true) => ({
+  const getNeumorphicProps = (baseSize, baseBlur, hoverSize, hoverBlur, isActive = false, isInsetHover = true) => ({
     style: {
-      backgroundColor: theme.background,
-      boxShadow: getShadow(theme.isLight, isInsetBase, baseSize, baseBlur),
-      border: `1px solid ${theme.isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}`,
-      transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
+      backgroundColor: isActive
+        ? (theme.isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)')
+        : 'transparent',
+      boxShadow: 'none',
+      border: 'none',
+      borderRadius: '8px',
+      transition: 'background-color 0.12s ease, color 0.12s ease'
     },
     onMouseEnter: (e) => {
-      e.currentTarget.style.backgroundColor = theme.isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.04)';
+      if (!isActive) {
+        e.currentTarget.style.backgroundColor = theme.isLight ? 'rgba(0,0,0,0.025)' : 'rgba(255,255,255,0.03)';
+      }
     },
     onMouseLeave: (e) => {
-      e.currentTarget.style.backgroundColor = theme.background;
+      e.currentTarget.style.backgroundColor = isActive
+        ? (theme.isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)')
+        : 'transparent';
     }
   });
 
   const getInputProps = (baseSize, baseBlur, focusSize, focusBlur) => ({
     style: {
-      backgroundColor: theme.background,
+      backgroundColor: theme.isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
       color: theme.otherMessageText,
-      border: `1.5px solid ${theme.isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}`,
+      border: '1px solid transparent',
       boxShadow: 'none',
-      transition: 'border-color 0.15s ease'
+      borderRadius: '6px',
+      transition: 'background-color 0.12s ease, border-color 0.12s ease'
     },
     onFocus: (e) => {
-      e.target.style.borderColor = theme.myMessageBubble || '#16a34a';
+      e.target.style.backgroundColor = theme.background;
+      e.target.style.borderColor = theme.myMessageBubble || '#5865f2';
     },
     onBlur: (e) => {
-      e.target.style.borderColor = theme.isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+      e.target.style.backgroundColor = theme.isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)';
+      e.target.style.borderColor = 'transparent';
     }
   });
 

@@ -1,40 +1,66 @@
-import { memo } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { memo, useState } from 'react';
+import { ChevronDown, ChevronRight, AtSign } from 'lucide-react';
 import Spinner from '../../common/Spinner';
 import { useTheme } from '../../../contexts/ThemeContext';
 import PrivateChat from './PrivateChat';
 
 const PrivateChatList = memo(function PrivateChatList({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat, unreadCounts = {} }) {
   const { theme } = useTheme();
-  const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
+  const [collapsed, setCollapsed] = useState(false);
+  const headerColor = theme.isLight ? '#4e5058' : '#949ba4';
+
   return (
-    <div className="pt-4">
-      {privateChats.length > 0 && <div className="mb-4" style={{ borderColor: isLight ? '#cbd5e0' : '#4a5568' }} />}
-      <div className="flex items-center gap-2 font-bold text-xs md:text-sm mb-3 px-2" style={{ color: theme.otherUsernameColor }}>
-        <MessageCircle className="w-3 h-3 md:w-4 md:h-4" /> Private Chats
-      </div>
-      <div className="space-y-2 md:space-y-3">
-        {loadingPrivateChats ? (
-          <div className="p-4 md:p-8 flex justify-center">
-            <Spinner />
-          </div>
-        ) : (
-          privateChats.map((chat) => {
-            const chatUserId = chat.otherUser.id || chat.otherUser._id;
-            const unread = unreadCounts[`private_${chatUserId}`] || 0;
-            return (
-              <PrivateChat
-                key={chatUserId}
-                chat={chat}
-                currentPrivateChat={currentPrivateChat}
-                handleStartPrivateChat={handleStartPrivateChat}
-                handleDeletePrivateChat={handleDeletePrivateChat}
-                unread={unread}
-              />
-            );
-          })
-        )}
-      </div>
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center gap-0.5 px-2 py-1 group transition-colors"
+        style={{ color: headerColor }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = theme.isLight ? '#060607' : '#f2f3f5'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = headerColor; }}
+      >
+        {collapsed
+          ? <ChevronRight className="w-3 h-3 flex-shrink-0" strokeWidth={2.5} />
+          : <ChevronDown className="w-3 h-3 flex-shrink-0" strokeWidth={2.5} />
+        }
+        <span className="text-[12px] font-bold uppercase tracking-wide leading-tight truncate">
+          Direct Messages
+        </span>
+        <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+          <AtSign className="w-3 h-3" strokeWidth={2} />
+        </span>
+      </button>
+      {!collapsed && (
+        <div className="mt-0.5">
+          {loadingPrivateChats ? (
+            <div className="p-4 flex justify-center">
+              <Spinner />
+            </div>
+          ) : privateChats.length === 0 ? (
+            <p
+              className="text-[13px] px-3 py-1.5 leading-tight"
+              style={{ color: theme.isLight ? '#7d8088' : '#6d727c' }}
+            >
+              No conversations yet
+            </p>
+          ) : (
+            privateChats.map((chat) => {
+              const chatUserId = chat.otherUser.id || chat.otherUser._id;
+              const unread = unreadCounts[`private_${chatUserId}`] || 0;
+              return (
+                <PrivateChat
+                  key={chatUserId}
+                  chat={chat}
+                  currentPrivateChat={currentPrivateChat}
+                  handleStartPrivateChat={handleStartPrivateChat}
+                  handleDeletePrivateChat={handleDeletePrivateChat}
+                  unread={unread}
+                />
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 });

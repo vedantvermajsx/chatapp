@@ -407,5 +407,44 @@ export const THEMES = [
     otherMessageText: '#00838f',
     otherUsernameColor: '#00acc1',
     isLight: true
+  },
+  {
+    id: 'discord-dark',
+    name: 'Discord Dark',
+    background: '#313338',
+    myMessageBubble: '#5865f2',
+    myMessageText: '#ffffff',
+    myUsernameColor: '#ffffff',
+    otherMessageBubble: '#2b2d31',
+    otherMessageText: '#dbdee1',
+    otherUsernameColor: '#f2f3f5',
+    sidebarBg: '#2b2d31',
+    isLight: false
+  },
+  {
+    id: 'discord-midnight',
+    name: 'Discord Midnight',
+    background: '#2b2d31',
+    myMessageBubble: '#5865f2',
+    myMessageText: '#ffffff',
+    myUsernameColor: '#ffffff',
+    otherMessageBubble: '#313338',
+    otherMessageText: '#dbdee1',
+    otherUsernameColor: '#f2f3f5',
+    sidebarBg: '#1e1f22',
+    isLight: false
+  },
+  {
+    id: 'discord-light',
+    name: 'Discord Light',
+    background: '#f2f3f5',
+    myMessageBubble: '#5865f2',
+    myMessageText: '#ffffff',
+    myUsernameColor: '#ffffff',
+    otherMessageBubble: '#e3e5e8',
+    otherMessageText: '#313338',
+    otherUsernameColor: '#060607',
+    sidebarBg: '#e3e5e8',
+    isLight: true
   }
 ];

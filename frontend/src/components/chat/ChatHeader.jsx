@@ -67,121 +67,159 @@ const ChatHeader = memo(function ChatHeader({
     }
   };
 
+  const borderColor = theme.isLight ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.4)';
+  const headerText = theme.isLight ? '#060607' : '#f2f3f5';
+  const subText = theme.isLight ? '#4e5058' : '#949ba4';
+  const iconColor = theme.isLight ? '#4e5058' : '#b5bac1';
+  const iconHoverBg = theme.isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+
+  const iconBtn = (extraClass = '') => ({
+    className: `p-1.5 rounded-md transition-colors flex items-center justify-center ${extraClass}`,
+    style: { color: iconColor },
+    onMouseEnter: (e) => { e.currentTarget.style.backgroundColor = iconHoverBg; },
+    onMouseLeave: (e) => { e.currentTarget.style.backgroundColor = 'transparent'; },
+  });
+
   return (
-    <div className="p-4 sm:p-6 border-b flex items-center" style={{
-      backgroundColor: theme.background,
-      borderColor: theme.isLight ? '#cbd5e0' : '#4a5568'
-    }}>
+    <div
+      className="px-4 py-2 border-b flex items-center flex-shrink-0"
+      style={{
+        backgroundColor: theme.background,
+        borderColor,
+        minHeight: '48px',
+      }}
+    >
       <button
         onClick={onToggleSidebar}
-        className="relative p-3 mr-3 rounded-full transition-all flex-shrink-0 z-30 md:hidden"
-        {...getNeumorphicProps(1, 1, 1, 2)}
+        className="relative p-1.5 mr-2 rounded-md transition-colors flex-shrink-0 md:hidden flex items-center justify-center"
+        style={{ color: iconColor }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = iconHoverBg; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
         aria-label="Back to chats"
       >
-        <ArrowLeft className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+        <ArrowLeft className="w-5 h-5" />
         {hiddenUnreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[1.2rem] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+          <span
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold"
+            style={{ backgroundColor: '#f23f43', color: '#fff' }}
+          >
             {hiddenUnreadCount > 99 ? '99+' : hiddenUnreadCount}
           </span>
         )}
       </button>
 
-      <div className="flex-1 flex items-center justify-between min-w-0">
+      <div className="flex-1 flex items-center justify-between min-w-0 gap-2">
         {currentRoom ? (
           <>
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="flex-shrink-0">
-                <Avatar url={currentRoom.groupPic} name={currentRoom.groupName} size={10} mdSize={12} isGroup />
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div
+                className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: theme.isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)' }}
+              >
+                <span style={{ color: subText }} className="text-[13px] font-bold">#</span>
               </div>
               <div className="min-w-0">
-                <h2 className="text-base sm:text-lg font-bold truncate" style={{ color: theme.otherMessageText }}>{currentRoom.groupName}</h2>
-                <p className="hidden sm:block text-xs sm:text-sm truncate" style={{ color: theme.otherUsernameColor, opacity: 0.8 }}>{currentRoom.groupDescription}</p>
+                <h2 className="text-[16px] font-semibold truncate leading-tight" style={{ color: headerText }}>
+                  {currentRoom.groupName}
+                </h2>
+                {currentRoom.groupDescription && (
+                  <p className="hidden sm:block text-[14px] truncate leading-tight" style={{ color: subText }}>
+                    {currentRoom.groupDescription}
+                  </p>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-2">
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <button
+                onClick={() => { loadRoomMembers(); setShowMembersModal(true); }}
+                {...iconBtn()}
+                title="Room Members"
+              >
+                <Users className="w-5 h-5" />
+              </button>
               {isRoomAdmin && (
                 <button
                   onClick={() => setShowGroupSettings(true)}
-                  className="p-2 sm:p-3 rounded-full transition-all"
-                  {...getNeumorphicProps(1, 2, 2, 3)}
+                  {...iconBtn()}
                   title="Group Settings"
                 >
-                  <Settings className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: theme.otherUsernameColor }} />
+                  <Settings className="w-5 h-5" />
                 </button>
               )}
-              <button
-                onClick={() => { loadRoomMembers(); setShowMembersModal(true); }}
-                className="p-2 sm:p-3 rounded-full transition-all"
-                {...getNeumorphicProps(1, 2, 2, 3)}
-                title="Room Members"
-              >
-                <Users className="w-5 h-5" style={{ color: theme.otherUsernameColor }} />
-              </button>
-
+              <div className="w-px h-5 mx-1" style={{ backgroundColor: borderColor }} />
               <button
                 onClick={(isRoomAdmin && !currentRoom?.isDeleted) ? handleDeleteRoom : handleLeaveRoom}
                 disabled={leaveRoomMutation.isPending || deleteRoomMutation.isPending}
-                className="px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-full transition-all text-red-500 hover:text-red-600 disabled:opacity-50 flex items-center justify-center"
-                {...getNeumorphicProps(1, 1, 1, 1)}
+                className="px-2 py-1 rounded-md transition-colors text-[13px] font-semibold disabled:opacity-50 flex items-center gap-1"
+                style={{ color: '#f23f43' }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = theme.isLight ? 'rgba(242,63,67,0.10)' : 'rgba(242,63,67,0.16)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                 title={(isRoomAdmin && !currentRoom?.isDeleted) ? 'Delete room' : 'Leave room'}
               >
                 {isRoomAdmin && !currentRoom?.isDeleted ? (
                   <>
-                    <Trash2 className="w-4 h-4 sm:hidden" />
-                    <span className="hidden sm:inline text-xs font-medium">Delete room</span>
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Delete</span>
                   </>
                 ) : (
                   <>
-                    <LogOut className="w-4 h-4 sm:hidden" />
-                    <span className="hidden sm:inline text-xs font-medium">Leave room</span>
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden sm:inline">Leave</span>
                   </>
                 )}
               </button>
-
-
             </div>
-
           </>
         ) : currentPrivateChat ? (
           <>
-            <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div className="flex-shrink-0 relative">
-                <Avatar url={currentPrivateChat.avatar} name={currentPrivateChat.username} gender={currentPrivateChat.gender} size={10} mdSize={12} />
+                <Avatar url={currentPrivateChat.avatar} name={currentPrivateChat.username} gender={currentPrivateChat.gender} size={9} />
                 {currentPrivateChat.isOnline && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#16a34a] rounded-full border-2 border-white dark:border-gray-800"></span>
+                  <span
+                    className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2"
+                    style={{
+                      backgroundColor: '#23a559',
+                      borderColor: theme.background,
+                    }}
+                  />
                 )}
               </div>
               <div className="min-w-0">
-                <h2 className="text-base sm:text-lg font-bold truncate" style={{ color: theme.otherMessageText }}>{currentPrivateChat.username}</h2>
-                <p className="text-xs sm:text-sm" style={{ color: theme.otherUsernameColor, opacity: 0.8 }}>
+                <h2 className="text-[16px] font-semibold truncate leading-tight" style={{ color: headerText }}>
+                  {currentPrivateChat.username}
+                </h2>
+                <p className="text-[14px] leading-tight" style={{ color: subText }}>
                   {currentPrivateChat.isOnline ? 'Online' : formatLastSeen(currentPrivateChat.lastSeen)}
                 </p>
               </div>
             </div>
-            {currentPrivateChat.isOnline && (
-              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                <button
-                  onClick={() => startCall && startCall(currentPrivateChat.id, false, currentPrivateChat)}
-                  className="p-2 sm:p-3 rounded-full transition-all text-green-500 hover:text-green-600"
-                  {...getNeumorphicProps(1, 2, 2, 3)}
-                  title="Voice Call"
-                >
-                  <Phone className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-                <button
-                  onClick={() => startCall && startCall(currentPrivateChat.id, true, currentPrivateChat)}
-                  className="p-2 sm:p-3 rounded-full transition-all text-blue-500 hover:text-blue-600"
-                  {...getNeumorphicProps(1, 2, 2, 3)}
-                  title="Video Call"
-                >
-                  <Video className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              {currentPrivateChat.isOnline && (
+                <>
+                  <button
+                    onClick={() => startCall && startCall(currentPrivateChat.id, false, currentPrivateChat)}
+                    {...iconBtn()}
+                    title="Voice Call"
+                  >
+                    <Phone className="w-5 h-5" style={{ color: '#23a559' }} />
+                  </button>
+                  <button
+                    onClick={() => startCall && startCall(currentPrivateChat.id, true, currentPrivateChat)}
+                    {...iconBtn()}
+                    title="Video Call"
+                  >
+                    <Video className="w-5 h-5" style={{ color: '#5865f2' }} />
+                  </button>
+                </>
+              )}
+            </div>
           </>
         ) : (
-          <div className="flex items-center justify-center w-full h-10 sm:h-12">
-            <h2 className="text-sm sm:text-lg font-bold text-center" style={{ color: theme.otherUsernameColor, opacity: 0.7 }}>Select a room or start a private chat</h2>
+          <div className="flex items-center justify-center w-full">
+            <h2 className="text-[14px] font-medium" style={{ color: subText }}>
+              No conversation selected
+            </h2>
           </div>
         )}
       </div>

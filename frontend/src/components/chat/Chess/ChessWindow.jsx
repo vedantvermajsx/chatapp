@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Minus, X, Maximize2, Crown } from 'lucide-react';
+import { Minus, X, Maximize2, Minimize2, Crown } from 'lucide-react';
 
 const BASE_URL = (import.meta.env.VITE_LOAD_BALENCER_URL || '').replace(/\/+$/, '');
 const WIN_W = 400;
@@ -8,11 +8,9 @@ const EDGE = 12;
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
-// Floating, draggable chess window (like the call window).
-// - Minimize keeps the iframe mounted (hidden) so the game/clock keep running.
-// - Close unmounts it; the server gives a 60s grace period to come back.
 const ChessWindow = ({ username, joinCode, onClose, onGameCreated, onActiveChange }) => {
   const [minimized, setMinimized] = useState(false);
+  const [fullscreen, setFullscreen] = useState(true);
   const [height, setHeight] = useState(620);
   const [gameActive, setGameActive] = useState(false);
   const [waiting, setWaiting] = useState(false);
@@ -33,7 +31,7 @@ const ChessWindow = ({ username, joinCode, onClose, onGameCreated, onActiveChang
   const width = () => Math.min(WIN_W, window.innerWidth - EDGE * 2);
 
   const applyPos = useCallback(() => {
-    if (!elRef.current) return;
+    if (!elRef.current || fullscreen) return;
     const w = elRef.current.offsetWidth || width();
     const h = elRef.current.offsetHeight || 48;
     posRef.current = {
@@ -41,13 +39,14 @@ const ChessWindow = ({ username, joinCode, onClose, onGameCreated, onActiveChang
       y: clamp(posRef.current.y, EDGE, Math.max(EDGE, window.innerHeight - h - EDGE)),
     };
     elRef.current.style.transform = `translate(${posRef.current.x}px, ${posRef.current.y}px)`;
-  }, []);
+  }, [fullscreen]);
 
   useEffect(() => {
+    if (fullscreen) return;
     applyPos();
     window.addEventListener('resize', applyPos);
     return () => window.removeEventListener('resize', applyPos);
-  }, [applyPos, minimized, height]);
+  }, [applyPos, minimized, height, fullscreen]);
 
   // Messages from the chess iframe (see games/chess/public/app.js notifyParent)
   useEffect(() => {
@@ -89,6 +88,7 @@ const ChessWindow = ({ username, joinCode, onClose, onGameCreated, onActiveChang
   useEffect(() => { onActiveRef.current?.(gameActive || waiting); }, [gameActive, waiting]);
 
   const onPointerDown = (e) => {
+    if (fullscreen) return;
     if (e.isPrimary === false || e.target.closest('button')) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragRef.current = {
@@ -111,11 +111,66 @@ const ChessWindow = ({ username, joinCode, onClose, onGameCreated, onActiveChang
     onClose();
   };
 
+  const toggleFullscreen = () => {
+    setFullscreen((f) => !f);
+    setMinimized(false);
+  };
+
   const src =
     `${BASE_URL}/start-chess?embed=1` +
     (username ? `&name=${encodeURIComponent(username)}` : '') +
     (joinCode ? `&join=${encodeURIComponent(joinCode)}` : '');
 
+  // Fullscreen mode: cover the entire viewport
+  if (fullscreen) {
+    return (
+      <div
+        ref={elRef}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 110,
+        }}
+        className="bg-gray-950 flex flex-col"
+      >
+        <div
+          style={{ userSelect: 'none' }}
+          className="h-11 shrink-0 bg-gray-900 border-b border-white/5 flex items-center justify-between px-3"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <Crown className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-white text-sm font-medium truncate">{status}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={toggleFullscreen}
+              aria-label="Exit fullscreen"
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleClose}
+              aria-label="Close chess"
+              className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <iframe
+          ref={iframeRef}
+          src={src}
+          title="Chess"
+          allow="clipboard-write; fullscreen"
+          style={{ width: '100%', flex: 1, border: 0, display: 'block' }}
+        />
+      </div>
+    );
+  }
+
+  // Floating windowed mode
   return (
     <div
       ref={elRef}
@@ -139,9 +194,15 @@ const ChessWindow = ({ username, joinCode, onClose, onGameCreated, onActiveChang
         <div className="flex items-center gap-2 min-w-0">
           <Crown className="w-4 h-4 text-amber-400 shrink-0" />
           <span className="text-white text-sm font-medium truncate">{status}</span>
-          {gameActive && <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" />}
         </div>
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={toggleFullscreen}
+            aria-label="Fullscreen chess"
+            className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={() => setMinimized((m) => !m)}
             aria-label={minimized ? 'Restore chess' : 'Minimize chess'}

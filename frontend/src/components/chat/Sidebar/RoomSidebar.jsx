@@ -160,10 +160,7 @@ function RoomSidebar({
   const myChatsUnread = Object.entries(unreadCounts).reduce((sum, [, v]) => sum + v, 0);
 
   const renderTabBar = () => (
-    <div
-      className="flex flex-shrink-0"
-      style={{ borderBottom: `1px solid ${border}` }}
-    >
+    <div className="flex flex-shrink-0 px-2 py-1 gap-0.5">
       {TABS.map((tab) => {
         const isActive = activeTab === tab;
         const badge = tab === "Chats" && myChatsUnread > 0 ? myChatsUnread : 0;
@@ -174,22 +171,36 @@ function RoomSidebar({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setActiveTab(tab)}
-            className="relative flex-1 py-2.5 text-xs font-semibold transition-colors"
+            className="relative flex-1 py-1.5 px-2 rounded-md text-[15px] font-semibold transition-colors leading-tight"
             style={{
-              color: isActive ? accent : theme.otherMessageText,
-              opacity: isActive ? 1 : 0.8,
-              borderBottom: isActive
-                ? `2px solid ${accent}`
-                : "transparent",
-              backgroundColor: "transparent",
+              color: isActive
+                ? (theme.isLight ? '#060607' : '#f2f3f5')
+                : (theme.isLight ? '#4e5058' : '#949ba4'),
+              backgroundColor: isActive
+                ? (theme.isLight ? 'rgba(78,80,88,0.16)' : 'rgba(79,84,92,0.32)')
+                : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = theme.isLight
+                  ? 'rgba(78,80,88,0.10)'
+                  : 'rgba(79,84,92,0.24)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = isActive
+                ? (theme.isLight ? 'rgba(78,80,88,0.16)' : 'rgba(79,84,92,0.32)')
+                : 'transparent';
             }}
           >
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center gap-1.5 w-full">
               {tab}
-
               {badge > 0 && (
-                <span className="min-w-[1rem] h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center px-1">
-                  {badge > 99 ? "99+" : badge}
+                <span
+                  className="flex-shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold"
+                  style={{ backgroundColor: '#f23f43', color: '#ffffff' }}
+                >
+                  {badge > 99 ? '99+' : badge}
                 </span>
               )}
             </span>
@@ -255,14 +266,19 @@ function RoomSidebar({
     </div>
   );
 
+  const sidebarBg = theme.sidebarBg || theme.background;
+
   const renderSidebarContent = (showMobileClose) => (
-    <div className="flex flex-col h-full overflow-hidden py-2" style={{ backgroundColor: theme.background }}>
+    <div
+      className="flex flex-col h-full overflow-hidden"
+      style={{ backgroundColor: sidebarBg }}
+    >
       <SidebarHeader showMobileClose={showMobileClose} onCloseSidebar={onCloseSidebar} />
 
       <SidebarSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
       {renderTabBar()}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 md:px-4 py-3">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-0.5 py-1">
         <div style={{ display: activeTab === 'Chats' ? 'block' : 'none' }}>
           {renderMyChats()}
         </div>
@@ -279,31 +295,45 @@ function RoomSidebar({
         </div>
       </div>
 
-      { }
       {activeTab === 'Chats' && user.role !== 'guest' && (
-        <div className="px-3  py-3 flex-shrink-0" style={{ borderTop: `1px solid ${border}` }}>
+        <div
+          className="mx-2 my-1 flex-shrink-0"
+          style={{ borderTop: `1px solid ${theme.isLight ? 'rgba(0,0,0,0.06)' : 'rgba(0,0,0,0.28)'}` }}
+        >
           <button
             onClick={() => setShowCreateForm(f => !f)}
-            className="w-full py-3 rounded-2xl flex items-center gap-3 px-4"
-            {...getNeumorphicProps(1, 1, 1, 1)}
-            style={{ ...getNeumorphicProps(1, 1, 1, 1).style }}
+            className="w-full mt-2 py-1.5 px-2 rounded-md flex items-center gap-2 transition-colors"
+            style={{
+              backgroundColor: 'transparent',
+              color: theme.isLight ? '#4e5058' : '#949ba4',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = theme.isLight
+                ? 'rgba(78,80,88,0.10)'
+                : 'rgba(79,84,92,0.24)';
+              e.currentTarget.style.color = theme.isLight ? '#060607' : '#f2f3f5';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = theme.isLight ? '#4e5058' : '#949ba4';
+            }}
           >
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: `${accent}18` }}
+              className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: theme.myMessageBubble || '#5865f2' }}
             >
-              <Plus className="w-3.5 h-3.5" style={{ color: accent }} />
+              <Plus className="w-3 h-3 text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-xs font-semibold" style={{ color: theme.otherMessageText }}>
-              New Room
+            <span className="text-[15px] font-semibold leading-tight">
+              Create Room
             </span>
             {showCreateForm
-              ? <ChevronUp className="w-3.5 h-3.5 ml-auto" style={{ color: theme.otherUsernameColor }} />
-              : <ChevronDown className="w-3.5 h-3.5 ml-auto" style={{ color: theme.otherUsernameColor }} />
+              ? <ChevronUp className="w-4 h-4 ml-auto" />
+              : <ChevronDown className="w-4 h-4 ml-auto" />
             }
           </button>
           {showCreateForm && (
-            <div className="mt-3">
+            <div className="mt-2 px-2">
               <CreateRoomForm
                 newRoomName={newRoomName}
                 setNewRoomName={setNewRoomName}

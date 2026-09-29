@@ -638,7 +638,7 @@ const ChatInput = memo(forwardRef(({
               style={{ backgroundColor: theme.myMessageBubble }}
               disabled={disabled}
             >
-              <Send className="w-6 h-6 mr-1 mt-1" style={{ color: theme.myMessageText }} />
+              <Send className="w-6 h-6" style={{ color: theme.myMessageText }} />
             </button>
           )}
         </div>

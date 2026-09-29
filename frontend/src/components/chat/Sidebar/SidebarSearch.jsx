@@ -1,32 +1,42 @@
 import { Search, X } from 'lucide-react';
-import { useNeumorphism } from '../../../hooks/useNeumorphism';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const SidebarSearch = ({ searchQuery, setSearchQuery }) => {
-  const { theme, getInputProps } = useNeumorphism();
-  const border = theme.isLight ? '#cbd5e0' : '#4a5568';
+  const { theme } = useTheme();
+  const searchBg = theme.isLight ? '#e3e5e8' : '#1e1f22';
 
   return (
-    <div className="px-4 md:px-5 py-3 flex-shrink-0" style={{ borderColor: border }}>
+    <div className="px-2 py-2 flex-shrink-0">
       <div className="relative flex items-center">
         <Search
-          className="absolute left-4 w-3.5 h-3.5 pointer-events-none"
-          style={{ color: theme.otherUsernameColor, opacity: 0.6 }}
+          className="absolute left-3 w-3.5 h-3.5 pointer-events-none"
+          style={{ color: theme.isLight ? '#4e5058' : '#949ba4' }}
         />
         <input
           type="text"
-          placeholder="Search..."
+          placeholder="Find or start a conversation"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-8 py-2.5 rounded-xl border-none text-sm transition-all"
-          {...getInputProps(1, 3, 2, 2)}
-          style={{ ...getInputProps(1, 3, 2, 2).style, color: theme.otherMessageText }}
+          className="w-full pl-9 pr-8 py-[6px] rounded-md border-none text-[14px] transition-all leading-5"
+          style={{
+            backgroundColor: searchBg,
+            color: theme.isLight ? '#313338' : '#dbdee1',
+            outline: 'none',
+          }}
+          onFocus={(e) => {
+            e.target.style.backgroundColor = theme.background;
+          }}
+          onBlur={(e) => {
+            e.target.style.backgroundColor = searchBg;
+          }}
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 opacity-50 hover:opacity-100 transition-opacity"
+            className="absolute right-2.5 p-0.5 rounded transition-opacity"
+            style={{ color: theme.isLight ? '#4e5058' : '#949ba4' }}
           >
-            <X className="w-3.5 h-3.5" style={{ color: theme.otherUsernameColor }} />
+            <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

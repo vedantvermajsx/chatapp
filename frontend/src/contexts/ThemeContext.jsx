@@ -10,16 +10,18 @@ export const ThemeProvider = ({ children }) => {
       try {
         const parsedTheme = JSON.parse(savedTheme);
         const existingTheme = THEMES.find(t => t.id === parsedTheme.id);
-        return existingTheme || THEMES[0];
+        return existingTheme || THEMES.find(t => t.id === 'discord-midnight') || THEMES[0];
       } catch {
-        return THEMES[0];
+        return THEMES.find(t => t.id === 'discord-midnight') || THEMES[0];
       }
     }
-    return THEMES[0];
+    return THEMES.find(t => t.id === 'discord-midnight') || THEMES[0];
   });
 
   useEffect(() => {
     localStorage.setItem('chatTheme', JSON.stringify(theme));
+    document.body.style.backgroundColor = theme.background;
+    document.body.style.color = theme.isLight ? '#000000' : '#ffffff';
   }, [theme]);
 
   const value = useMemo(() => ({ theme, setTheme, THEMES }), [theme]);

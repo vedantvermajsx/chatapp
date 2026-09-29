@@ -20,13 +20,12 @@ const SystemMessage = ({ msg, isPrivateChat = false }) => {
     const Icon = msg.systemType ? SYSTEM_ICONS[msg.systemType] : null;
 
     return (
-        <div className="flex flex-col items-center my-6">
+        <div className="flex flex-col items-center my-4">
             <span
-                className="text-xs px-6 py-3 rounded-2xl font-semibold flex items-center gap-2"
+                className="text-[12px] px-3 py-1.5 rounded-full font-medium flex items-center gap-2 transition-colors"
                 style={{
-                    border: `px solid ${theme.otherMessageBubble}`,
-                    color: theme.otherMessageText,
-                    boxShadow: getShadow(theme.isLight, true, 0.5, 1)
+                    backgroundColor: theme.isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+                    color: theme.isLight ? '#4e5058' : '#949ba4',
                 }}
             >
                 {Icon && <Icon className="w-3.5 h-3.5 flex-shrink-0" />}

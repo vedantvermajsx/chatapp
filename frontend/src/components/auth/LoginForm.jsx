@@ -44,7 +44,7 @@ function LoginForm({ setCurrForm }) {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="login-username">Username</Label>
           <div className="relative">
-            <User className="absolute left-3.5 top-1/2  w-[15px] h-[15px] text-muted-foreground" />
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
             <Input
               id="login-username"
               name="username"
@@ -62,7 +62,7 @@ function LoginForm({ setCurrForm }) {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="login-password">Password</Label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2  w-[15px] h-[15px] text-muted-foreground" />
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
             <Input
               id="login-password"
               name="password"
@@ -79,7 +79,7 @@ function LoginForm({ setCurrForm }) {
               onClick={() => setShowPassword((v) => !v)}
               tabIndex={-1}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-3.5 top-1/2  text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               {showPassword ? <EyeOff className="w-[15px] h-[15px]" /> : <Eye className="w-[15px] h-[15px]" />}
             </button>
