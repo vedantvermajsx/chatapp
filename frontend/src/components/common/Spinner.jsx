@@ -1,15 +1,11 @@
-export default function Spinner({ size = 'md' }) {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12',
-  };
+import Loader from './Loader';
 
+const SIZES = { sm: 'w-4 h-4', md: 'w-7 h-7', lg: 'w-10 h-10' };
+
+export default function Spinner({ size = 'md', variant = 'ring' }) {
   return (
-    <div className="flex items-center justify-center">
-      <div
-        className={`${sizeClasses[size]} border-4 border-gray-300 border-t-gray-800 rounded-full animate-spin`}
-      />
+    <div className="flex items-center justify-center opacity-70">
+      <Loader variant={variant} className={SIZES[size] || SIZES.md} />
     </div>
   );
 }

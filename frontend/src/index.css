@@ -151,6 +151,19 @@ body,
     outline: none;
 }
 
+*:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.msg-row:hover,
+.msg-row:focus-within { background-color: var(--msg-hover); }
+.msg-row:hover .msg-tools,
+.msg-row:focus-within .msg-tools,
+.msg-row:hover .msg-gutter-time,
+.msg-row:focus-within .msg-gutter-time { opacity: 1; }
+
 .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(128, 128, 128, 0.45)) transparent;
@@ -270,3 +283,65 @@ body,
         animation: none;
     }
 }
+
+/* ================= Mini loaders (transform/opacity only) ================= */
+@layer components {
+  .ld { display: inline-flex; align-items: center; justify-content: center; width: 1em; height: 1em; flex-shrink: 0; vertical-align: middle; }
+  .ld-ring svg { width: 100%; height: 100%; animation: ld-spin 0.75s linear infinite; }
+  .ld-dots { gap: 0.22em; }
+  .ld-dots i { width: 0.3em; height: 0.3em; min-width: 4px; min-height: 4px; border-radius: 9999px; background: currentColor; animation: ld-dot 0.9s ease-in-out infinite; }
+  .ld-dots i:nth-child(2) { animation-delay: 0.12s; }
+  .ld-dots i:nth-child(3) { animation-delay: 0.24s; }
+  .ld-bars { gap: 12%; align-items: center; }
+  .ld-bars i { width: 16%; height: 70%; border-radius: 9999px; background: currentColor; transform-origin: center; animation: ld-bar 0.9s ease-in-out infinite; }
+  .ld-bars i:nth-child(2) { animation-delay: 0.12s; }
+  .ld-bars i:nth-child(3) { animation-delay: 0.24s; }
+}
+@keyframes ld-spin { to { transform: rotate(360deg); } }
+@keyframes ld-dot { 0%, 80%, 100% { transform: scale(0.55); opacity: 0.35; } 40% { transform: scale(1); opacity: 1; } }
+@keyframes ld-bar { 0%, 100% { transform: scaleY(0.4); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } }
+
+/* Keep tiny in-place loaders alive under reduced motion (essential "working" feedback) */
+@media (prefers-reduced-motion: reduce) {
+  .ld-ring svg { animation-duration: 1.2s !important; animation-iteration-count: infinite !important; }
+  .ld-dots i, .ld-bars i { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
+}
+
+/* ================= Liquid glass (Plasma-style), perf-first =================
+   Rules to stay fast:
+   - backdrop-filter ONLY on .glass (header) and .glass-strong (transient overlays). Never nested.
+   - .glass-lite = translucent + highlight, NO blur (use for lists, inputs, buttons).
+   - Static gradients only. No animated filters/blur. contain: paint keeps repaints local.
+   Vars (--g-*) are set once per theme change in ThemeContext. */
+:root {
+  --g-bg: #1e1f22; --g-fg: #fff; --g-accent: #5865f2;
+  --g-line: rgba(255,255,255,0.09); --g-hi: rgba(255,255,255,0.10); --g-shadow: rgba(0,0,0,0.30);
+}
+@layer components {
+  .glass, .glass-strong, .glass-lite {
+    background-color: color-mix(in srgb, var(--g-bg) 70%, transparent);
+    background-image: linear-gradient(180deg, var(--g-hi), transparent 60%);
+    border: 1px solid var(--g-line);
+    box-shadow: inset 0 1px 0 var(--g-hi), 0 6px 20px -8px var(--g-shadow);
+    contain: paint;
+  }
+  .glass { backdrop-filter: blur(14px) saturate(1.5); -webkit-backdrop-filter: blur(14px) saturate(1.5); border-width: 0 0 1px 0; box-shadow: inset 0 -1px 0 var(--g-line); }
+  .glass-strong { background-color: color-mix(in srgb, var(--g-bg) 82%, transparent); backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6); box-shadow: inset 0 1px 0 var(--g-hi), 0 24px 60px -12px var(--g-shadow); }
+  .glass-lite { background-color: color-mix(in srgb, var(--g-fg) 6%, transparent); box-shadow: inset 0 1px 0 var(--g-hi); contain: none; transition: background-color .15s ease, border-color .15s ease; }
+  .glass-lite:hover { background-color: color-mix(in srgb, var(--g-fg) 10%, transparent); }
+  .glass-lite:focus-within { border-color: var(--g-accent); }
+  .ambient { background-image: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--g-accent) 10%, transparent), transparent 70%); }
+}
+@media (max-width: 767px) {
+  .glass { backdrop-filter: blur(8px) saturate(1.3); -webkit-backdrop-filter: blur(8px) saturate(1.3); }
+  .glass-strong { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .glass-strong { background-color: color-mix(in srgb, var(--g-bg) 96%, transparent); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .glass-strong { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: var(--g-bg); background-image: none; }
+}
+
+@keyframes pop-in { from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: none; } }
+.pop-in { animation: pop-in 0.16s cubic-bezier(0.16, 1, 0.3, 1) backwards; }

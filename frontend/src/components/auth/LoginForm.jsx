@@ -1,4 +1,4 @@
-import { Lock, LogIn, User, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, LogIn, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -86,12 +86,8 @@ function LoginForm({ setCurrForm }) {
           </div>
         </div>
 
-        <Button type="submit" disabled={isLoading} className="w-full mt-1">
-          {isLoading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
-          ) : (
-            <><LogIn className="w-4 h-4" /> Sign in</>
-          )}
+        <Button type="submit" loading={isLoading} className="w-full mt-1">
+          <LogIn className="w-4 h-4" /> Sign in
         </Button>
       </form>
 

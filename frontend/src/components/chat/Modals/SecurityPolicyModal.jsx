@@ -35,8 +35,9 @@ const SecurityPolicyModal = ({ onClose }) => {
     <div className="fixed inset-0 z-[60] flex items-center justify-center w-full ">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div
-        className="relative rounded-3xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
-        style={{ backgroundColor: theme.background }}
+        role="dialog"
+        aria-modal="true"
+        className="glass-strong pop-in relative rounded-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: border }}>
           <h2 className="text-base font-bold" style={{ color: theme.otherMessageText }}>Security &amp; Policy</h2>

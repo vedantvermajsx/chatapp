@@ -1,4 +1,5 @@
-import { X, Loader2, Mic } from 'lucide-react';
+import { X, Mic } from 'lucide-react';
+import LoaderMini from '../../common/Loader';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
 export default function ChatMediaPreview({ selectedFile, isProcessingMedia, onRemoveFile, theme }) {
@@ -14,7 +15,7 @@ export default function ChatMediaPreview({ selectedFile, isProcessingMedia, onRe
       {isProcessingMedia ? (
         <>
           <div className="w-16 h-16 rounded-lg flex items-center justify-center" style={{ backgroundColor: theme.otherMessageBubble }}>
-            <Loader2 className="w-8 h-8 animate-spin" style={{ color: theme.otherMessageText }} />
+            <LoaderMini className="w-8 h-8 animate-spin" style={{ color: theme.otherMessageText }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold" style={{ color: theme.otherMessageText }}>Processing media...</p>

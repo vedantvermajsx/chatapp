@@ -9,7 +9,12 @@ const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unread = 0 
 
     return (
         <div
+            role="button"
+            tabIndex={0}
+            aria-current={isActive ? 'true' : undefined}
+            aria-label={`${room.groupName}${unread > 0 ? `, ${unread} unread` : ''}${room.isDeleted ? ', deleted' : ''}`}
             onClick={() => handleJoinRoom(room._id, room)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleJoinRoom(room._id, room); } }}
             className={`group relative mx-1 my-0.5 cursor-pointer transition-all`}
             style={room.isDeleted ? { opacity: 0.45 } : undefined}
         >

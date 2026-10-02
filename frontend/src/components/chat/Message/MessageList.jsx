@@ -148,7 +148,7 @@ const MessageList = ({
       className="h-full overflow-y-auto hide-scrollbar"
       style={{
         backgroundColor: theme.background,
-        padding: `${topPadding + 16}px 16px 16px`,
+        padding: `${topPadding + 8}px 0 8px`,
         overflowAnchor: 'none',
         '--scrollbar-thumb': theme.isLight ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.22)',
         '--scrollbar-thumb-hover': theme.isLight ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)',
@@ -165,8 +165,14 @@ const MessageList = ({
           <Spinner />
         </div>
       ) : (
-        <div className="space-y-4">
-          {messages.map((msg, idx) => (
+        <div role="log" aria-live="polite" aria-label="Messages">
+          {messages.map((msg, idx) => {
+            const prev = messages[idx - 1];
+            const grouped = !!prev && !prev.isSystemMessage && !msg.isSystemMessage
+              && prev.username === msg.username && !!prev.isOwn === !!msg.isOwn
+              && !msg.replyTo && !prev.media?.type?.includes('sticker') && msg.media?.type !== 'sticker'
+              && (new Date(msg.timestamp) - new Date(prev.timestamp)) < 5 * 60 * 1000;
+            return (
             <div
               key={msg.id || msg._id || idx}
               data-msg-id={msg.id || msg._id}
@@ -178,7 +184,7 @@ const MessageList = ({
               className={idx === messages.length - 1 ? 'animate-bubble-in' : ''}
             >
               {msg?.isSystemMessage ? <SystemMessage msg={msg} isPrivateChat={isPrivateChat} /> :
-                <SwipeToReply disabled={msg.isPending} isOwn={msg.isOwn} onReply={() => onReplyClick?.(msg)}>
+                <SwipeToReply disabled={msg.isPending} isOwn={false} onReply={() => onReplyClick?.(msg)}>
                   <Message
                     msg={msg}
                     isOwn={msg.isOwn}
@@ -186,6 +192,7 @@ const MessageList = ({
                     gender={msg.gender}
                     isPrivateChat={isPrivateChat}
                     progress={msg.uploadProgress}
+                    grouped={grouped}
                     isTagged={msg.taggedUser && currentUser && (msg.taggedUser === currentUser._id || msg.taggedUser === currentUser.id)}
                     onReplyClick={onReplyClick}
                     onReplyQuoteClick={onReplyQuoteClick}
@@ -193,7 +200,8 @@ const MessageList = ({
                 </SwipeToReply>
               }
             </div>
-          ))}
+            );
+          })}
 
           {typingIndicator?.active && (
             <TypingIndicator

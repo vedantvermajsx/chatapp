@@ -1,4 +1,5 @@
-import { X, Users, Search, Loader2 } from 'lucide-react';
+import { X, Users, Search } from 'lucide-react';
+import LoaderMini from '../../common/Loader';
 import Member from './Member';
 import MemberSkeleton from './MemberSkeleton';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -43,13 +44,12 @@ const MembersPanel = memo(function MembersPanel({
 
   return (
     <div id={admin + 'panel'} className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
       <div
-        className="absolute right-0 top-0 h-full w-4/5 sm:w-72 md:w-80 overflow-hidden flex flex-col"
-        style={{
-          backgroundColor: theme.background,
-          borderLeft: `1px solid ${isLight ? '#cbd5e0' : '#4a5568'}`
-        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Room members"
+        className="glass-strong absolute right-0 top-0 h-full w-4/5 sm:w-72 md:w-80 overflow-hidden flex flex-col"
       >
         <div
           className="p-4 border-b flex flex-col gap-4"
@@ -58,7 +58,7 @@ const MembersPanel = memo(function MembersPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Users className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
-              <h2 className="text-xl font-bold" style={{ color: theme.otherMessageText }}>Room Members</h2>
+              <h2 className="text-xl font-bold" style={{ color: theme.otherMessageText }}>Members</h2>
             </div>
             <button
               onClick={onClose}
@@ -91,7 +91,7 @@ const MembersPanel = memo(function MembersPanel({
             <Search className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
             <input
               type="text"
-              placeholder="Search members..."
+              aria-label="Search members" placeholder="Search members"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-transparent border-none text-sm"
@@ -154,7 +154,7 @@ const MembersPanel = memo(function MembersPanel({
           )}
           {loading && members && members.length > 0 && (
             <div className="flex justify-center p-4">
-              <Loader2 className="w-5 h-5 animate-spin" style={{ color: theme.otherUsernameColor }} />
+              <LoaderMini className="w-5 h-5 animate-spin" style={{ color: theme.otherUsernameColor }} />
             </div>
           )}
         </div>

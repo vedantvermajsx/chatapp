@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Play, Loader2 } from 'lucide-react';
+import { Play } from 'lucide-react';
+import LoaderMini from '../../common/Loader';
 import AudioPlayer from './AudioPlayer';
 import ProgressLoader from './ProgressLoader';
 
@@ -28,7 +29,7 @@ function MediaContent({ msg, isOwn, theme }) {
         >
           {!mediaLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 md:w-8 md:h-8 animate-spin" style={{ color: theme.isLight ? '#9ca3af' : '#6b7280' }} />
+              <LoaderMini className="w-6 h-6 md:w-8 md:h-8 animate-spin" style={{ color: theme.isLight ? '#9ca3af' : '#6b7280' }} />
             </div>
           )}
           {isGif && !mediaLoaded && (
@@ -104,7 +105,7 @@ function MediaContent({ msg, isOwn, theme }) {
         >
           {!mediaLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 md:w-8 md:h-8 animate-spin" style={{ color: theme.isLight ? '#9ca3af' : '#6b7280' }} />
+              <LoaderMini className="w-6 h-6 md:w-8 md:h-8 animate-spin" style={{ color: theme.isLight ? '#9ca3af' : '#6b7280' }} />
             </div>
           )}
           {isGif && !mediaLoaded && (

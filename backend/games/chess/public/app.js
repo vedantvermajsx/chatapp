@@ -99,7 +99,6 @@ let selectedSquare = null;
 let legalTargets = [];
 let gameOver = false;
 let pendingPromotion = null;
-let dragCtx = null;
 let reconnectInterval = null;
 let oppReconnectInterval = null;
 
@@ -592,7 +591,6 @@ function applyDiff(newMap) {
     const pos = squareToPercentPos(occ.square, orientation);
     el.style.left = pos.left + '%';
     el.style.top = pos.top + '%';
-    attachDrag(el, occ.square);
     board.appendChild(el);
     nextPieceMap[occ.square] = el;
   });
@@ -709,65 +707,7 @@ function showPromotionModal(color) {
   modal.classList.remove('hidden');
 }
 
-function attachDrag(el, initialSquare) {
-  el.addEventListener('pointerdown', (e) => {
-    if (gameOver || pendingPromotion) return;
-    const square = findSquareForEl(el);
-    if (!square) return;
-    if (el.dataset.color !== myColor) {
-      // Enemy piece: it isn't draggable, but a click on it is a capture attempt.
-      // Pieces are siblings of square divs (not children), so this click would
-      // otherwise never reach the square's own click handler.
-      onSquareClick(square);
-      return;
-    }
-    e.preventDefault();
-    if (selectedSquare !== square) selectSquare(square);
-    const boardEl = document.getElementById('board');
-    const rect = boardEl.getBoundingClientRect();
-    dragCtx = { el, rect, square };
-    el.classList.add('dragging');
-    el.setPointerCapture(e.pointerId);
-  });
 
-  el.addEventListener('pointermove', (e) => {
-    if (!dragCtx || dragCtx.el !== el) return;
-    const { rect } = dragCtx;
-    let x = ((e.clientX - rect.left) / rect.width) * 100 - 6.25;
-    let y = ((e.clientY - rect.top) / rect.height) * 100 - 6.25;
-    x = Math.max(-6.25, Math.min(93.75, x));
-    y = Math.max(-6.25, Math.min(93.75, y));
-    el.style.left = x + '%';
-    el.style.top = y + '%';
-  });
-
-  el.addEventListener('pointerup', (e) => {
-    if (!dragCtx || dragCtx.el !== el) return;
-    const { rect, square } = dragCtx;
-    el.classList.remove('dragging');
-    dragCtx = null;
-    const relX = (e.clientX - rect.left) / rect.width;
-    const relY = (e.clientY - rect.top) / rect.height;
-    let col = Math.floor(relX * 8), row = Math.floor(relY * 8);
-    col = Math.max(0, Math.min(7, col));
-    row = Math.max(0, Math.min(7, row));
-    const { file, rank } = colRowToFileRank(col, row, orientation);
-    const targetSquare = FILES[file] + (rank + 1);
-
-    const target = legalTargets.find(m => m.to === targetSquare);
-    if (target) {
-      attemptMove(square, targetSquare);
-    } else {
-      const pos = squareToPercentPos(square, orientation);
-      el.style.left = pos.left + '%';
-      el.style.top = pos.top + '%';
-    }
-  });
-}
-
-function findSquareForEl(el) {
-  return Object.keys(pieceMap).find(sq => pieceMap[sq] === el);
-}
 
 function fmt(seconds) {
   const s = Math.max(0, Math.round(seconds));

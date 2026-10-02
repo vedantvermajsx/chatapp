@@ -470,7 +470,7 @@ const ChatArea = memo(function ChatArea({
 
   return (
     <div
-      className="flex-1 flex flex-col min-w-0 relative overflow-hidden"
+      className="ambient flex-1 flex flex-col min-w-0 relative overflow-hidden"
       style={{
         backgroundColor: theme.background,
         height: containerHeight != null ? `${containerHeight}px` : '100%',
@@ -547,14 +547,14 @@ const ChatArea = memo(function ChatArea({
                 setNewMsgCount(0);
               }
             }}
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium shadow-lg transition-all"
+            className="pop-in absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-transform active:scale-95"
             style={{
               backgroundColor: theme.primary || '#6366f1',
               color: '#fff',
               boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
             }}
           >
-            <span>↓ {newMsgCount > 99 ? '99+' : newMsgCount > 9 ? '9+' : newMsgCount} new message{newMsgCount === 1 ? '' : 's'}</span>
+            <span>↓ {newMsgCount > 99 ? '99+' : newMsgCount} new message{newMsgCount === 1 ? '' : 's'}</span>
           </button>
         )}
       </div>

@@ -82,12 +82,8 @@ const ChatHeader = memo(function ChatHeader({
 
   return (
     <div
-      className="px-4 py-2 border-b flex items-center flex-shrink-0"
-      style={{
-        backgroundColor: theme.background,
-        borderColor,
-        minHeight: '48px',
-      }}
+      className="glass px-4 py-2 flex items-center flex-shrink-0"
+      style={{ minHeight: '48px' }}
     >
       <button
         onClick={onToggleSidebar}

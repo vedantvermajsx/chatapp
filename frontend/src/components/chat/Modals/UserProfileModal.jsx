@@ -34,15 +34,7 @@ const UserProfileModal = ({ userId, fallback, onClose }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div
-        className="relative rounded-3xl w-full max-w-sm overflow-hidden flex flex-col max-h-[85vh]"
-        style={{
-          backgroundColor: theme.background,
-          boxShadow: isLight
-            ? '1px 1px 2px rgba(0,0,0,0.1), -1px -1px 2px rgba(255,255,255,0.8)'
-            : '1px 1px 2px rgba(0,0,0,0.4), -1px -1px 2px rgba(255,255,255,0.05)'
-        }}
-      >
+      <div role="dialog" aria-modal="true" className="glass-strong pop-in relative rounded-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[85vh]">
         <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: border }}>
           <h2 className="text-base font-bold" style={{ color: theme.otherMessageText }}>Profile</h2>
           <button onClick={onClose} className="p-1.5 rounded-full transition-all">

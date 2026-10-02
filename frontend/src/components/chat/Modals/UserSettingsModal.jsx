@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Loader2, Camera } from 'lucide-react';
+import { X, Camera } from 'lucide-react';
+import LoaderMini from '../../common/Loader';
 import { toast } from 'sonner';
 import userService from '../../../services/user.service';
 import messageService from '../../../services/message.service';
@@ -99,12 +100,7 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative rounded-3xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]" style={{
-        backgroundColor: theme.background,
-        boxShadow: isLight
-          ? '1px 1px 2px rgba(0,0,0,0.1), -1px -1px 2px rgba(255,255,255,0.8)'
-          : '1px 1px 2px rgba(0,0,0,0.4), -1px -1px 2px rgba(255,255,255,0.05)'
-      }}>
+      <div role="dialog" aria-modal="true" className="glass-strong pop-in relative rounded-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
         <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: isLight ? '#cbd5e0' : '#4a5568' }}>
           <h2 className="text-xl font-bold" style={{ color: theme.otherMessageText }}>Profile Settings</h2>
           <button onClick={onClose} className="p-2 rounded-full transition-all" style={{
@@ -140,7 +136,7 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                   }}
                   title="Upload picture"
                 >
-                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: theme.otherUsernameColor }} /> : <Camera className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />}
+                  {isUploading ? <LoaderMini className="w-4 h-4 animate-spin" style={{ color: theme.otherUsernameColor }} /> : <Camera className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />}
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
               </div>
@@ -162,7 +158,7 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 }}
                 required
               />
-              {usernameStatus === 'checking' && <p className="text-sm text-blue-500 mt-2 flex items-center font-semibold"><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Checking availability...</p>}
+              {usernameStatus === 'checking' && <p className="text-sm text-blue-500 mt-2 flex items-center font-semibold"><LoaderMini className="w-4 h-4 mr-1 animate-spin" /> Checking availability...</p>}
               {usernameStatus === 'available' && <p className="text-sm text-green-500 mt-2 font-semibold">✓ Username is available</p>}
               {usernameStatus === 'taken' && <p className="text-sm text-red-500 mt-2 font-semibold">✗ Username is already taken</p>}
               {usernameStatus === 'invalid' && <p className="text-sm text-red-500 mt-2 font-semibold">Username must be at least 2 characters</p>}
@@ -204,7 +200,7 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
 
             }}
           >
-            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Changes'}
+            {isSaving ? <LoaderMini className="w-5 h-5 animate-spin" /> : 'Save Changes'}
           </button>
         </div>
       </div>

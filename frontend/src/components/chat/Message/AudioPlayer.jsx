@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, memo } from "react";
-import { Play, Pause, Loader2 } from "lucide-react";
+import { Play, Pause } from 'lucide-react';
+import LoaderMini from '../../common/Loader';
 
 const BAR_HEIGHTS = [3, 5, 8, 12, 9, 14, 10, 6, 11, 16, 13, 8, 5, 10, 14, 9, 12, 7, 4, 11, 15, 10, 6, 8, 13, 16, 11, 5, 9, 12, 7, 14, 10, 6];
 
@@ -159,7 +160,7 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
                 aria-label={isPlaying ? 'Pause' : 'Play'}
             >
                 {isLoading
-                    ? <Loader2 size={14} className="animate-spin" color="#fff" />
+                    ? <LoaderMini size={14} className="animate-spin" color="#fff" />
                     : isPlaying
                         ? <Pause size={14} fill="#fff" color="#fff" />
                         : <Play size={14} fill="#fff" color="#fff" style={{ marginLeft: 1 }} />

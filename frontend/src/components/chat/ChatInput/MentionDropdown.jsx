@@ -19,12 +19,7 @@ export default function MentionDropdown({
       ref={mentionListRef}
       role="listbox"
       aria-label="Mention suggestions"
-      className="absolute left-0 right-0 bottom-full mb-1 mx-2 sm:mx-6 rounded-xl overflow-hidden z-50"
-      style={{
-        backgroundColor: theme.cardBackground || theme.background,
-        boxShadow: '0 -4px 24px rgba(0,0,0,0.18)',
-        border: `1px solid ${theme.isLight ? '#e2e8f0' : '#374151'}`,
-      }}
+      className="glass-strong pop-in absolute left-0 right-0 bottom-full mb-1 mx-2 sm:mx-6 rounded-xl overflow-hidden z-50"
     >
       {isMentionLoading && mentionSuggestions.length === 0 ? (
         [0, 1, 2].map((i) => (

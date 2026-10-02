@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Tag, Loader2, Check, X, AlertCircle } from 'lucide-react';
+import { User, Tag, Check, X, AlertCircle } from 'lucide-react';
+import LoaderMini from '../common/Loader';
 import authService from '../../services/auth.service';
 import { sanitizeUsernameInput, isValidUsername, USERNAME_HINT } from '../../utils/validation';
 import { Button } from '../ui/button';
@@ -58,7 +59,7 @@ function GuestForm({ setCurrForm }) {
     };
 
     const statusCfg = {
-        checking: { cls: 'text-muted-foreground', icon: <Loader2 className="w-3 h-3 animate-spin" />, text: 'Checking...' },
+        checking: { cls: 'text-muted-foreground', icon: <LoaderMini className="w-3 h-3 animate-spin" />, text: 'Checking...' },
         available: { cls: 'text-emerald-600', icon: <Check className="w-3 h-3" />, text: 'Available' },
         taken: { cls: 'text-red-500', icon: <X className="w-3 h-3" />, text: 'Already taken' },
         invalid: { cls: 'text-red-500', icon: null, text: 'Minimum 2 characters' },
@@ -143,12 +144,8 @@ function GuestForm({ setCurrForm }) {
                     </span>
                 </label>
 
-                <Button type="submit" disabled={isLoading || !agreedToTerms} className="w-full mt-1">
-                    {isLoading ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" /> Connecting...</>
-                    ) : (
-                        'Continue as guest'
-                    )}
+                <Button type="submit" loading={isLoading} disabled={!agreedToTerms} className="w-full mt-1">
+                    Continue as guest
                 </Button>
             </form>
 

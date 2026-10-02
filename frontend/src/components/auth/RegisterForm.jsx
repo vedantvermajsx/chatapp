@@ -1,4 +1,5 @@
-import { User, Mail, Lock, UserPlus, Loader2, Check, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, UserPlus, Check, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import LoaderMini from '../common/Loader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -11,7 +12,7 @@ import { Checkbox } from '../ui/checkbox';
 
 function UsernameHint({ status, empty }) {
   if (empty) return <p className="text-[12px] text-muted-foreground mt-1.5 ml-0.5 font-sans">{USERNAME_HINT}</p>;
-  if (status === 'checking') return <p className="text-[12px] text-muted-foreground mt-1.5 ml-0.5 flex items-center gap-1 font-sans"><Loader2 className="w-3 h-3 animate-spin" /> Checking...</p>;
+  if (status === 'checking') return <p className="text-[12px] text-muted-foreground mt-1.5 ml-0.5 flex items-center gap-1 font-sans"><LoaderMini className="w-3 h-3 animate-spin" /> Checking...</p>;
   if (status === 'available') return <p className="text-[12px] text-emerald-600 mt-1.5 ml-0.5 flex items-center gap-1 font-sans"><Check className="w-3 h-3" /> Available</p>;
   if (status === 'taken') return <p className="text-[12px] text-red-500 mt-1.5 ml-0.5 flex items-center gap-1 font-sans"><X className="w-3 h-3" /> Already taken</p>;
   if (status === 'invalid') return <p className="text-[12px] text-red-500 mt-1.5 ml-0.5 font-sans">Minimum 2 characters</p>;
@@ -184,12 +185,8 @@ function RegisterForm({ setCurrForm }) {
           </span>
         </label>
 
-        <Button type="submit" disabled={isLoading || !agreedToTerms} className="w-full mt-1">
-          {isLoading ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</>
-          ) : (
-            <><UserPlus className="w-4 h-4" /> Create account</>
-          )}
+        <Button type="submit" loading={isLoading} disabled={!agreedToTerms} className="w-full mt-1">
+          <UserPlus className="w-4 h-4" /> Create account
         </Button>
       </form>
 

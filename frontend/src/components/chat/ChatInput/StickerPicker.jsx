@@ -1,5 +1,6 @@
 import { memo, useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Loader2, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
+import LoaderMini from '../../common/Loader';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 import apiClient from '../../../services/api';
@@ -123,14 +124,12 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
   return (
     <div
       ref={pickerRef}
-      className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[999] rounded-2xl flex flex-col overflow-hidden sm:absolute sm:inset-x-auto sm:bottom-full sm:left-1/2 sm:translate-y-16 sm:-translate-x-1/2"
+      className="glass-strong pop-in fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[999] rounded-2xl flex flex-col overflow-hidden sm:absolute sm:inset-x-auto sm:bottom-full sm:left-1/2 sm:translate-y-16 sm:-translate-x-1/2"
       style={{
         width: 'min(360px, calc(100vw - 24px))',
         height: 'min(420px, 62dvh)',
         maxHeight: '62dvh',
         zIndex: 100,
-        backgroundColor: theme.background,
-        boxShadow: getShadow(theme.isLight, false, 4, 12),
         border: `1px solid ${border}`,
       }}
     >
@@ -159,7 +158,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
       >
         {items.length === 0 && loading && (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-6 h-6 animate-spin" style={{ color: subText }} />
+            <LoaderMini className="w-6 h-6 animate-spin" style={{ color: subText }} />
           </div>
         )}
 
@@ -195,7 +194,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
 
         {items.length > 0 && loading && (
           <div className="flex justify-center py-3">
-            <Loader2 className="w-4 h-4 animate-spin" style={{ color: subText }} />
+            <LoaderMini className="w-4 h-4 animate-spin" style={{ color: subText }} />
           </div>
         )}
       </div>

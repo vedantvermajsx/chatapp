@@ -416,7 +416,7 @@ const ChatInput = memo(forwardRef(({
                 : replyingTo.text || 'Message'}
             </p>
           </div>
-          <button type="button" onClick={onCancelReply} className="p-1 rounded-full hover:bg-black/10 flex-shrink-0">
+          <button type="button" onClick={onCancelReply} className="p-1 rounded-full hover:bg-black/10 flex-shrink-0" aria-label="Cancel reply">
             <X className="w-4 h-4" style={{ color: theme.otherUsernameColor }} />
           </button>
         </div>
@@ -448,10 +448,7 @@ const ChatInput = memo(forwardRef(({
             <Avatar url={user.avatar} name={user.username} gender={user.gender} size={12} />
           </div>
         )}
-        <div className="w-full sm:w-4/5 lg:w-3/4 flex items-center gap-2 sm:gap-3 rounded-2xl px-4 sm:px-6 py-2 sm:py-1 relative" style={{
-          backgroundColor: theme.background,
-          boxShadow: getShadow(theme.isLight, false, 0.5, 4)
-        }}>
+        <div className="glass-lite w-full sm:w-4/5 lg:w-3/4 flex items-center gap-2 sm:gap-3 rounded-2xl px-4 sm:px-6 py-2 sm:py-1 relative">
           <input
             ref={fileInputRef}
             id="file-upload"
@@ -488,7 +485,7 @@ const ChatInput = memo(forwardRef(({
                   {formatTime(recordingTime)}
                 </span>
                 <span className="text-sm ml-2 animate-pulse" style={{ color: theme.otherUsernameColor }}>
-                  Recording...
+                  Recording…
                 </span>
               </div>
             )}
@@ -584,7 +581,7 @@ const ChatInput = memo(forwardRef(({
                 transform: 'translateY(-50%)',
                 pointerEvents: 'none'
               }}>
-                Type your message...
+                Message
               </span>
             )}
             {!isRecording && inputMessage.length >= MAX_CHARS - 100 && (
@@ -634,11 +631,13 @@ const ChatInput = memo(forwardRef(({
               type="submit"
               onMouseDown={(e) => e.preventDefault()}
               onTouchStart={(e) => e.preventDefault()}
-              className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-12 h-12 hover:opacity-80"
+              className="pop-in flex items-center justify-center rounded-full transition-[transform,filter] duration-150 active:scale-90 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-11 h-11"
               style={{ backgroundColor: theme.myMessageBubble }}
               disabled={disabled}
+              aria-label="Send message"
+              title="Send"
             >
-              <Send className="w-6 h-6" style={{ color: theme.myMessageText }} />
+              <Send className="w-5 h-5" style={{ color: theme.myMessageText }} />
             </button>
           )}
         </div>
