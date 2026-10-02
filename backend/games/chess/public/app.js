@@ -379,6 +379,7 @@ socket.on('illegalMove', () => {
   }
   clearSelection();
   applyDiff(boardMatrixToMap(chess.board()));
+  highlightLastMoveAndCheck({ lastMove: null, check: chess.inCheck(), turn: chess.turn() });
   flashStatus('Illegal move');
 });
 
@@ -451,8 +452,20 @@ function hideOpponentBanner() {
   clearInterval(oppReconnectInterval);
 }
 
+let boardBound = false;
+function bindBoard(board) {
+  if (boardBound) return;
+  boardBound = true;
+  board.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const sq = e.target.closest('.square');
+    if (sq) onSquareClick(sq.dataset.square);
+  });
+}
+
 function buildBoard() {
   const board = document.getElementById('board');
+  bindBoard(board);
   board.innerHTML = '';
   squareEls = {};
   pieceMap = {};
@@ -480,7 +493,6 @@ function buildBoard() {
         f.textContent = FILES[file];
         sqEl.appendChild(f);
       }
-      sqEl.addEventListener('click', () => onSquareClick(square));
       board.appendChild(sqEl);
       squareEls[square] = sqEl;
     }
@@ -622,7 +634,7 @@ function clearSelection() {
 }
 
 function onSquareClick(square) {
-  if (gameOver || pendingPromotion) return;
+  if (gameOver || pendingPromotion || pendingMove) return;
   const piece = pieceMap[square];
 
   if (selectedSquare) {
@@ -666,6 +678,11 @@ function sendMove(from, to, promotion) {
     return;
   }
   pendingMove = true;
+  setTimeout(() => { pendingMove = false; }, 3000);
+  clearSelection();
+  applyDiff(boardMatrixToMap(chess.board()));
+  highlightLastMoveAndCheck({ lastMove: { from: move.from, to: move.to }, check: chess.inCheck(), turn: chess.turn() });
+  updateStatusText({ turn: chess.turn(), check: chess.inCheck() });
   socket.emit('makeMove', {
     from: move.from,
     to: move.to,

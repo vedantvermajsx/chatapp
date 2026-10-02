@@ -21,7 +21,8 @@ async function resolveMembers(ids) {
   return results.filter(Boolean);
 }
 
-const MEMBERS_PAGE_TTL_SECONDS = 24 * 60 * 60; // 24h
+const ROOM_TTL_MS = (parseInt(process.env.ROOM_CACHE_TTL_SECONDS, 10) || 300) * 1000;
+const MEMBERS_PAGE_TTL_SECONDS = Math.floor(ROOM_TTL_MS / 1000);
 const MEMBERS_PAGE_SIZE = 20;
 const NAME_LOOKUP_TTL_SECONDS = null;
 
@@ -43,6 +44,58 @@ class RoomCacheService {
     this.roomOrder = [];
     this.trie = new RoomTrie();
     this.ready = false;
+    this.cachedAt = new Map();
+    this.sweeper = null;
+  }
+
+  startSweeper() {
+    if (this.sweeper) return;
+    this.sweeper = setInterval(() => this.sweepExpired().catch((e) => console.error('[RoomCache] sweep failed:', e.message)), Math.max(30000, ROOM_TTL_MS / 2));
+    this.sweeper.unref?.();
+  }
+
+  async sweepExpired() {
+    const now = Date.now();
+    const stale = [];
+    for (const [id, t] of this.cachedAt) if (now - t > ROOM_TTL_MS) stale.push(id);
+    if (!stale.length) return;
+    const fresh = await Room.find({ _id: { $in: stale } }).lean();
+    const found = new Set();
+    for (const room of fresh) {
+      found.add(String(room._id));
+      this.applyFresh(room);
+    }
+    for (const id of stale) if (!found.has(id)) { this.removeRoomFromIndex(id); this.cachedAt.delete(id); }
+  }
+
+  applyFresh(room) {
+    const id = String(room._id);
+    room.groupMembers = [...new Set((room.groupMembers || []).map(String))];
+    const old = this.roomsById.get(id);
+
+    if (old) {
+      for (const uid of old.groupMembers || []) {
+        if (!room.groupMembers.includes(uid)) {
+          const set = this.roomsByUser.get(uid);
+          if (set) { set.delete(id); if (!set.size) this.roomsByUser.delete(uid); }
+        }
+      }
+      if (!old.isDeleted && (old.groupName !== room.groupName || room.isDeleted)) this.trie.remove(old.groupName, id);
+      if (!room.isDeleted && (!old || old.isDeleted || old.groupName !== room.groupName)) this.trie.insert(room.groupName, id);
+    } else if (!room.isDeleted) {
+      this.trie.insert(room.groupName, id);
+    }
+
+    for (const uid of room.groupMembers) {
+      if (!this.roomsByUser.has(uid)) this.roomsByUser.set(uid, new Set());
+      this.roomsByUser.get(uid).add(id);
+    }
+    if (room.isDeleted) this.roomOrder = this.roomOrder.filter((r) => r !== id);
+    else if (!this.roomOrder.includes(id)) this.roomOrder.unshift(id);
+
+    this.roomsById.set(id, room);
+    this.cachedAt.set(id, Date.now());
+    return room;
   }
 
   async initialize() {
@@ -54,6 +107,7 @@ class RoomCacheService {
       room.groupMembers = [...new Set((room.groupMembers || []).map(String))];
 
       this.roomsById.set(roomId, room);
+      this.cachedAt.set(roomId, Date.now());
       this.roomOrder.push(roomId);
 
       if (!room.isDeleted) {
@@ -69,6 +123,7 @@ class RoomCacheService {
     }
 
     this.ready = true;
+    this.startSweeper();
     console.log(`[RoomCacheService] preloaded ${rooms.length} rooms)`);
   }
 
@@ -82,6 +137,7 @@ class RoomCacheService {
     room.groupMembers = [...new Set((room.groupMembers || []).map(String))];
 
     this.roomsById.set(roomId, room);
+    this.cachedAt.set(roomId, Date.now());
 
     for (const memberId of room.groupMembers) {
       if (!this.roomsByUser.has(memberId)) {
@@ -103,16 +159,17 @@ class RoomCacheService {
     id = String(id);
 
     const room = this.roomsById.get(id);
-    if (room) return room;
+    if (room && Date.now() - (this.cachedAt.get(id) || 0) <= ROOM_TTL_MS) return room;
 
     return dedupe(`room:id:${id}`, async () => {
-      const existing = this.roomsById.get(id);
-      if (existing) return existing;
-
       const fetched = await Room.findById(id).lean();
-      if (!fetched) return null;
-
-      await this.addRoomToCache(id, fetched);
+      if (!fetched) {
+        this.removeRoomFromIndex(id);
+        this.cachedAt.delete(id);
+        return null;
+      }
+      this.applyFresh(fetched);
+      this.invalidateRoomMembers(id);
       return this.roomsById.get(id);
     });
   }
@@ -180,22 +237,13 @@ class RoomCacheService {
 
     if (!room) {
       this.removeRoomFromIndex(id);
+      this.cachedAt.delete(id);
       return null;
     }
 
-    room.groupMembers = [...new Set(room.groupMembers.map(String))];
-
-    const old = this.roomsById.get(id);
-    if (old && !old.isDeleted && old.groupName !== room.groupName) {
-      this.trie.remove(old.groupName, id);
-      if (!room.isDeleted) this.trie.insert(room.groupName, id);
-    } else if (!old && !room.isDeleted) {
-      this.trie.insert(room.groupName, id);
-    }
-
-    this.roomsById.set(id, room);
-
-    return room;
+    this.applyFresh(room);
+    this.invalidateRoomMembers(id);
+    return this.roomsById.get(id);
   }
 
   removeRoomFromIndex(id) {
@@ -203,6 +251,7 @@ class RoomCacheService {
     if (!room) return;
     this.trie.remove(room.groupName, id);
     this.roomsById.delete(id);
+    this.cachedAt.delete(id);
     this.roomOrder = this.roomOrder.filter(rid => rid !== id);
   }
 
