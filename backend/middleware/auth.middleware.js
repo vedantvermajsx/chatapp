@@ -19,6 +19,7 @@ export const authenticate = async (req, res, next) => {
       avatar: decoded.avatar,
       gender: decoded.gender,
       role: decoded.role || 'user',
+      isGuest: decoded.role === 'guest',
       isOnline: decoded.isOnline,
       lastSeen: decoded.lastSeen,
       exp: decoded.exp,

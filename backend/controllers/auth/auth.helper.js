@@ -2,6 +2,7 @@ import { signToken } from '../../utils/tokenGenerator.js';
 import userCacheClient from '../../database/userCacheClient.js';
 
 export async function handleAuthSuccess(res, userDocument, role, privateKey = null) {
+  const isGuest = role === 'guest';
   const userData = {
     _id: userDocument._id.toString(),
     username: userDocument.username,
@@ -25,6 +26,8 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
     gender: userData.gender,
     publicKey: userData.publicKey,
     role,
+    isOnline: true,
+    lastSeen: userData.lastSeen ?? new Date(),
   };
 
   await userCacheClient.seedUser(cacheProfile);
@@ -37,14 +40,15 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
     gender: userDocument.gender,
     isOnline: true,
     lastSeen: userDocument.lastSeen ?? new Date(),
-  });
+    isGuest,
+  }, isGuest);
   const isProduction = process.env.NODE_ENV === 'production';
 
   res.cookie('token', token, {
     httpOnly: true,
     sameSite: isProduction ? 'none' : 'strict',
     secure: isProduction,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000 * (isGuest ? 1 : 7),
   });
 
   const response = {

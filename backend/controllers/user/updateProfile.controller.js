@@ -91,6 +91,7 @@ export async function updateProfile(req, res) {
             gender: req.user.gender,
             isOnline: req.user.isOnline,
             lastSeen: req.user.lastSeen,
+            isGuest: req.user.isGuest,
           },
           req.user.exp
         );
