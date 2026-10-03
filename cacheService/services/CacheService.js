@@ -57,6 +57,15 @@ class CacheService {
     return deleted;
   }
 
+  deleteByPrefix(prefix) {
+    let n = 0;
+    for (const key of [...this.cache.keys()]) {
+      if (typeof key === 'string' && key.startsWith(prefix)) { this.cache.delete(key); n++; }
+    }
+    this.stats.deletes += n;
+    return n;
+  }
+
   clear() {
     this.cache.clear();
     this.stats.clears++;

@@ -14,10 +14,12 @@ import { handlePrivateLastRead } from './processors/notification/handlePrivateLa
 import { connectToBroker, subscribe, on } from './broker.js';
 import { connectDB } from './database/db.js';
 import { createAdminServer } from './adminServer.js';
+import { startRoomMemberReconciler } from './jobs/reconcileRoomMembers.js';
 
 dotenv.config();
 
 const messageQueue = new BatchQueue({
+  name: 'messageQueue',
   batchSize: 50,
   flushInterval: 500,
   maxSize: 30000,
@@ -25,6 +27,7 @@ const messageQueue = new BatchQueue({
 });
 
 const userQueue = new BatchQueue({
+  name: 'userQueue',
   batchSize: 1,
   flushInterval: 100,
   maxSize: 10000,
@@ -32,6 +35,7 @@ const userQueue = new BatchQueue({
 });
 
 const guestQueue = new BatchQueue({
+  name: 'guestQueue',
   batchSize: 1,
   flushInterval: 100,
   maxSize: 10000,
@@ -39,6 +43,7 @@ const guestQueue = new BatchQueue({
 });
 
 const presenceQueue = new BatchQueue({
+  name: 'presenceQueue',
   batchSize: 1,
   flushInterval: 100,
   maxSize: 10000,
@@ -50,6 +55,7 @@ const presenceQueue = new BatchQueue({
 });
 
 const roomQueue = new BatchQueue({
+  name: 'roomQueue',
   batchSize: 1,
   flushInterval: 100,
   maxSize: 10000,
@@ -63,6 +69,7 @@ const roomQueue = new BatchQueue({
 });
 
 const notificationQueue = new BatchQueue({
+  name: 'notificationQueue',
   batchSize: 1,
   flushInterval: 100,
   maxSize: 10000,
@@ -121,6 +128,8 @@ async function start() {
 
   //console.log('[NotificationProcessor] subscribed to notification.* channels');
 
+  startRoomMemberReconciler();
+
   createAdminServer({
     port: process.env.PORT || 6000,
     getStats: () => ({
@@ -140,7 +149,14 @@ start().catch((err) => {
   process.exit(1);
 });
 
-process.on('SIGTERM', () => {
+async function shutdown(signal) {
+  console.log(`[QueueService] ${signal} received, draining queues`);
+  const queues = [messageQueue, userQueue, guestQueue, presenceQueue, roomQueue, notificationQueue];
+  await Promise.allSettled(queues.map((q) => q.drain(10000)));
   console.log('[QueueService] shutting down');
   process.exit(0);
-});
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('unhandledRejection', (err) => console.error('[QueueService] unhandledRejection:', err));

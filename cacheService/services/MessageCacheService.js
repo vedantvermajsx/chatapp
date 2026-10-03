@@ -17,6 +17,62 @@ onBroker('cache:invalidate:chatlist', ({ userA, userB }) => {
   _invalidateChatListLocal(userA, userB);
 });
 
+const RECENT_TTL_MS = 60 * 1000;
+const recentPrivate = new Map(); // userId -> Map(peerId -> lastMessage)
+
+function _rememberRecentPrivate(msg) {
+  const id = msg._id || msg.id;
+  if (!id || !msg.senderId || !msg.receiverId) return;
+  const doc = {
+    _id: String(id),
+    senderId: String(msg.senderId),
+    receiverId: String(msg.receiverId),
+    roomId: null,
+    content: msg.content ?? msg.text ?? '',
+    iv: msg.iv ?? null,
+    senderKeyWrapped: msg.senderKeyWrapped ?? null,
+    receiverKeyWrapped: msg.receiverKeyWrapped ?? null,
+    isSystemMessage: !!msg.isSystemMessage,
+    systemType: msg.systemType ?? null,
+    media: msg.media ?? null,
+    timestamp: new Date(msg.timestamp ?? Date.now()),
+    _seenAt: Date.now(),
+  };
+  for (const [user, peer] of [[doc.senderId, doc.receiverId], [doc.receiverId, doc.senderId]]) {
+    if (!recentPrivate.has(user)) recentPrivate.set(user, new Map());
+    const m = recentPrivate.get(user);
+    const prev = m.get(peer);
+    if (!prev || prev.timestamp <= doc.timestamp) m.set(peer, doc);
+  }
+}
+
+function _forgetRecentPrivate(userA, userB) {
+  recentPrivate.get(String(userA))?.delete(String(userB));
+  recentPrivate.get(String(userB))?.delete(String(userA));
+}
+
+function _overlayRecentPrivate(userId, chats) {
+  const mine = recentPrivate.get(String(userId));
+  if (!mine) return chats;
+  const now = Date.now();
+  const out = [...chats];
+  for (const [peer, msg] of mine) {
+    if (now - msg._seenAt > RECENT_TTL_MS) { mine.delete(peer); continue; }
+    const { _seenAt, ...lastMessage } = msg;
+    const idx = out.findIndex((c) => String(c._id) === peer);
+    if (idx === -1) {
+      out.push({ _id: peer, lastMessage });
+    } else if (
+      String(out[idx].lastMessage._id) !== lastMessage._id &&
+      new Date(out[idx].lastMessage.timestamp) < lastMessage.timestamp
+    ) {
+      out[idx] = { ...out[idx], lastMessage };
+    }
+  }
+  if (!mine.size) recentPrivate.delete(String(userId));
+  return out.sort((a, b) => new Date(b.lastMessage.timestamp) - new Date(a.lastMessage.timestamp));
+}
+
 const inFlight = new Map();
 
 async function dedupe(key, fetcher) {
@@ -184,6 +240,7 @@ export function invalidateRoomMessages(roomId) {
 }
 
 export function invalidatePrivateMessages(userA, userB) {
+  _forgetRecentPrivate(userA, userB);
   for (const limit of COMMON_LIMITS) {
     messageCache.delete(privateFirstPageKey(userA, userB, limit));
   }
@@ -245,6 +302,7 @@ export function appendRoomMessages(roomId, messages) {
 }
 
 export function appendPrivateMessages(senderId, receiverId, messages) {
+  for (const m of messages) _rememberRecentPrivate({ senderId, receiverId, ...m });
   const msg = messages[0];
   if (msg) {
     const msgId = msg._id || msg.id;
@@ -363,7 +421,8 @@ export async function getPrivateChats(userId) {
       { $sort: { 'lastMessage.timestamp': -1 } },
     ]);
 
-    messageCache.set(cacheKey, chats, CHAT_LIST_TTL_SECONDS);
-    return chats;
+    const merged = _overlayRecentPrivate(userId, chats);
+    messageCache.set(cacheKey, merged, CHAT_LIST_TTL_SECONDS);
+    return merged;
   });
 }

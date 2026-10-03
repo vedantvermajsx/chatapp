@@ -62,3 +62,36 @@ export const formatMessageTime = (timestamp) => {
   if (isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(d);
 };
+
+export const isSameDay = (date1, date2) => {
+  if (!date1 || !date2) return false;
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};
+
+export const formatDateSeparator = (timestamp) => {
+  if (!timestamp) return '';
+  const d = new Date(timestamp);
+  const now = new Date();
+  
+  if (isSameDay(d, now)) {
+    return 'Today';
+  }
+  
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (isSameDay(d, yesterday)) {
+    return 'Yesterday';
+  }
+  
+  return new Intl.DateTimeFormat('en-US', { 
+    month: 'long', 
+    day: 'numeric', 
+    year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' 
+  }).format(d);
+};

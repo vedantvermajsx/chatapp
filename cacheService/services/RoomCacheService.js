@@ -358,10 +358,8 @@ class RoomCacheService {
     });
   }
 
-  async invalidateRoomMembers(roomId, { maxMembers = 500, pageSize = 20 } = {}) {
-    for (let skip = 0; skip < maxMembers; skip += pageSize) {
-      roomCache.delete(`roommembers:${roomId}:${skip}:${pageSize}`);
-    }
+  async invalidateRoomMembers(roomId) {
+    roomCache.deleteByPrefix(`roommembers:${roomId}:`);
   }
 
   getAllRooms({ search = '', skip = 0, limit = 20 } = {}) {

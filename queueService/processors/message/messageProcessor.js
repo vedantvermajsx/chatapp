@@ -1,21 +1,18 @@
 import Message from '../../models/message.model.js';
 
+const isDuplicateKey = (e) => e?.code === 11000;
+
 export const processMessageBatch = async (batch) => {
-
-  let insertedCount = 0;
-
   try {
-    const saved = await Message.insertMany(batch, { ordered: false });
-    insertedCount = saved.length;
+    await Message.insertMany(batch, { ordered: false });
   } catch (err) {
-    insertedCount = err.insertedDocs?.length ?? 0;
+    const writeErrors = err.writeErrors ?? err.result?.result?.writeErrors ?? [];
+    const onlyDuplicates =
+      isDuplicateKey(err) ||
+      (writeErrors.length > 0 && writeErrors.every((w) => isDuplicateKey(w) || isDuplicateKey(w.err)));
+    if (onlyDuplicates) return;
 
-    if (insertedCount < batch.length) {
-      console.error(
-        `[MessageProcessor] ${batch.length - insertedCount} message(s) failed to save:`,
-        err.message
-      );
-    }
+    console.error(`[MessageProcessor] batch of ${batch.length} failed:`, err.message);
+    throw err; 
   }
-
 };

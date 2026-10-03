@@ -5,6 +5,7 @@ import SystemMessage from './SystemMessage';
 import Spinner from '../../common/Spinner';
 import TypingIndicator from './TypingIndicator';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { isSameDay, formatDateSeparator } from '../../../utils/dateUtils';
 
 const MessageList = ({
   messagesContainerRef,
@@ -172,9 +173,24 @@ const MessageList = ({
               && prev.username === msg.username && !!prev.isOwn === !!msg.isOwn
               && !msg.replyTo && !prev.media?.type?.includes('sticker') && msg.media?.type !== 'sticker'
               && (new Date(msg.timestamp) - new Date(prev.timestamp)) < 5 * 60 * 1000;
+            const showDateSeparator = !prev || !isSameDay(prev.timestamp, msg.timestamp);
+
             return (
+            <div key={msg.id || msg._id || idx} className="flex flex-col">
+              {showDateSeparator && (
+                <div className="flex justify-center my-4">
+                  <span
+                    className="px-3 py-1 text-xs font-medium rounded-full shadow-sm"
+                    style={{
+                      backgroundColor: theme.isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)',
+                      color: theme.isLight ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)',
+                    }}
+                  >
+                    {formatDateSeparator(msg.timestamp)}
+                  </span>
+                </div>
+              )}
             <div
-              key={msg.id || msg._id || idx}
               data-msg-id={msg.id || msg._id}
               ref={(el) => {
                 if (idx === lastNonOwnIndex) lastMsgElRef.current = el;
@@ -199,6 +215,7 @@ const MessageList = ({
                   />
                 </SwipeToReply>
               }
+            </div>
             </div>
             );
           })}

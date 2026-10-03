@@ -57,6 +57,17 @@ export function attachHmacInterceptor(axiosInstance) {
     Object.assign(config.headers, hmacHeaders);
     return config;
   });
+
+  axiosInstance.interceptors.response.use(undefined, async (error) => {
+    const config = error.config;
+    if (!config || error.response?.status !== 429) throw error;
+    config.__retry429 = (config.__retry429 || 0) + 1;
+    if (config.__retry429 > 3) throw error;
+    const retryAfter = Number(error.response.headers?.['retry-after']);
+    const delay = Math.min((retryAfter > 0 ? retryAfter * 1000 : 500 * 2 ** config.__retry429), 10000);
+    await new Promise((r) => setTimeout(r, delay));
+    return axiosInstance.request(config); // request interceptor re-signs with a fresh timestamp
+  });
 }
 
 

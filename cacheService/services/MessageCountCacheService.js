@@ -28,9 +28,7 @@ const MessageCountCacheService = {
       messageCache.set(k, next, TTL);
       return next;
     }
-    const count = await Message.countDocuments({ roomId, isSystemMessage: { $ne: true } });
-    messageCache.set(k, count, TTL);
-    return count;
+    return null;
   },
 
   invalidateRoom(roomId) {

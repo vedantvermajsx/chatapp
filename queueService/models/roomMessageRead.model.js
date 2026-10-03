@@ -6,6 +6,8 @@ const roomMessageReadSchema = new mongoose.Schema(
     roomId: { type: String, required: true },
     lastReadMessageId: { type: String, default: null },
     lastReadAt: { type: Date, default: null },
+    // Owned by cacheService (total non-system messages the user has read).
+    readCount: { type: Number, default: 0 },
   },
   { timestamps: true, versionKey: false },
 );

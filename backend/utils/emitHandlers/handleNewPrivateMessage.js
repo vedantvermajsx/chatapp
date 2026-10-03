@@ -2,13 +2,35 @@ import { getIO } from '../../socket.js';
 import { publish } from '../messageBroker.js';
 import unreadCacheClient from '../../database/unreadCacheClient.js';
 import messageCountCacheClient from '../../database/messageCountCacheClient.js';
+import userCacheClient from '../../database/userCacheClient.js';
 import { sendPushToUser } from '../pushNotifications.js';
 
+const toParty = (id, u, fb = {}) => ({
+  _id: String(id),
+  username: u?.username ?? fb.username ?? null,
+  avatar: u?.avatar ?? fb.avatar ?? null,
+  gender: u?.gender ?? fb.gender ?? null,
+  isOnline: u?.isOnline ?? fb.isOnline ?? null,
+  lastSeen: u?.lastSeen ?? fb.lastSeen ?? null,
+});
+
 export async function handleNewPrivateMessage(data) {
-  const { senderId, receiverId, payload } = data;
+  const { senderId, receiverId } = data;
+  let { payload } = data;
   const io = getIO();
   const senderStr = String(senderId);
   const receiverStr = String(receiverId);
+
+  try {
+    const receiverUser = await userCacheClient.getUserById(receiverStr);
+    payload = {
+      ...payload,
+      sender: toParty(senderStr, null, payload),
+      receiver: toParty(receiverStr, receiverUser),
+    };
+  } catch (err) {
+    console.error('[emitQueue] newPrivateMessage party lookup error:', err.message);
+  }
   if (io) {
     io.to(receiverStr).emit('newPrivateMessage', payload);
     io.to(senderStr).emit('newPrivateMessage', payload);
