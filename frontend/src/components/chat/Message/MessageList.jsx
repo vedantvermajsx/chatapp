@@ -200,7 +200,7 @@ const MessageList = ({
               className={idx === messages.length - 1 ? 'animate-bubble-in' : ''}
             >
               {msg?.isSystemMessage ? <SystemMessage msg={msg} isPrivateChat={isPrivateChat} /> :
-                <SwipeToReply disabled={msg.isPending} isOwn={false} onReply={() => onReplyClick?.(msg)}>
+                <SwipeToReply disabled={msg.isPending} isOwn={!!msg.isOwn} onReply={() => onReplyClick?.(msg)}>
                   <Message
                     msg={msg}
                     isOwn={msg.isOwn}

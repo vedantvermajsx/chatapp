@@ -26,10 +26,6 @@ const IncomingCallScreen = () => {
         className="relative w-full sm:max-w-sm mx-auto rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden border"
         style={{ background: cardBg, borderColor }}
       >
-        <div
-          className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full opacity-30 blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #a855f7, transparent 70%)' }}
-        />
 
         <div className="relative px-8 pt-10 pb-10 text-center">
           <div className="relative mx-auto w-28 h-28 mb-6">

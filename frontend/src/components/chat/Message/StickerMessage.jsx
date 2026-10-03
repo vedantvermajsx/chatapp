@@ -4,20 +4,22 @@ import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { formatSeenAt, formatMessageTime } from '../../../utils/dateUtils';
 
-const StickerMessage = memo(function StickerMessage({ msg, isOwn, senderAvatar = null, isOnline, lastSeen, isPrivateChat = false }) {
+const StickerMessage = memo(function StickerMessage({ msg, isOwn, senderAvatar = null, isOnline, lastSeen, isPrivateChat = false, grouped = false }) {
   const { theme } = useTheme();
+  const muted = theme.isLight ? '#4b5563' : '#a1a1aa';
 
   return (
-    <div className={`group relative flex gap-4 w-full px-4 mt-3 animate-fade-in-up`}>
-      <div className="flex-shrink-0">
-        <Avatar url={senderAvatar} name={msg.username} size={10} mdSize={10} isOnline={isOnline} lastSeen={lastSeen} />
-      </div>
-      
-      <div className={`flex flex-col items-start`}>
-        <div className="flex items-baseline gap-2">
-          <span className="font-semibold text-[15px]" style={{ color: isOwn ? theme.otherMessageText : theme.otherUsernameColor }}>{msg?.username}</span>
-          <time className="text-[11px]" style={{ color: theme.isLight ? '#4b5563' : '#a1a1aa' }}>{formatMessageTime(msg.timestamp)}</time>
+    <div className={`group relative flex items-end gap-2 w-full px-3 sm:px-4 animate-fade-in-up ${isOwn ? 'flex-row-reverse' : 'flex-row'}`} style={{ marginTop: grouped ? 2 : 10 }}>
+      {!isOwn && (
+        <div className="w-8 flex-shrink-0 self-start">
+          {!grouped && <Avatar url={senderAvatar} name={msg.username} size={8} mdSize={8} isOnline={isOnline} lastSeen={lastSeen} />}
         </div>
+      )}
+
+      <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+        {!isOwn && !isPrivateChat && !grouped && (
+          <span className="font-semibold text-[12px] mb-0.5 px-1" style={{ color: theme.otherUsernameColor }}>{msg?.username}</span>
+        )}
         <div className="relative">
           <img
             src={msg.media.url}
@@ -26,18 +28,15 @@ const StickerMessage = memo(function StickerMessage({ msg, isOwn, senderAvatar =
             style={{ opacity: msg.isPending ? 0.5 : 1 }}
             loading="lazy"
           />
-          {msg.isPending && (
-            <LoaderMini className="absolute bottom-1 right-1 w-3 h-3 animate-spin" style={{ color: theme.isLight ? '#4b5563' : '#9ca3af' }} />
+          {msg.isPending && <LoaderMini className="absolute bottom-1 right-1 w-3 h-3 animate-spin" style={{ color: muted }} />}
+        </div>
+        <div className="flex items-center gap-1 px-1">
+          <time className="text-[10px]" style={{ color: muted }}>{formatMessageTime(msg.timestamp)}</time>
+          {isOwn && !msg.isPending && isPrivateChat && msg.isSeen && (
+            <span className="text-[10px]" style={{ color: muted }}>· {formatSeenAt(msg.seenAt)}</span>
           )}
         </div>
-        
       </div>
-
-      {isOwn && !msg.isPending && isPrivateChat && msg.isSeen && (
-        <p className="text-[10px] " style={{ color: theme.isLight ? '#4b5563' : '#9ca3af', opacity: 0.9 }}>
-          {formatSeenAt(msg.seenAt)}
-        </p>
-      )}
     </div>
   );
 });

@@ -29,7 +29,6 @@ const CallContent = ({
             : 'relative z-10 flex flex-col items-center justify-center gap-5 px-6 text-center'
         }
       >
-        {!isMinimized && <div className="absolute w-64 h-64 rounded-full bg-indigo-600/15 blur-3xl -z-10" />}
 
         <img
           src={target?.avatar?.replace('w_50,h_50,c_fill', 'w_100,h_100,c_fill') || 'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1782369805/male_g68rxt.avif'}
