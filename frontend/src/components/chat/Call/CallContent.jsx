@@ -70,7 +70,7 @@ const CallContent = ({
     )}
 
     {!isMinimized && isLost && (
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-red-600/90 backdrop-blur-sm text-white px-5 py-2 rounded-full shadow-2xl text-xs font-semibold tracking-wide uppercase animate-pulse">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-full shadow-2xl text-xs font-semibold tracking-wide uppercase animate-pulse">
         <WifiOff className="w-3.5 h-3.5" />
         Connection Lost
       </div>

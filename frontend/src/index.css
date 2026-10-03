@@ -307,11 +307,7 @@ body,
   .ld-dots i, .ld-bars i { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
 }
 
-/* ================= Liquid glass (Plasma-style), perf-first =================
-   Rules to stay fast:
-   - backdrop-filter ONLY on .glass (header) and .glass-strong (transient overlays). Never nested.
-   - .glass-lite = translucent + highlight, NO blur (use for lists, inputs, buttons).
-   - Static gradients only. No animated filters/blur. contain: paint keeps repaints local.
+/* ================= Solid UI (No Glass / Blur) =================
    Vars (--g-*) are set once per theme change in ThemeContext. */
 :root {
   --g-bg: #1e1f22; --g-fg: #fff; --g-accent: #5865f2;
@@ -319,28 +315,36 @@ body,
 }
 @layer components {
   .glass, .glass-strong, .glass-lite {
-    background-color: color-mix(in srgb, var(--g-bg) 70%, transparent);
-    background-image: linear-gradient(180deg, var(--g-hi), transparent 60%);
+    background-color: var(--g-bg);
     border: 1px solid var(--g-line);
-    box-shadow: inset 0 1px 0 var(--g-hi), 0 6px 20px -8px var(--g-shadow);
     contain: paint;
   }
-  .glass { backdrop-filter: blur(14px) saturate(1.5); -webkit-backdrop-filter: blur(14px) saturate(1.5); border-width: 0 0 1px 0; box-shadow: inset 0 -1px 0 var(--g-line); }
-  .glass-strong { background-color: color-mix(in srgb, var(--g-bg) 82%, transparent); backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6); box-shadow: inset 0 1px 0 var(--g-hi), 0 24px 60px -12px var(--g-shadow); }
-  .glass-lite { background-color: color-mix(in srgb, var(--g-fg) 6%, transparent); box-shadow: inset 0 1px 0 var(--g-hi); contain: none; transition: background-color .15s ease, border-color .15s ease; }
-  .glass-lite:hover { background-color: color-mix(in srgb, var(--g-fg) 10%, transparent); }
-  .glass-lite:focus-within { border-color: var(--g-accent); }
-  .ambient { background-image: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--g-accent) 10%, transparent), transparent 70%); }
-}
-@media (max-width: 767px) {
-  .glass { backdrop-filter: blur(8px) saturate(1.3); -webkit-backdrop-filter: blur(8px) saturate(1.3); }
-  .glass-strong { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass, .glass-strong { background-color: color-mix(in srgb, var(--g-bg) 96%, transparent); }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .glass, .glass-strong { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: var(--g-bg); background-image: none; }
+  .glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-width: 0 0 1px 0;
+    box-shadow: 0 2px 8px var(--g-shadow);
+  }
+  .glass-strong {
+    background-color: var(--g-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 12px 32px var(--g-shadow);
+  }
+  .glass-lite {
+    background-color: color-mix(in srgb, var(--g-fg) 6%, var(--g-bg));
+    contain: none;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+  .glass-lite:hover {
+    background-color: color-mix(in srgb, var(--g-fg) 10%, var(--g-bg));
+  }
+  .glass-lite:focus-within {
+    border-color: var(--g-accent);
+  }
+  .ambient {
+    background-image: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--g-accent) 10%, transparent), transparent 70%);
+  }
 }
 
 @keyframes pop-in { from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: none; } }

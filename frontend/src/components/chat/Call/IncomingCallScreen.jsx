@@ -21,7 +21,7 @@ const IncomingCallScreen = () => {
   const borderColor = isLight ? 'rgba(99,102,241,0.15)' : 'rgba(168,85,247,0.20)';
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-xl">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/90">
       <div
         className="relative w-full sm:max-w-sm mx-auto rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden border"
         style={{ background: cardBg, borderColor }}

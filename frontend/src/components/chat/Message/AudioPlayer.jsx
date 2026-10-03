@@ -145,7 +145,6 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
             style={{
                 minWidth: 200,
                 background: theme.isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
-                backdropFilter: 'blur(4px)',
             }}
         >
             <audio ref={audioRef} src={src} preload="metadata" />

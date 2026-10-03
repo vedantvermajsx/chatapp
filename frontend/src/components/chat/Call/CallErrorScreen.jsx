@@ -10,7 +10,7 @@ const CallErrorScreen = () => {
   if (!callError) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85">
       <div
         className="p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border"
         style={{

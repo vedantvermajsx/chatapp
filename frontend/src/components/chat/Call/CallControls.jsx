@@ -17,7 +17,7 @@ const CallControls = ({ isVideo }) => {
   } = useCall();
 
   return (
-    <div className="h-24 bg-gray-950/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-center gap-5 px-6 absolute bottom-0 w-full">
+    <div className="h-24 bg-gray-950 border-t border-white/5 flex items-center justify-center gap-5 px-6 absolute bottom-0 w-full">
       {canSwitchSpeaker ? (
         <button
           onClick={toggleSpeaker}

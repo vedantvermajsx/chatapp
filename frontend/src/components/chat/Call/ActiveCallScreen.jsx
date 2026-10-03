@@ -93,7 +93,7 @@ const ActiveCallScreen = () => {
     <div className="fixed inset-0 z-[100] bg-gray-950 flex flex-col">
       <button
         onClick={toggleMinimize}
-        className="absolute top-6 left-6 z-30 p-3 bg-black/30 hover:bg-black/50 text-white rounded-full backdrop-blur-md transition-all"
+        className="absolute top-6 left-6 z-30 p-3 bg-black/60 hover:bg-black/80 text-white rounded-full transition-all"
         title="Minimize call"
       >
         <Minimize2 className="w-6 h-6" />

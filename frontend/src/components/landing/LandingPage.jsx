@@ -33,7 +33,7 @@ function LandingPage() {
         className={cn(
           'fixed top-0 inset-x-0 z-30 transition-colors duration-300',
           scrolledPastHero
-            ? 'bg-base-100/90 backdrop-blur-sm border-b border-border'
+            ? 'bg-base-100 border-b border-border'
             : 'bg-transparent border-b border-transparent'
         )}
       >

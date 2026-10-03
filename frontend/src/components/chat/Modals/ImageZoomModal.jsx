@@ -102,10 +102,9 @@ export const ImageZoomModal = ({
               className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all hover:scale-100 active:scale-95"
               style={{
                 backgroundColor: isLight
-                  ? "rgba(255,255,255,0.9)"
-                  : "rgba(30,30,30,0.9)",
+                  ? "#ffffff"
+                  : "#1e1e1e",
                 color: isLight ? "#1f2937" : "#f3f4f6",
-                backdropFilter: "blur(12px)",
                 boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
               }}
             >
@@ -119,10 +118,9 @@ export const ImageZoomModal = ({
             className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
             style={{
               backgroundColor: isLight
-                ? "rgba(255,255,255,0.9)"
-                : "rgba(30,30,30,0.9)",
+                ? "#ffffff"
+                : "#1e1e1e",
               color: isLight ? "#1f2937" : "#f3f4f6",
-              backdropFilter: "blur(12px)",
               boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
             }}
           >
