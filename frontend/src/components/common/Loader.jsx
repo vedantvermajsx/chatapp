@@ -5,13 +5,15 @@ import { memo } from 'react';
  * Drop-in for lucide's Loader2: accepts className (w-4 h-4 etc), style, color, size.
  * variant: 'ring' (default) | 'dots' | 'bars'
  */
+const VARIANT_CLASS = { ring: 'ld-ring', dots: 'ld-dots', bars: 'ld-bars' };
+
 const Loader = memo(function Loader({ variant = 'ring', size, color, className = '', style, label = 'Loading', ...rest }) {
   const cls = className.replace(/\banimate-spin\b/g, '').trim();
   const dim = typeof size === 'number' ? { width: size, height: size } : null;
   const props = {
     role: 'status',
     'aria-label': label,
-    className: `ld ld-${variant} ${cls}`,
+    className: `ld ${VARIANT_CLASS[variant] || 'ld-ring'} ${cls}`,
     style: { ...dim, ...(color ? { color } : null), ...style },
   };
 

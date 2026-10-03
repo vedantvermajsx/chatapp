@@ -10,13 +10,15 @@ const fetchNewerMessagesPage = async (
   setMessages,
   messageCache,
   setUnreadCounts,
-  roomPrivateKey = null
+  roomPrivateKey = null,
+  isActive = () => true
 ) => {
   if (!messages || messages.length === 0) {
     return { messages: messages || [], hasMore: false };
   }
 
-  const latestMessage = messages[messages.length - 1];
+  const latestMessage = [...messages].reverse().find(m => !m.isPending);
+  if (!latestMessage) return { messages, hasMore: false };
   const after = latestMessage.timestamp;
 
   const cacheKey = type === 'room' ? `room_${chatId}` : `private_${chatId}`;
@@ -36,16 +38,23 @@ const fetchNewerMessagesPage = async (
     return { messages, hasMore: res.hasMore || false };
   }
 
-  const existingIds = new Set(messages.map(m => String(m.id || m._id)));
-  const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id || m._id)));
+  const mergeNewer = (current) => {
+    const ids = new Set(current.map(m => String(m.id || m._id)));
+    const fresh = res.messages.filter(m => !ids.has(String(m.id || m._id)));
+    if (!fresh.length) return current;
+    const merged = [...current, ...fresh];
+    return type === 'private' && lastRead ? applyLastRead(merged, lastRead) : merged;
+  };
 
   let mergedMessages = messages;
+  const base = isActive() ? messages : (messageCache.current[cacheKey]?.messages || messages);
+  const reallyNew = res.messages.filter(m => !new Set(base.map(x => String(x.id || x._id))).has(String(m.id || m._id)));
 
   if (reallyNew.length > 0) {
-    mergedMessages = [...messages, ...reallyNew];
-
-    if (type === 'private' && lastRead) {
-      mergedMessages = applyLastRead(mergedMessages, lastRead);
+    if (isActive()) {
+      setMessages((prev) => (mergedMessages = mergeNewer(prev)));
+    } else {
+      mergedMessages = mergeNewer(base);
     }
 
     messageCache.current[cacheKey] = {
@@ -54,7 +63,6 @@ const fetchNewerMessagesPage = async (
       timestamp: Date.now(),
     };
 
-    setMessages(mergedMessages);
     await dbService.mergeNewMessages(cacheKey, reallyNew);
   }
 
@@ -72,13 +80,14 @@ export const loadNewerMessagesHandler = async (
   setHasMoreNewerMessages,
   messageCache,
   setUnreadCounts = null,
-  roomPrivateKey = null
+  roomPrivateKey = null,
+  isActive = () => true
 ) => {
   if (!messages || messages.length === 0) return;
 
   try {
-    const { hasMore } = await fetchNewerMessagesPage(chatId, type, messages, setMessages, messageCache, setUnreadCounts, roomPrivateKey);
-    setHasMoreNewerMessages(hasMore);
+    const { hasMore } = await fetchNewerMessagesPage(chatId, type, messages, setMessages, messageCache, setUnreadCounts, roomPrivateKey, isActive);
+    if (isActive()) setHasMoreNewerMessages(hasMore);
   } catch (error) {
     console.error('Failed to load newer messages:', error);
   }

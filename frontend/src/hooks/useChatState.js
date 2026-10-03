@@ -386,7 +386,12 @@ export const useChatState = (user) => {
     setShowSidebar(false);
   }, [user, CACHE_TTL, clearUnread, unreadCounts]);
 
+  const activeKeyRef = useRef(null);
+  activeKeyRef.current = currentPrivateChat ? `private_${currentPrivateChat.id}` : currentRoom ? `room_${currentRoom._id}` : null;
+
   const loadMoreMessages = useCallback(async () => {
+    const key = activeKeyRef.current;
+    const isActive = () => activeKeyRef.current === key;
     if (currentPrivateChat) {
       await loadMoreMessagesHandler(
         currentPrivateChat,
@@ -396,7 +401,8 @@ export const useChatState = (user) => {
         setHasMoreMessages,
         loadingMoreMessages,
         messageCache,
-        setUnreadCounts
+        setUnreadCounts,
+        isActive
       );
     } else if (currentRoom) {
       await loadMoreRoomMessagesHandler(
@@ -407,12 +413,15 @@ export const useChatState = (user) => {
         loadingMoreMessages,
         messageCache,
         setUnreadCounts,
-        currentRoom.privateKey ?? null
+        currentRoom.privateKey ?? null,
+        isActive
       );
     }
   }, [currentPrivateChat, currentRoom, user, messages]);
 
   const loadNewerMessages = useCallback(async () => {
+    const key = activeKeyRef.current;
+    const isActive = () => activeKeyRef.current === key;
     if (loadingNewerMessagesRef.current || !hasMoreNewerMessages || messages.length === 0) return;
     loadingNewerMessagesRef.current = true;
     setLoadingNewerMessages(true);
@@ -426,7 +435,9 @@ export const useChatState = (user) => {
           setMessages,
           setHasMoreNewerMessages,
           messageCache,
-          setUnreadCounts
+          setUnreadCounts,
+          null,
+          isActive
         );
       } else if (currentRoom) {
         await loadNewerMessagesHandler(
@@ -438,7 +449,8 @@ export const useChatState = (user) => {
           setHasMoreNewerMessages,
           messageCache,
           setUnreadCounts,
-          currentRoom.privateKey ?? null
+          currentRoom.privateKey ?? null,
+          isActive
         );
       }
     } finally {

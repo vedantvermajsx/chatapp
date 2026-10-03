@@ -366,7 +366,7 @@ const ChatArea = memo(function ChatArea({
       const cacheKey = currentRoom?._id ? `room_${currentRoom._id}` : `private_${currentPrivateChat?.id}`;
 
       while (hasMore && iterations < 10) {
-        const latestMessage = currentMessages[currentMessages.length - 1];
+        const latestMessage = [...currentMessages].reverse().find(m => !m.isPending);
         if (!latestMessage) break;
         const after = latestMessage.timestamp;
 
