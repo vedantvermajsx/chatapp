@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f0f0f" />
+<title>Minigames</title>
+<script>
+if (new URLSearchParams(location.search).get('embed') === '1' || window.self !== window.top) {
+  document.documentElement.classList.add('embed');
+}
+</script>
+<link rel="stylesheet" href="/games/minigames/style.css" />
+</head>
+<body>
+
+<div id="loader" class="loader" role="status" aria-live="polite">
+  <div class="loader-inner">
+    <div class="loader-icon">🎮</div>
+    <div class="loader-bar"><span></span></div>
+    <p id="loaderText" class="loader-text">Loading…</p>
+  </div>
+</div>
+
+<!-- Game picker -->
+<div id="screen-pick" class="screen">
+  <div class="card">
+    <h1 class="logo">🎮 Minigames</h1>
+    <p class="subtitle">Pick a game, then share a code with a friend.</p>
+    <div id="gameList" class="game-list"></div>
+  </div>
+</div>
+
+<!-- Lobby for the selected game -->
+<div id="screen-home" class="screen">
+  <div class="card">
+    <button id="backToPick" class="link-btn back-link" type="button">⟵ All games</button>
+    <h1 class="logo"><span id="homeIcon"></span> <span id="homeTitle"></span></h1>
+    <p id="homeBlurb" class="subtitle"></p>
+
+    <div id="rpsOptions" class="section" hidden>
+      <label class="section-label">Match length</label>
+      <div class="seg" id="roundsOptions">
+        <button type="button" class="seg-btn selected" data-rounds="3">Best of 3</button>
+        <button type="button" class="seg-btn" data-rounds="5">Best of 5</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <label class="section-label" for="nameInput">Your name</label>
+      <input id="nameInput" class="text-input" maxlength="20" placeholder="Enter your name" autocomplete="off" />
+    </div>
+
+    <div class="actions">
+      <button id="createBtn" class="primary-btn" type="button">Create Game</button>
+      <div class="divider"><span>or</span></div>
+      <div class="join-row">
+        <input id="joinCodeInput" class="text-input code-input" maxlength="4" inputmode="numeric" placeholder="4-digit code" autocomplete="off" />
+        <button id="joinBtn" class="secondary-btn" type="button">Join Game</button>
+      </div>
+      <p id="joinError" class="error-text" role="alert"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Waiting for an opponent -->
+<div id="screen-waiting" class="screen">
+  <div class="card waiting-card">
+    <h2>Waiting for opponent…</h2>
+    <p id="waitingGame" class="hint"></p>
+    <div class="spinner"></div>
+    <p class="hint">Share this code with your friend:</p>
+    <div class="code-display" id="codeDisplay">----</div>
+    <button id="copyCodeBtn" class="secondary-btn small" type="button">Copy Code</button>
+    <button id="cancelWaitBtn" class="link-btn" type="button">Cancel</button>
+  </div>
+</div>
+
+<!-- Game -->
+<div id="screen-game" class="screen">
+  <div class="game-wrap">
+    <div class="player-bar">
+      <span class="player-id"><span id="oppDot" class="dot"></span><span class="player-name" id="oppName">Opponent</span></span>
+      <span class="score" id="oppScore" hidden></span>
+    </div>
+
+    <div class="banner" id="banner"><span id="bannerText">&nbsp;</span><span id="timer" class="timer"></span></div>
+
+    <div class="board-shell">
+      <div id="stage" class="stage"></div>
+
+      <div id="overModal" class="over-modal hidden">
+        <div class="over-box">
+          <h2 id="overTitle">Game Over</h2>
+          <p id="overDesc"></p>
+          <p id="rematchNote" class="hint"></p>
+          <button id="rematchBtn" class="primary-btn" type="button">Rematch</button>
+          <button id="leaveBtn" class="link-btn" type="button">Leave</button>
+        </div>
+      </div>
+
+      <div id="resignModal" class="over-modal hidden">
+        <div class="over-box">
+          <h2>Resign this game?</h2>
+          <p class="hint">Your opponent will be declared the winner.</p>
+          <div class="confirm-row">
+            <button id="resignYesBtn" class="primary-btn danger-btn" type="button">Resign</button>
+            <button id="resignNoBtn" class="secondary-btn" type="button">Keep playing</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="reconnectModal" class="over-modal hidden">
+        <div class="over-box">
+          <div class="spinner"></div>
+          <h2>Connection lost</h2>
+          <p>Reconnect within <span id="reconnectCountdown">60</span>s or you'll forfeit the game.</p>
+          <p class="hint">Game code: <strong id="reconnectCode">----</strong></p>
+          <button id="rejoinBtn" class="primary-btn" type="button">Rejoin Now</button>
+        </div>
+      </div>
+
+      <div id="awayBanner" class="reconnect-banner hidden">
+        Opponent disconnected — waiting <span id="oppReconnectCountdown">60</span>s for them to return…
+      </div>
+    </div>
+
+    <div class="player-bar">
+      <span class="player-id"><span id="meDot" class="dot"></span><span class="player-name" id="meName">You</span></span>
+      <span class="score" id="meScore" hidden></span>
+    </div>
+
+    <div class="game-footer">
+      <div class="game-code-tag"><span id="gameLabel"></span> #<span id="activeCodeTag">----</span></div>
+      <button id="resignBtn" class="link-btn danger" type="button">Resign</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script type="module" src="/games/minigames/app.js"></script>
+</body>
+</html>
