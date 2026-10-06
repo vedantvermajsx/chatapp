@@ -18,11 +18,14 @@ const ActiveCallScreen = () => {
     toggleMute,
     callConnectedTime,
     setRemoteMediaElement,
+    remoteScreenStream,
+    isScreenSharing,
   } = useCall();
 
   const [durationStr, setDurationStr] = useState('00:00:00');
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteScreenRef = useRef(null);
 
   useEffect(() => {
     if (!callConnectedTime || connectionState !== 'connected') {
@@ -58,6 +61,13 @@ const ActiveCallScreen = () => {
     }
   }, [remoteStream, isMinimized, setRemoteMediaElement]);
 
+  useEffect(() => {
+    if (remoteScreenRef.current) {
+      remoteScreenRef.current.srcObject = remoteScreenStream || null;
+      if (remoteScreenStream) remoteScreenRef.current.play().catch((e) => console.warn('Screen play error:', e));
+    }
+  }, [remoteScreenStream, isMinimized]);
+
   if (!activeCall) return null;
 
   const isVideo = activeCall.isVideo;
@@ -75,6 +85,9 @@ const ActiveCallScreen = () => {
     localVideoRef,
     target,
     durationStr,
+    remoteScreenStream,
+    remoteScreenRef,
+    isScreenSharing,
   };
 
   if (isMinimized) {

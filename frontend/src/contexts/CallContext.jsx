@@ -119,6 +119,23 @@ export const CallProvider = ({ children, socket }) => {
           break;
         }
 
+        case 'renegotiate-offer': {
+          if (activeCallSnap && String(activeCallSnap.targetId) === String(senderId)) {
+            await rtc.handleRenegotiateOffer(data, senderId);
+          }
+          break;
+        }
+
+        case 'renegotiate-answer': {
+          await rtc.handleRenegotiateAnswer(data);
+          break;
+        }
+
+        case 'screen-share': {
+          rtc.handleRemoteScreenState(data?.active);
+          break;
+        }
+
         case 'reject-call': {
           if (activeCallSnap && String(activeCallSnap.targetId) === String(senderId)) {
             if (activeCallSnap.status === 'calling' && activeCallSnap.targetData && callStartTimeRef.current) {
@@ -307,6 +324,10 @@ export const CallProvider = ({ children, socket }) => {
         toggleVideo: rtc.toggleVideo,
         toggleSpeaker: rtc.toggleSpeaker,
         switchCamera: rtc.switchCamera,
+        isScreenSharing: rtc.isScreenSharing,
+        canShareScreen: rtc.canShareScreen,
+        remoteScreenStream: rtc.remoteScreenStream,
+        toggleScreenShare: rtc.toggleScreenShare,
         setRemoteMediaElement: rtc.setRemoteMediaElement,
         setCallError,
         callConnectedTime,

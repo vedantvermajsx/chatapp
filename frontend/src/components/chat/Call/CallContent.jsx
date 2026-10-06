@@ -11,6 +11,9 @@ const CallContent = ({
   localVideoRef,
   target,
   durationStr,
+  remoteScreenStream,
+  remoteScreenRef,
+  isScreenSharing,
 }) => (
   <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-black">
     <video
@@ -21,7 +24,15 @@ const CallContent = ({
         }`}
     />
 
-    {(!isVideo || isConnecting || !remoteStream) && (
+    <video
+      ref={remoteScreenRef}
+      autoPlay
+      playsInline
+      muted
+      className={`absolute inset-0 w-full h-full object-contain bg-black z-10 ${remoteScreenStream ? '' : 'hidden'}`}
+    />
+
+    {!remoteScreenStream && (!isVideo || isConnecting || !remoteStream) && (
       <div
         className={
           isMinimized
@@ -65,6 +76,13 @@ const CallContent = ({
       >
         <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
         {!isMinimized && <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10" />}
+      </div>
+    )}
+
+    {!isMinimized && isScreenSharing && (
+      <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-full shadow-2xl text-xs font-semibold">
+        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+        You're sharing your screen
       </div>
     )}
 

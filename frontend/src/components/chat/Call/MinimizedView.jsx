@@ -18,6 +18,9 @@ const MinimizedView = ({
   remoteVideoRef,
   localVideoRef,
   durationStr,
+  remoteScreenStream,
+  remoteScreenRef,
+  isScreenSharing,
   isMuted,
   toggleMute,
   endCall,
@@ -139,6 +142,9 @@ const MinimizedView = ({
         localVideoRef={localVideoRef}
         target={target}
         durationStr={durationStr}
+        remoteScreenStream={remoteScreenStream}
+        remoteScreenRef={remoteScreenRef}
+        isScreenSharing={isScreenSharing}
       />
 
       <div className="h-14 shrink-0 bg-gray-900 border-t border-white/5 flex items-center justify-between px-4">

@@ -31,6 +31,11 @@ export const useWebRTC = (socket) => {
   const [canSwitchSpeaker, setCanSwitchSpeaker] = useState(false);
   const [canSwitchCamera, setCanSwitchCamera] = useState(false);
   const [connectionState, setConnectionState] = useState('new');
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [remoteScreenStream, setRemoteScreenStream] = useState(null);
+  const [canShareScreen] = useState(
+    () => typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getDisplayMedia
+  );
 
   const peerConnection = useRef(null);
   const activeCallTargetId = useRef(null);
@@ -39,6 +44,10 @@ export const useWebRTC = (socket) => {
   const remoteElRef = useRef(null);
   const outputDevicesRef = useRef([]);
   const facingModeRef = useRef('user');
+  const screenStreamRef = useRef(null);
+  const screenSenderRef = useRef(null);
+  const mainRemoteStreamIdRef = useRef(null);
+  const isPoliteRef = useRef(false);
 
   const socketRef = useRef(socket);
   socketRef.current = socket;
@@ -80,6 +89,12 @@ export const useWebRTC = (socket) => {
       localStreamRef.current = null;
       setLocalStream(null);
     }
+    screenStreamRef.current?.getTracks().forEach((t) => { t.onended = null; t.stop(); });
+    screenStreamRef.current = null;
+    screenSenderRef.current = null;
+    mainRemoteStreamIdRef.current = null;
+    setIsScreenSharing(false);
+    setRemoteScreenStream(null);
     setRemoteStream(null);
     activeCallTargetId.current = null;
     iceCandidateBuffer.current = [];
@@ -145,6 +160,8 @@ export const useWebRTC = (socket) => {
 
     const pc = new RTCPeerConnection(ICE_SERVERS);
     activeCallTargetId.current = targetId;
+    mainRemoteStreamIdRef.current = null;
+    setRemoteScreenStream(null);
 
     pc.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
@@ -165,8 +182,13 @@ export const useWebRTC = (socket) => {
     };
 
     pc.ontrack = (event) => {
-      if (event.streams?.[0]) {
-        setRemoteStream(event.streams[0]);
+      const stream = event.streams?.[0];
+      if (!stream) return;
+      if (!mainRemoteStreamIdRef.current || mainRemoteStreamIdRef.current === stream.id) {
+        mainRemoteStreamIdRef.current = stream.id;
+        setRemoteStream(stream);
+      } else {
+        setRemoteScreenStream(stream);
       }
     };
 
@@ -187,6 +209,7 @@ export const useWebRTC = (socket) => {
 
   const createOffer = useCallback(async (targetId, callerData, currentStream = null) => {
     const pc = createPeerConnection(targetId);
+    isPoliteRef.current = false;
     const streamToUse = currentStream || localStreamRef.current;
     if (streamToUse) addTracksToConnection(streamToUse);
 
@@ -200,6 +223,7 @@ export const useWebRTC = (socket) => {
 
   const handleOffer = useCallback(async (offer, senderId, currentStream = null) => {
     const pc = createPeerConnection(senderId);
+    isPoliteRef.current = true;
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
     const buffered = iceCandidateBuffer.current.splice(0);
@@ -317,6 +341,84 @@ export const useWebRTC = (socket) => {
     }
   }, []);
 
+  const renegotiate = useCallback(async () => {
+    const pc = peerConnection.current;
+    const targetId = activeCallTargetId.current;
+    if (!pc || !targetId || pc.signalingState !== 'stable') return;
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socketRef.current?.emit('webrtcSignal', { targetId, type: 'renegotiate-offer', data: pc.localDescription });
+  }, []);
+
+  const handleRenegotiateOffer = useCallback(async (offer, senderId) => {
+    const pc = peerConnection.current;
+    if (!pc) return;
+    if (pc.signalingState !== 'stable') {
+      if (!isPoliteRef.current) return;
+      await pc.setLocalDescription({ type: 'rollback' });
+    }
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socketRef.current?.emit('webrtcSignal', { targetId: senderId, type: 'renegotiate-answer', data: pc.localDescription });
+  }, []);
+
+  const handleRenegotiateAnswer = useCallback(async (answer) => {
+    const pc = peerConnection.current;
+    if (!pc || pc.signalingState !== 'have-local-offer') return;
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    } catch (e) {
+      console.warn('[WebRTC] renegotiate answer failed:', e);
+    }
+  }, []);
+
+  const handleRemoteScreenState = useCallback((active) => {
+    if (!active) setRemoteScreenStream(null);
+  }, []);
+
+  const stopScreenShare = useCallback(async () => {
+    const stream = screenStreamRef.current;
+    if (!stream) return;
+    stream.getTracks().forEach((t) => { t.onended = null; t.stop(); });
+    screenStreamRef.current = null;
+    setIsScreenSharing(false);
+
+    const pc = peerConnection.current;
+    const sender = screenSenderRef.current;
+    screenSenderRef.current = null;
+    if (pc && sender) {
+      try { pc.removeTrack(sender); } catch (e) { console.warn('[WebRTC] removeTrack failed:', e); }
+      await renegotiate().catch((e) => console.warn('[WebRTC] renegotiate failed:', e));
+    }
+    const targetId = activeCallTargetId.current;
+    if (targetId) socketRef.current?.emit('webrtcSignal', { targetId, type: 'screen-share', data: { active: false } });
+  }, [renegotiate]);
+
+  const startScreenShare = useCallback(async () => {
+    const pc = peerConnection.current;
+    if (!pc || screenStreamRef.current || !navigator.mediaDevices?.getDisplayMedia) return;
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      const track = stream.getVideoTracks()[0];
+      if (!track) return;
+      track.onended = () => stopScreenShare();
+      screenStreamRef.current = stream;
+      screenSenderRef.current = pc.addTrack(track, stream);
+      setIsScreenSharing(true);
+      const targetId = activeCallTargetId.current;
+      socketRef.current?.emit('webrtcSignal', { targetId, type: 'screen-share', data: { active: true } });
+      await renegotiate();
+    } catch (err) {
+      if (err?.name !== 'NotAllowedError') console.warn('[WebRTC] startScreenShare failed:', err);
+    }
+  }, [renegotiate, stopScreenShare]);
+
+  const toggleScreenShare = useCallback(
+    () => (screenStreamRef.current ? stopScreenShare() : startScreenShare()),
+    [startScreenShare, stopScreenShare]
+  );
+
   return {
     localStream,
     localStreamRef,
@@ -337,6 +439,13 @@ export const useWebRTC = (socket) => {
     toggleVideo,
     toggleSpeaker,
     switchCamera,
+    isScreenSharing,
+    canShareScreen,
+    remoteScreenStream,
+    toggleScreenShare,
+    handleRenegotiateOffer,
+    handleRenegotiateAnswer,
+    handleRemoteScreenState,
     cleanup,
   };
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { PhoneOff, Mic, MicOff, Video, VideoOff, Volume2, Volume1, SwitchCamera } from 'lucide-react';
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Volume2, Volume1, SwitchCamera, ScreenShare, ScreenShareOff } from 'lucide-react';
 import { useCall } from '../../../contexts/CallContext';
 
 const CallControls = ({ isVideo }) => {
@@ -14,6 +14,9 @@ const CallControls = ({ isVideo }) => {
     toggleVideo,
     toggleSpeaker,
     switchCamera,
+    isScreenSharing,
+    canShareScreen,
+    toggleScreenShare,
   } = useCall();
 
   return (
@@ -79,6 +82,22 @@ const CallControls = ({ isVideo }) => {
             ${isVideoOff ? 'bg-white/5 text-white/30 cursor-not-allowed' : 'bg-white/10 text-white hover:bg-white/20 active:bg-white/30'}`}
         >
           <SwitchCamera className="w-5 h-5" />
+        </button>
+      ) : (
+        <div className="w-12 h-12" />
+      )}
+
+      {canShareScreen ? (
+        <button
+          onClick={toggleScreenShare}
+          title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors
+            ${isScreenSharing
+              ? 'bg-green-500/20 text-green-400 hover:bg-green-500/35 active:bg-green-500/50 ring-1 ring-green-500/40'
+              : 'bg-white/10 text-white hover:bg-white/20 active:bg-white/30'
+            }`}
+        >
+          {isScreenSharing ? <ScreenShareOff className="w-5 h-5" /> : <ScreenShare className="w-5 h-5" />}
         </button>
       ) : (
         <div className="w-12 h-12" />
