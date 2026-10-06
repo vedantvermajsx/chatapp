@@ -13,6 +13,7 @@ import mediaRoutes from './routes/media.routes.js';
 import { requestLogger } from './middleware/logger.js';
 import { globalLimiter, authLimiter, messagingLimiter, uploadLimiter } from './middleware/rateLimiter.js';
 import { createChessRouter, setupChessSocket } from './games/chess/index.js';
+import { createMinigamesRouter, setupMinigamesSocket } from './games/minigames/index.js';
 import {bloomFilter} from './utils/bloomFilterService.js';
 import { setupGuestChangeStream } from './models/guest.model.js';
 
@@ -49,11 +50,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(requestLogger);
 
-// Chess and messaging are mounted ahead of globalLimiter so they use their
-// own per-minute limiters instead of the 200-req/15min limit applied to the
-// rest of the API (that 15-minute window would otherwise choke a 200/min or
-// 100/min budget down to a small fraction of its intended rate).
 app.use(createChessRouter()); // chess play: 200 req/min (games/chess/chess.limiter.js)
+app.use(createMinigamesRouter()); // tic-tac-toe / connect four / rock-paper-scissors: 200 req/min (games/minigames/minigames.limiter.js)
 
 app.use('/api/messages/upload-signature', uploadLimiter);
 app.use('/api/messages', messagingLimiter, messageRoutes); // messaging: 100 req/min
@@ -100,6 +98,7 @@ connectDB().then(async () => {
   const io = setupSocket(server);
   app.set('io', io);
   setupChessSocket(io);
+  setupMinigamesSocket(io);
   server.listen(currentPort, () => console.log(`Server running on port ${currentPort}`));
 
   

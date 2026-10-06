@@ -1,3 +1,5 @@
+import { parseInvite, MINIGAMES } from '../../../utils/minigames';
+
 const CHESS_INVITE = /^Join the chess game with code: (\d{4})$/;
 const EMOJI_RE = /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}])*|[\u{1F1E6}-\u{1F1FF}]{2})/gu;
 const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\uFE0F|\u200D|[\u{1F3FB}-\u{1F3FF}]|[\u{1F1E6}-\u{1F1FF}]|\s)+$/u;
@@ -27,6 +29,28 @@ function TextContent({ text, textColor, bubbleBg, accent, isOwn = false }) {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('open-chess', { detail: { code } }))}
+            className="mt-2 px-3 py-1.5 rounded-lg text-sm font-semibold"
+            style={{ backgroundColor: accent || textColor, color: accent ? '#fff' : bubbleBg }}
+          >
+            Join game
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const minigame = parseInvite(text);
+  if (minigame) {
+    const { game, code } = minigame;
+    return (
+      <div>
+        <p className="text-[15px] leading-[1.4]" style={{ color: textColor }}>
+          {MINIGAMES[game].icon} Join the {MINIGAMES[game].label} game with code: <span className="font-bold tracking-widest">{code}</span>
+        </p>
+        {!isOwn && (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-minigame', { detail: { game, code } }))}
             className="mt-2 px-3 py-1.5 rounded-lg text-sm font-semibold"
             style={{ backgroundColor: accent || textColor, color: accent ? '#fff' : bubbleBg }}
           >

@@ -10,6 +10,8 @@ import { useChatSocket } from '../hooks/useChatSocket';
 import { CallProvider } from '../contexts/CallContext';
 import CallOverlay from './chat/Call/CallOverlay';
 import ChessWindow from './chat/Chess/ChessWindow';
+import MinigameWindow from './chat/Minigames/MinigameWindow';
+import { MINIGAME_COMMANDS, inviteText } from '../utils/minigames';
 import { sendMessageHandler } from '../handlers/message/sendMessage.handler.js';
 
 function Chat() {
@@ -89,6 +91,7 @@ function Chat() {
   const chessBusyRef = useRef(false);
   const showChessRef = useRef(false);
   showChessRef.current = showChess;
+  const minigameRef = useRef(null); // current minigame window state (assigned below, next to the state)
 
   useEffect(() => {
     const onOpenChess = (e) => {
@@ -96,6 +99,10 @@ function Chat() {
       if (!code) return;
       if (showChessRef.current && chessBusyRef.current) {
         toast.error('Finish or close your current chess game first.');
+        return;
+      }
+      if (minigameRef.current) {
+        toast.error('Close your minigame window first.');
         return;
       }
       setChessJoinCode(code);
@@ -109,17 +116,16 @@ function Chat() {
   const chessCtxRef = useRef({});
   chessCtxRef.current = { currentRoom, currentPrivateChat, user, socket, setMessages, privateChats, setPrivateChats, messageCache };
 
-  const handleChessCreated = useCallback((code) => {
-    if (!code || lastInvitedCodeRef.current === code) return;
+  // Posts an invite message into whichever chat is currently open.
+  const sendInviteText = useCallback((text) => {
     const c = chessCtxRef.current;
-    if (!c.user || !(c.currentRoom || c.currentPrivateChat)) return;
-    lastInvitedCodeRef.current = code;
+    if (!c.user || !(c.currentRoom || c.currentPrivateChat)) return false;
     sendMessageHandler(
       { preventDefault() { } },
       c.currentRoom,
       c.currentPrivateChat,
       c.user,
-      `Join the chess game with code: ${code}`,
+      text,
       () => { },            // don't touch what the user is typing
       c.socket,
       c.setMessages,
@@ -133,12 +139,62 @@ function Chat() {
       null,
       () => { }
     );
+    return true;
   }, []);
 
+  const handleChessCreated = useCallback((code) => {
+    if (!code || lastInvitedCodeRef.current === code) return;
+    if (sendInviteText(`Join the chess game with code: ${code}`)) lastInvitedCodeRef.current = code;
+  }, [sendInviteText]);
+
+  // ── Minigames (tic-tac-toe / connect four / rock-paper-scissors) ──
+  const [minigame, setMinigame] = useState(null); // { game, joinCode, key } | null
+  minigameRef.current = minigame;
+  const minigameBusyRef = useRef(false);
+  const lastMinigameCodeRef = useRef(null);
+
+  const openMinigame = useCallback((game, code) => {
+    if (minigameRef.current && minigameBusyRef.current) {
+      toast.error('Finish or close your current game first.');
+      return;
+    }
+    if (showChessRef.current) {
+      toast.error('Close your chess window first.');
+      return;
+    }
+    minigameBusyRef.current = false;
+    setMinigame({ game: game || null, joinCode: code || null, key: Date.now() });
+  }, []);
+
+  useEffect(() => {
+    const onOpenMinigame = (e) => {
+      const { game, code } = e.detail || {};
+      if (game && code) openMinigame(game, code);
+    };
+    window.addEventListener('open-minigame', onOpenMinigame);
+    return () => window.removeEventListener('open-minigame', onOpenMinigame);
+  }, [openMinigame]);
+
+  const handleMinigameCreated = useCallback((game, code) => {
+    if (!game || !code || lastMinigameCodeRef.current === `${game}:${code}`) return;
+    if (sendInviteText(inviteText(game, code))) lastMinigameCodeRef.current = `${game}:${code}`;
+  }, [sendInviteText]);
+
   const handleSendMessage = (e) => {
-    if ((inputMessage || '').trim().toLowerCase() === '/start-chess' && !selectedFile) {
+    const typed = (inputMessage || '').trim().toLowerCase();
+    if (!selectedFile && Object.prototype.hasOwnProperty.call(MINIGAME_COMMANDS, typed)) {
       e.preventDefault();
       setInputMessage('');
+      openMinigame(MINIGAME_COMMANDS[typed], null);
+      return;
+    }
+    if (typed === '/start-chess' && !selectedFile) {
+      e.preventDefault();
+      setInputMessage('');
+      if (minigameRef.current) {
+        toast.error('Close your minigame window first.');
+        return;
+      }
       setChessJoinCode(null);
       if (!showChess) setChessKey((k) => k + 1);
       setShowChess(true);
@@ -362,6 +418,18 @@ function Chat() {
           onGameCreated={handleChessCreated}
           onActiveChange={(active) => { chessBusyRef.current = active; }}
           onClose={() => { chessBusyRef.current = false; setShowChess(false); }}
+        />
+      )}
+
+      {minigame && (
+        <MinigameWindow
+          key={minigame.key}
+          game={minigame.game}
+          username={user?.username}
+          joinCode={minigame.joinCode}
+          onGameCreated={handleMinigameCreated}
+          onActiveChange={(active) => { minigameBusyRef.current = active; }}
+          onClose={() => { minigameBusyRef.current = false; setMinigame(null); }}
         />
       )}
     </div>
