@@ -157,6 +157,8 @@ const MinimizedView = ({
         <div className="flex items-center gap-2">
           <button
             onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
+            title={isMuted ? 'Unmute' : 'Mute'}
             onPointerDown={(e) => e.stopPropagation()}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
               isMuted ? 'bg-red-500/20 text-red-400 hover:bg-red-500/35' : 'bg-white/10 text-white hover:bg-white/20'
@@ -166,6 +168,8 @@ const MinimizedView = ({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); endCall(); }}
+            aria-label="End call"
+            title="End call"
             onPointerDown={(e) => e.stopPropagation()}
             className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white transition-colors"
           >

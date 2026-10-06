@@ -27,7 +27,7 @@ const IncomingCallScreen = () => {
         style={{ background: cardBg, borderColor }}
       >
 
-        <div className="relative px-8 pt-10 pb-10 text-center">
+        <div className="relative px-8 pt-10 pb-10 text-center" style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
           <div className="relative mx-auto w-28 h-28 mb-6">
             <div
               className="absolute -inset-1.5 rounded-full animate-spin-slow"
@@ -42,7 +42,6 @@ const IncomingCallScreen = () => {
                 decoding="async"
                 className="w-full h-full object-cover"
               />
-              )
             </div>
             <span className="absolute inset-0 rounded-full border-2 border-purple-400 opacity-50 animate-ping" />
           </div>
@@ -60,7 +59,8 @@ const IncomingCallScreen = () => {
             <div className="flex flex-col items-center gap-2.5">
               <button
                 onClick={rejectCall}
-                className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 active:scale-95 flex items-center justify-center text-white shadow-lg shadow-red-500/30 transition-all duration-150"
+                aria-label="Decline call"
+                className="w-[4.5rem] h-[4.5rem] rounded-full bg-gradient-to-br from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 active:scale-95 flex items-center justify-center text-white shadow-lg shadow-red-500/30 transition-all duration-150"
               >
                 <PhoneOff className="w-6 h-6" />
               </button>
@@ -70,7 +70,8 @@ const IncomingCallScreen = () => {
             <div className="flex flex-col items-center gap-2.5">
               <button
                 onClick={acceptCall}
-                className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-500 hover:to-green-700 active:scale-95 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 transition-all duration-150 animate-pulse-slow"
+                aria-label="Accept call"
+                className="w-[4.5rem] h-[4.5rem] rounded-full bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-500 hover:to-green-700 active:scale-95 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 transition-all duration-150 animate-pulse-slow"
               >
                 {incomingCall.isVideo ? <Video className="w-6 h-6" /> : <Phone className="w-6 h-6" />}
               </button>

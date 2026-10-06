@@ -43,7 +43,7 @@ const CallContent = ({
 
         <img
           src={target?.avatar?.replace('w_50,h_50,c_fill', 'w_100,h_100,c_fill') || 'https://res.cloudinary.com/dfxi4ihfs/image/upload/w_50,h_50,c_fill/v1782369805/male_g68rxt.avif'}
-          alt={target.username}
+          alt={target?.username || 'User'}
           className={
             isMinimized
               ? 'w-16 h-16 rounded-full object-cover shadow-lg'
@@ -53,8 +53,8 @@ const CallContent = ({
 
         {!isMinimized && (
           <div>
-            <p className="text-white text-xl font-medium">{target?.username}</p>
-            <p className="text-white/45 text-sm mt-1">
+            <p className="text-white text-2xl font-semibold tracking-tight">{target?.username}</p>
+            <p className="text-white/55 text-sm mt-1.5 tabular-nums">
               {isConnecting
                 ? 'Calling…'
                 : isVideo
@@ -71,7 +71,7 @@ const CallContent = ({
         className={
           isMinimized
             ? 'absolute bottom-2 right-2 w-14 h-20 rounded-lg overflow-hidden shadow-lg border border-white/20 z-20'
-            : 'absolute bottom-28 right-4 w-28 h-44 sm:w-36 sm:h-52 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20 z-20'
+            : 'absolute bottom-40 sm:bottom-44 right-4 w-24 h-36 sm:w-36 sm:h-52 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20 z-20'
         }
       >
         <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
@@ -80,13 +80,13 @@ const CallContent = ({
     )}
 
     {!isMinimized && isScreenSharing && (
-      <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-full shadow-2xl text-xs font-semibold">
+      <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-white/40 text-black px-4 py-1.5 rounded-full shadow-2xl text-xs font-semibold">
         You're sharing your screen
       </div>
     )}
 
     {!isMinimized && isLost && (
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-full shadow-2xl text-xs font-semibold tracking-wide uppercase animate-pulse">
+      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 whitespace-nowrap flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-full shadow-2xl text-xs font-semibold tracking-wide uppercase animate-pulse">
         <WifiOff className="w-3.5 h-3.5" />
         Connection Lost
       </div>

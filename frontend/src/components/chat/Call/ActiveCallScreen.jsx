@@ -106,10 +106,12 @@ const ActiveCallScreen = () => {
     <div className="fixed inset-0 z-[100] bg-gray-950 flex flex-col">
       <button
         onClick={toggleMinimize}
-        className="absolute top-6 left-6 z-30 p-3 bg-black/60 hover:bg-black/80 text-white rounded-full transition-all"
+        className="absolute left-4 z-30 p-2.5 bg-black/50 hover:bg-black/70 active:scale-95 backdrop-blur-sm border border-white/10 text-white rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        style={{ top: 'max(1rem, env(safe-area-inset-top))' }}
         title="Minimize call"
+        aria-label="Minimize call"
       >
-        <Minimize2 className="w-6 h-6" />
+        <Minimize2 className="w-5 h-5" />
       </button>
 
       <CallContent {...sharedProps} isMinimized={false} />
