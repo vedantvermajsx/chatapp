@@ -81,7 +81,6 @@ const CallContent = ({
 
     {!isMinimized && isScreenSharing && (
       <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-full shadow-2xl text-xs font-semibold">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
         You're sharing your screen
       </div>
     )}
