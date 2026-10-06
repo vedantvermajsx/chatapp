@@ -1,4 +1,4 @@
-import { publish } from '../../utils/messageBroker.js';
+import { publish, INSTANCE_ID } from '../../utils/messageBroker.js';
 
 const handleWebrtcSignal = (socket, io) => async (payload) => {
   try {
@@ -14,7 +14,8 @@ const handleWebrtcSignal = (socket, io) => async (payload) => {
       senderId,
       type,
       data,
-      callerData
+      callerData,
+      origin: INSTANCE_ID
     };
 
     io.to(String(targetId)).emit('webrtcSignal', payloadToEmit);

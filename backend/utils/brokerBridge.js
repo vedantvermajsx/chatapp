@@ -1,4 +1,4 @@
-import { on } from '../utils/messageBroker.js';
+import { on, INSTANCE_ID } from '../utils/messageBroker.js';
 
 let registered = false;
 
@@ -50,7 +50,8 @@ export function registerBrokerBridge(io, onlineUsers) {
   });
 
   on('webrtcSignal', (payload) => {
-    const { targetId } = payload;
+    const { targetId, origin } = payload;
+    if (origin === INSTANCE_ID) return;
     if (targetId) {
       io.to(String(targetId)).emit('webrtcSignal', payload);
     }

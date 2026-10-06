@@ -1,8 +1,11 @@
 import WebSocket from 'ws';
 import dotenv from 'dotenv';
+import { randomUUID } from 'crypto';
 import { signWsMessage } from './hmacClient.js';
 
 dotenv.config();
+
+export const INSTANCE_ID = randomUUID();
 
 const CORE_CHANNELS = [
   'userOnline',

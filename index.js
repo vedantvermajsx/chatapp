@@ -1,11 +1,3 @@
-// gatherup-api.js
-// One-file client for every API the GatherUp frontend uses.
-// REST only, no dependencies. Uses built-in fetch (Node 18+ or any browser).
-//
-// NOTE: the real app end-to-end encrypts message text (utils/crypto.js).
-// This client sends/receives whatever you give it. Encrypt/decrypt yourself if needed.
-
-
 const LOG = true; // console.log every response
 const REST_URL = 'https://gatherup-now-loadbalancer-service.onrender.com/api';
 

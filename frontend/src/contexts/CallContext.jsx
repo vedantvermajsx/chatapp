@@ -58,6 +58,14 @@ export const CallProvider = ({ children, socket }) => {
   useEffect(() => { activeCallRef.current = activeCall; }, [activeCall]);
   useEffect(() => { rtcRef.current = rtc; }, [rtc]);
 
+  useEffect(() => {
+    if (rtc.connectionState === 'connected' && activeCall && !callConnectedTimeRef.current) {
+      const now = Date.now();
+      callConnectedTimeRef.current = now;
+      setCallConnectedTime(now);
+    }
+  }, [rtc.connectionState, activeCall]);
+
   const endCallLocally = useCallback(() => {
     rtc.cleanup();
     setIncomingCall(null);
@@ -105,9 +113,6 @@ export const CallProvider = ({ children, socket }) => {
         case 'answer': {
           if (activeCallSnap && String(activeCallSnap.targetId) === String(senderId)) {
             await rtc.handleAnswer(data);
-            const now = Date.now();
-            callConnectedTimeRef.current = now;
-            setCallConnectedTime(now);
             setActiveCall((prev) => ({ ...prev, status: 'connected' }));
             stopRingtone();
           }
@@ -230,9 +235,6 @@ export const CallProvider = ({ children, socket }) => {
     }
 
     try {
-      const now = Date.now();
-      callConnectedTimeRef.current = now;
-      setCallConnectedTime(now);
       setActiveCall({
         targetId: incoming.callerId,
         isVideo: incoming.isVideo,
