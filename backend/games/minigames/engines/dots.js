@@ -7,6 +7,8 @@ const vIdx = (r, c) => r * (COLS + 1) + c;
 export default {
   id: 'dots',
   label: 'Dots and Boxes',
+  icon: '🔲',
+  blurb: 'Draw lines and claim the most boxes.',
   turnMs: 60 * 1000,
 
   sanitizeOptions: () => ({}),

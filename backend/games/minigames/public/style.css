@@ -899,6 +899,7 @@ html.embed .card {
 
 .gmk-board {
   display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
   gap: 2px;
   width: min(100%, 420px);
   background: #c9a15b;
@@ -944,7 +945,7 @@ html.embed .card {
 
 .rev-board {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(var(--n), 1fr);
   gap: 2px;
   width: min(100%, 400px);
   background: #1e6b3a;
@@ -1001,7 +1002,7 @@ html.embed .card {
   justify-items: center;
 }
 
-.dots-board .dot {
+.dots-board .pt {
   width: 12px;
   height: 12px;
   border-radius: 50%;

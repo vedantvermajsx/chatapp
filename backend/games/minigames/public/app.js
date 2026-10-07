@@ -8,14 +8,12 @@ const MARKS = {
 };
 const HANDS = { rock: '✊', paper: '✋', scissors: '✌️' };
 
-const GAMES = {
-  tictactoe: { label: 'Tic-Tac-Toe', icon: '⭕', blurb: 'Get three in a row before your opponent does.' },
-  connect4: { label: 'Connect Four', icon: '🔴', blurb: 'Drop discs and line up four in any direction.' },
-  gomoku: { label: 'Gomoku', icon: '⚫', blurb: 'Line up five stones on a 13×13 board.' },
-  reversi: { label: 'Reversi', icon: '⚪', blurb: 'Flank your opponent’s discs to flip them.' },
-  dots: { label: 'Dots and Boxes', icon: '🔲', blurb: 'Draw lines and claim the most boxes.' },
-  rps: { label: 'Rock Paper Scissors', icon: '✊', blurb: 'Lock in your pick and out-guess your friend.' },
-};
+// Game metadata comes from the server (engines/index.js GAME_LIST), so new games need no edit here.
+const GAMES = {};
+try {
+  const list = await (await fetch('/games/minigames/games.json')).json();
+  list.forEach((g) => { GAMES[g.id] = g; });
+} catch { /* leave empty; picker shows nothing */ }
 
 /* ───────────── state ───────────── */
 const params = new URLSearchParams(location.search);
@@ -342,7 +340,7 @@ function enterGame(d) {
   $('resignBtn').hidden = false;
   ['overModal', 'resignModal', 'reconnectModal', 'awayBanner'].forEach((m) => modal(m, false));
 
-  buildStage(true);
+  buildStage(true, d.state);
   showScreen('screen-game');
   applySnapshot(d);
 }
@@ -358,7 +356,7 @@ function applySnapshot(d) {
     overNotified = false;
     modal('overModal', false);
     $('resignBtn').hidden = false;
-    buildStage(true);
+    buildStage(true, d.state);
     notify('started', { id: gameId, game: gameType });
   }
   renderAll();
@@ -383,6 +381,43 @@ $('stage').addEventListener('click', (e) => {
 });
 
 /* ───────────── renderers ───────────── */
+// Generic square-grid renderer: size comes from the server state (`s.size`). Optional `s.legal`
+// restricts clickable cells and `s.last` (index or {cell}) marks the last move.
+function gridRenderer(cls, info) {
+  return {
+    build(stage, s) {
+      if (info) stage.innerHTML = `<div class="${cls}-info"></div>`;
+      const board = document.createElement('div');
+      board.className = `${cls}-board`;
+      board.style.setProperty('--n', s.size);
+      for (let i = 0; i < s.size * s.size; i++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `${cls}-cell`;
+        b.dataset.move = JSON.stringify({ cell: i });
+        board.appendChild(b);
+      }
+      stage.appendChild(board);
+    },
+    update(s, over) {
+      const line = over && over.line ? over.line : [];
+      const legal = s.legal ? new Set(s.legal) : null;
+      const last = s.last && typeof s.last === 'object' ? s.last.cell : s.last;
+      if (info) $('stage').querySelector(`.${cls}-info`).textContent = info(s);
+      $('stage').querySelectorAll(`.${cls}-cell`).forEach((c, i) => {
+        const v = s.board[i];
+        const ok = v === null && canAct() && (!legal || legal.has(i));
+        c.classList.toggle('p0', v === 0);
+        c.classList.toggle('p1', v === 1);
+        c.classList.toggle('last', last === i);
+        c.classList.toggle('win', line.includes(i));
+        c.classList.toggle('hint', !!legal && ok);
+        c.disabled = !ok;
+      });
+    },
+  };
+}
+
 const RENDER = {
   tictactoe: {
     build(stage) {
@@ -455,71 +490,20 @@ const RENDER = {
     },
   },
 
-  gomoku: {
-    build(stage) {
-      const board = document.createElement('div');
-      board.className = 'gmk-board';
-      board.style.gridTemplateColumns = 'repeat(13, 1fr)';
-      for (let i = 0; i < 169; i++) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'gmk-cell';
-        b.dataset.move = JSON.stringify({ cell: i });
-        board.appendChild(b);
-      }
-      stage.appendChild(board);
-    },
-    update(s, over) {
-      const line = over && over.line ? over.line : [];
-      $('stage').querySelectorAll('.gmk-cell').forEach((c, i) => {
-        const v = s.board[i];
-        c.classList.toggle('p0', v === 0);
-        c.classList.toggle('p1', v === 1);
-        c.classList.toggle('last', s.last === i);
-        c.classList.toggle('win', line.includes(i));
-        c.disabled = v !== null || !canAct();
-      });
-    },
-  },
-
-  reversi: {
-    build(stage) {
-      stage.innerHTML = '<div class="rev-info" id="revInfo"></div>';
-      const board = document.createElement('div');
-      board.className = 'rev-board';
-      for (let i = 0; i < 64; i++) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'rev-cell';
-        b.dataset.move = JSON.stringify({ cell: i });
-        board.appendChild(b);
-      }
-      stage.appendChild(board);
-    },
-    update(s) {
-      const legal = new Set(s.legal || []);
-      $('revInfo').textContent = `Black ${s.scores[0]} · White ${s.scores[1]}` + (s.passed !== null && s.passed !== undefined ? ' · opponent passed' : '');
-      $('stage').querySelectorAll('.rev-cell').forEach((c, i) => {
-        const v = s.board[i];
-        c.classList.toggle('p0', v === 0);
-        c.classList.toggle('p1', v === 1);
-        c.classList.toggle('hint', v === null && canAct() && legal.has(i));
-        c.classList.toggle('last', s.last && s.last.cell === i);
-        c.disabled = v !== null || !canAct() || !legal.has(i);
-      });
-    },
-  },
+  gomoku: gridRenderer('gmk'),
+  reversi: gridRenderer('rev', (s) =>
+    `Black ${s.scores[0]} · White ${s.scores[1]}` + (s.passed != null ? ' · opponent passed' : '')),
 
   dots: {
-    build(stage) {
+    build(stage, s) {
       stage.innerHTML = '<div class="dots-info" id="dotsInfo"></div><div class="dots-board" id="dotsBoard"></div>';
       const bd = $('dotsBoard');
-      const R = 4, C = 4;
+      const R = s.rows, C = s.cols;
       bd.style.gridTemplateColumns = 'repeat(' + (2 * C + 1) + ', auto)';
       for (let gr = 0; gr <= 2 * R; gr++) {
         for (let gc = 0; gc <= 2 * C; gc++) {
           const el = document.createElement(gr % 2 === gc % 2 ? 'div' : 'button');
-          if (gr % 2 === 0 && gc % 2 === 0) el.className = 'dot';
+          if (gr % 2 === 0 && gc % 2 === 0) el.className = 'pt';
           else if (gr % 2 === 1 && gc % 2 === 1) { el.className = 'box'; el.dataset.box = (gr - 1) / 2 * C + (gc - 1) / 2; }
           else {
             el.type = 'button';
@@ -626,14 +610,14 @@ const RENDER = {
   },
 };
 
-function buildStage(force) {
+function buildStage(force, state) {
   if (!force && builtFor === gameType) return;
   builtFor = gameType;
   prevMoves = -1;
   shownRound = 0;
   const stage = $('stage');
   stage.innerHTML = '';
-  RENDER[gameType].build(stage);
+  RENDER[gameType].build(stage, state);
 }
 
 function renderAll() {

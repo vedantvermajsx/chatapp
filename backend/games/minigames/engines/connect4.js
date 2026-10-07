@@ -22,6 +22,8 @@ const winningRun = (board, row, col, seat) => {
 export default {
   id: 'connect4',
   label: 'Connect Four',
+  icon: '🔴',
+  blurb: 'Drop discs and line up four in any direction.',
   turnMs: 60 * 1000,
 
   sanitizeOptions: () => ({}),

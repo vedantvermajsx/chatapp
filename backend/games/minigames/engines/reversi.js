@@ -30,6 +30,8 @@ const count = (board) => [board.filter((x) => x === 0).length, board.filter((x) 
 export default {
   id: 'reversi',
   label: 'Reversi',
+  icon: '⚪',
+  blurb: 'Flank your opponent’s discs to flip them.',
   turnMs: 60 * 1000,
 
   sanitizeOptions: () => ({}),

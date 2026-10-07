@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createMinigamesLimiter } from './minigames.limiter.js';
+import { GAME_LIST } from './engines/index.js';
 
 const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
 
@@ -33,6 +34,11 @@ export const createMinigamesRouter = () => {
   router.get('/start-minigame', limiter, allowEmbedding, (req, res) => {
     res.set('Cache-Control', 'no-cache');
     res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  });
+
+  router.get('/games/minigames/games.json', limiter, allowEmbedding, (req, res) => {
+    res.set('Cache-Control', 'no-cache');
+    res.json(GAME_LIST);
   });
 
   router.use(

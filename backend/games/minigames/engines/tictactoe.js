@@ -7,6 +7,8 @@ const LINES = [
 export default {
   id: 'tictactoe',
   label: 'Tic-Tac-Toe',
+  icon: '⭕',
+  blurb: 'Get three in a row before your opponent does.',
   turnMs: 60 * 1000,
 
   sanitizeOptions: () => ({}),

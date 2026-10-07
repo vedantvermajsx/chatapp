@@ -8,6 +8,9 @@ lobby/room system, one engine per game.
 | --- | --- | --- |
 | Tic-Tac-Toe | `tictactoe` | 60s per move |
 | Connect Four | `connect4` | 7x6 board, 60s per move |
+| Gomoku | `gomoku` | 13x13, five in a row, 60s per move |
+| Reversi | `reversi` | 8x8, auto-pass, legal-move hints, 60s per move |
+| Dots and Boxes | `dots` | 4x4 boxes, extra turn on a claimed box, 60s per move |
 | Rock Paper Scissors | `rps` | best of 3 or 5, picks stay hidden until both lock in, 30s per round |
 
 ## Routes
@@ -52,7 +55,8 @@ MINIGAMES_EMBED_ORIGINS=https://app.example.com   # falls back to CHESS_EMBED_OR
    (copy `tictactoe.js` — it's ~35 lines). `move` mutates state and returns `{}`, `{ error }`,
    or `{ over: { winner: 0|1|null, reason, line? } }`.
 2. Register it in `engines/index.js`.
-3. In `public/app.js`, add an entry to `GAMES` and a `RENDER.<id> = { build(stage), update(state, over) }`.
+3. In `public/app.js`, add `RENDER.<id> = { build(stage, state), update(state, over) }` (square boards: `gridRenderer('<css-prefix>')`).
+   The picker reads `GAME_LIST` from `/games/minigames/games.json`, so no `GAMES` entry is needed.
    Put clickable elements' payload in `data-move='{"..."}'` and the shared click handler sends it.
 4. Frontend: add it to `frontend/src/utils/minigames.js` (label, icon, `/start-<id>` command).
 
