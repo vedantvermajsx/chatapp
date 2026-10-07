@@ -1,13 +1,20 @@
 export const MINIGAMES = {
-  tictactoe: { label: 'Tic-Tac-Toe', icon: '⭕' },
-  connect4: { label: 'Connect Four', icon: '🔴' },
-  rps: { label: 'Rock Paper Scissors', icon: '✊' },
+  tictactoe: { label: 'Tic-Tac-Toe' },
+  connect4: { label: 'Connect Four' },
+  gomoku: { label: 'Gomoku' },
+  reversi: { label: 'Reversi' },
+  dots: { label: 'Dots and Boxes' },
+  rps: { label: 'Rock Paper Scissors' },
 };
 
+// Chat slash commands. `null` opens the game picker.
 export const MINIGAME_COMMANDS = {
   '/games': null,
   '/start-tictactoe': 'tictactoe',
   '/start-connect4': 'connect4',
+  '/start-gomoku': 'gomoku',
+  '/start-reversi': 'reversi',
+  '/start-dots': 'dots',
   '/start-rps': 'rps',
 };
 
