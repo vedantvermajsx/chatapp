@@ -451,8 +451,61 @@ function gridRenderer(cls, info) {
         c.classList.toggle('p1', v === 1);
         c.classList.toggle('last', last === i);
         c.classList.toggle('win', line.includes(i));
-        c.classList.toggle('hint', ok);
+        c.classList.toggle('hint', !!legal && ok);
         c.disabled = !ok;
+      });
+    },
+  };
+}
+
+// Reversi: pick one of your discs first, then only the squares reachable through that disc are shown.
+function reversiRenderer() {
+  let sel = null;
+  const repaint = () => RENDER.reversi.update(snap.state, snap.over);
+  return {
+    build(stage, s) {
+      sel = null;
+      stage.innerHTML = '<div class="rev-info"></div>';
+      const board = document.createElement('div');
+      board.className = 'rev-board';
+      board.style.setProperty('--n', s.size);
+      for (let i = 0; i < s.size * s.size; i++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'rev-cell';
+        b.dataset.i = i;
+        board.appendChild(b);
+      }
+      board.addEventListener('click', (e) => {
+        const el = e.target.closest('.rev-cell');
+        if (!el || el.disabled || !el.classList.contains('pick')) return;
+        const i = Number(el.dataset.i);
+        sel = sel === i ? null : i;
+        repaint();
+      });
+      stage.appendChild(board);
+    },
+    update(s) {
+      const mine = canAct();
+      if (!mine) sel = null;
+      const by = s.byDisc || {};
+      if (sel !== null && !(by[sel] && s.board[sel] === mySeat)) sel = null;
+      const dest = new Set(sel !== null ? by[sel] : []);
+      const info = $('stage').querySelector('.rev-info');
+      info.textContent = `Black ${s.scores[0]} · White ${s.scores[1]}` + (s.passed != null ? ' · opponent passed' : '') +
+        (mine ? (sel === null ? ' · select one of your discs' : ' · pick a highlighted square') : '');
+      $('stage').querySelectorAll('.rev-cell').forEach((c, i) => {
+        const v = s.board[i];
+        const pick = mine && v === mySeat && !!by[i];
+        const target = mine && v === null && dest.has(i);
+        c.classList.toggle('p0', v === 0);
+        c.classList.toggle('p1', v === 1);
+        c.classList.toggle('pick', pick);
+        c.classList.toggle('sel', sel === i);
+        c.classList.toggle('hint', target);
+        c.classList.toggle('last', !!(s.last && s.last.cell === i));
+        if (target) c.dataset.move = JSON.stringify({ cell: i }); else delete c.dataset.move;
+        c.disabled = !(pick || target);
       });
     },
   };
@@ -486,7 +539,6 @@ const RENDER = {
           c.classList.toggle('p1', v === 1);
         }
         c.classList.toggle('win', line.includes(i));
-        c.classList.toggle('hint', v === null && canAct());
         c.disabled = v !== null || !canAct();
       });
     },
@@ -535,8 +587,7 @@ const RENDER = {
   },
 
   gomoku: gridRenderer('gmk'),
-  reversi: gridRenderer('rev', (s) =>
-    `Black ${s.scores[0]} · White ${s.scores[1]}` + (s.passed != null ? ' · opponent passed' : '')),
+  reversi: reversiRenderer(),
 
   dots: {
     build(stage, s) {

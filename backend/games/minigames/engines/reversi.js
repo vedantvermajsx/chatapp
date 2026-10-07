@@ -25,6 +25,28 @@ const legalMoves = (board, seat) => {
   return out;
 };
 
+// Discs that bracket a flank when `seat` plays `cell` (the far end of each flipping line).
+const anchorsFor = (board, cell, seat) => {
+  const row = Math.floor(cell / N);
+  const col = cell % N;
+  const out = [];
+  for (const [dr, dc] of DIRS) {
+    let r = row + dr;
+    let c = col + dc;
+    let n = 0;
+    while (r >= 0 && r < N && c >= 0 && c < N && board[r * N + c] === 1 - seat) { r += dr; c += dc; n++; }
+    if (n && r >= 0 && r < N && c >= 0 && c < N && board[r * N + c] === seat) out.push(r * N + c);
+  }
+  return out;
+};
+
+// { anchorDisc: [cells you can play by flanking through that disc] }
+const movesByDisc = (board, seat) => {
+  const by = {};
+  for (const cell of legalMoves(board, seat)) for (const a of anchorsFor(board, cell, seat)) (by[a] = by[a] || []).push(cell);
+  return by;
+};
+
 const count = (board) => [board.filter((x) => x === 0).length, board.filter((x) => x === 1).length];
 
 export default {
@@ -54,6 +76,7 @@ export default {
     passed: s.passed,
     scores: count(s.board),
     legal: legalMoves(s.board, s.turn),
+    byDisc: movesByDisc(s.board, s.turn),
   }),
 
   turnOf: (s) => s.turn,

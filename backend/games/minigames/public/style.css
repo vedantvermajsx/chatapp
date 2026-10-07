@@ -1066,3 +1066,10 @@ html.embed .card {
 
 .ico { width: 1em; height: 1em; vertical-align: -.125em; flex: none; }
 .rps-hand .ico { width: 46px; height: 46px; }
+
+.rev-cell.pick { cursor: pointer; box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); }
+.rev-cell.sel { box-shadow: inset 0 0 0 3px var(--accent); }
+.rev-cell.hint { cursor: pointer; }
+.c4-col .c4-cell.land { background: var(--bg); }
+.c4-col:hover:not(:disabled) .c4-cell.land { background: color-mix(in srgb, var(--me) 40%, var(--bg)); }
+.ttt-cell.hint, .gmk-cell.hint { background-image: none; }
