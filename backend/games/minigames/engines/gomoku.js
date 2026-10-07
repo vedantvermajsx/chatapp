@@ -4,7 +4,7 @@ const SIZE = 13;
 export default {
   id: 'gomoku',
   label: 'Gomoku',
-  icon: '⚫',
+  pieces: ['Black', 'White'], // index = seat = value stored on the board; piece 0 moves first
   blurb: 'Line up five stones on a 13×13 board.',
   turnMs: 60 * 1000,
 

@@ -22,7 +22,7 @@ const winningRun = (board, row, col, seat) => {
 export default {
   id: 'connect4',
   label: 'Connect Four',
-  icon: '🔴',
+  pieces: ['Red', 'Yellow'], // index = seat = value stored on the board; piece 0 moves first
   blurb: 'Drop discs and line up four in any direction.',
   turnMs: 60 * 1000,
 

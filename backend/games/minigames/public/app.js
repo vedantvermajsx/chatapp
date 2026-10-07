@@ -6,7 +6,23 @@ const MARKS = {
   x: '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round"><path d="M22 22 L78 78 M78 22 L22 78"/></svg>',
   o: '<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="14"><circle cx="50" cy="50" r="29"/></svg>',
 };
-const HANDS = { rock: '✊', paper: '✋', scissors: '✌️' };
+// Inline SVG icons (stroke = currentColor, sized by font-size). Game icons are keyed by game id.
+const ico = (inner) => '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+const ICON = {
+  tictactoe: ico('<path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>'),
+  connect4: ico('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8" cy="9" r="1.6"/><circle cx="12" cy="9" r="1.6"/><circle cx="16" cy="9" r="1.6"/><circle cx="8" cy="15" r="1.6"/><circle cx="12" cy="15" r="1.6" fill="currentColor"/><circle cx="16" cy="15" r="1.6"/>'),
+  gomoku: ico('<path d="M3 8h18M3 16h18M8 3v18M16 3v18"/><circle cx="8" cy="8" r="2.6" fill="currentColor"/><circle cx="16" cy="16" r="2.6" fill="var(--bg, #000)"/>'),
+  reversi: ico('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>'),
+  dots: ico('<circle cx="5" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="19" cy="5" r="1.4" fill="currentColor"/><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/><circle cx="5" cy="19" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/><circle cx="19" cy="19" r="1.4" fill="currentColor"/><path d="M5 5h7M12 5v7M5 12v7"/>'),
+  rps: ico('<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L18 4M16 16L6 4"/>'),
+  unknown: ico('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>'),
+  lock: ico('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+};
+const HANDS = {
+  rock: ico('<rect x="6" y="8" width="12" height="10" rx="4"/><path d="M9 8v3M12 8v3M15 8v3"/>'),
+  paper: ico('<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>'),
+  scissors: ICON.rps,
+};
 
 // Game metadata comes from the server (engines/index.js GAME_LIST), so new games need no edit here.
 const GAMES = {};
@@ -27,6 +43,7 @@ let gameOver = false;
 let opponentAway = false;
 let pendingMove = false;
 let deadlineAt = 0;
+let side = ['0', '1'].includes(params.get('side')) ? Number(params.get('side')) : params.get('side') === 'random' ? 'random' : 0;
 let rpsRounds = Number(params.get('rounds')) === 5 ? 5 : 3;
 let everConnected = false;
 let overTimer = null;
@@ -151,7 +168,7 @@ function buildPicker() {
     btn.type = 'button';
     btn.className = 'game-card';
     btn.innerHTML = '<span class="gi"></span><span><div class="gt"></div><div class="gb"></div></span>';
-    btn.querySelector('.gi').textContent = g.icon;
+    btn.querySelector('.gi').innerHTML = ICON[id] || '';
     btn.querySelector('.gt').textContent = g.label;
     btn.querySelector('.gb').textContent = g.blurb;
     btn.addEventListener('click', () => selectGame(id));
@@ -162,13 +179,34 @@ function buildPicker() {
 function selectGame(id) {
   gameType = id;
   const g = GAMES[id];
-  $('homeIcon').textContent = g.icon;
+  $('homeIcon').innerHTML = ICON[id] || '';
   $('homeTitle').textContent = g.label;
   $('homeBlurb').textContent = g.blurb;
   $('rpsOptions').hidden = id !== 'rps';
+  buildSidePicker(g);
   $('joinError').textContent = '';
   showScreen('screen-home');
 }
+
+function buildSidePicker(g) {
+  const seg = $('sideSeg');
+  $('sideOptions').hidden = !g.pieces;
+  seg.innerHTML = '';
+  if (!g.pieces) return;
+  [[0, g.pieces[0] + ' (moves first)'], [1, g.pieces[1]], ['random', 'Random']].forEach(([v, label]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'seg-btn' + (v === side ? ' selected' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      side = v;
+      seg.querySelectorAll('.seg-btn').forEach((x) => x.classList.toggle('selected', x === b));
+    });
+    seg.appendChild(b);
+  });
+}
+
+const createPayload = () => ({ game: gameType, name: getName(), side, options: { rounds: rpsRounds } });
 
 function syncRoundsButtons() {
   document.querySelectorAll('#roundsOptions .seg-btn').forEach((b) =>
@@ -187,7 +225,7 @@ $('backToPick').addEventListener('click', () => { gameType = null; showScreen('s
 $('createBtn').addEventListener('click', (e) => {
   if (!gameType) return;
   setBusy(e.currentTarget, 'Creating…');
-  socket.emit('createGame', { game: gameType, name: getName(), options: { rounds: rpsRounds } });
+  socket.emit('createGame', createPayload());
 });
 
 $('joinBtn').addEventListener('click', (e) => {
@@ -310,7 +348,7 @@ function autoStart() {
     const saved = store.get('session:' + joinCode);
     socket.emit('joinGame', { id: joinCode, game: gameType, name: getName(), token: saved ? saved.token : null });
   } else if (params.get('action') === 'create' && gameType) {
-    socket.emit('createGame', { game: gameType, name: getName(), options: { rounds: rpsRounds } });
+    socket.emit('createGame', createPayload());
   }
 }
 if (socket.connected) autoStart(); else socket.once('connect', autoStart);
@@ -336,7 +374,9 @@ function enterGame(d) {
   $('meDot').className = 'dot p' + mySeat;
   $('oppDot').className = 'dot p' + (1 - mySeat);
   $('activeCodeTag').textContent = gameId;
-  $('gameLabel').textContent = GAMES[gameType].label;
+  const pc = GAMES[gameType].pieces;
+  $('gameLabel').textContent = GAMES[gameType].label + (pc ? ' · You: ' + pc[mySeat] : '');
+  $('stage').dataset.me = mySeat;
   $('resignBtn').hidden = false;
   ['overModal', 'resignModal', 'reconnectModal', 'awayBanner'].forEach((m) => modal(m, false));
 
@@ -411,7 +451,7 @@ function gridRenderer(cls, info) {
         c.classList.toggle('p1', v === 1);
         c.classList.toggle('last', last === i);
         c.classList.toggle('win', line.includes(i));
-        c.classList.toggle('hint', !!legal && ok);
+        c.classList.toggle('hint', ok);
         c.disabled = !ok;
       });
     },
@@ -446,6 +486,7 @@ const RENDER = {
           c.classList.toggle('p1', v === 1);
         }
         c.classList.toggle('win', line.includes(i));
+        c.classList.toggle('hint', v === null && canAct());
         c.disabled = v !== null || !canAct();
       });
     },
@@ -484,7 +525,10 @@ const RENDER = {
           const isLast = s.last && s.last.row === r && s.last.col === c;
           cell.classList.toggle('drop', !!(fresh && isLast));
         });
-        col.disabled = s.board[c] !== null || !canAct();
+        const ok = s.board[c] === null && canAct();
+        const land = ok ? [...Array(6).keys()].reverse().find((r) => s.board[r * 7 + c] === null) : -1;
+        [...col.children].forEach((cell, r) => cell.classList.toggle('land', r === land));
+        col.disabled = !ok;
       });
       prevMoves = s.moves;
     },
@@ -540,9 +584,9 @@ const RENDER = {
       stage.innerHTML =
         '<div class="rps-info" id="rpsInfo"></div>' +
         '<div class="rps-arena">' +
-        '<div class="rps-side"><span class="rps-label">You</span><div class="rps-hand" id="rpsMe">❔</div></div>' +
+        '<div class="rps-side"><span class="rps-label">You</span><div class="rps-hand" id="rpsMe">' + ICON.unknown + '</div></div>' +
         '<div class="rps-vs">VS</div>' +
-        '<div class="rps-side"><span class="rps-label">Opponent</span><div class="rps-hand" id="rpsOpp">❔</div></div>' +
+        '<div class="rps-side"><span class="rps-label">Opponent</span><div class="rps-hand" id="rpsOpp">' + ICON.unknown + '</div></div>' +
         '</div>' +
         '<div class="rps-result" id="rpsResult"></div>' +
         '<div class="rps-choices"></div>' +
@@ -555,7 +599,7 @@ const RENDER = {
         b.dataset.move = JSON.stringify({ choice: k });
         b.dataset.choice = k;
         b.innerHTML = '<span class="em"></span><span></span>';
-        b.firstChild.textContent = em;
+        b.firstChild.innerHTML = em;
         b.lastChild.textContent = k[0].toUpperCase() + k.slice(1);
         choices.appendChild(b);
       });
@@ -569,17 +613,17 @@ const RENDER = {
       opp.classList.remove('won');
 
       if (s.mine) {
-        me.textContent = HANDS[s.mine];
-        opp.textContent = s.oppLocked ? '🔒' : '❔';
+        me.innerHTML = HANDS[s.mine];
+        opp.innerHTML = s.oppLocked ? ICON.lock : ICON.unknown;
         res.textContent = s.oppLocked ? '' : 'Locked in — waiting for opponent…';
       } else if (s.oppLocked) {
-        me.textContent = '❔';
-        opp.textContent = '🔒';
+        me.innerHTML = ICON.unknown;
+        opp.innerHTML = ICON.lock;
         res.textContent = 'Your opponent has locked in!';
       } else if (s.last) {
         const l = s.last;
-        me.textContent = HANDS[l.picks[mySeat]];
-        opp.textContent = HANDS[l.picks[1 - mySeat]];
+        me.innerHTML = HANDS[l.picks[mySeat]];
+        opp.innerHTML = HANDS[l.picks[1 - mySeat]];
         if (l.winner === null) res.textContent = 'Tie — go again';
         else if (l.winner === mySeat) { res.textContent = 'You win the round!'; me.classList.add('won'); }
         else { res.textContent = 'They win the round'; opp.classList.add('won'); }
@@ -588,8 +632,8 @@ const RENDER = {
           [me, opp].forEach((h) => { h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop'); });
         }
       } else {
-        me.textContent = '❔';
-        opp.textContent = '❔';
+        me.innerHTML = ICON.unknown;
+        opp.innerHTML = ICON.unknown;
         res.textContent = '';
       }
 
@@ -701,7 +745,7 @@ function showOver(over, rematch) {
     overNotified = true;
   }
 
-  $('overTitle').textContent = over.winner === null ? "It's a draw" : over.winner === mySeat ? 'You win! 🎉' : 'You lose';
+  $('overTitle').textContent = over.winner === null ? "It's a draw" : over.winner === mySeat ? 'You win!' : 'You lose';
   $('overDesc').textContent = describeOver(over);
 
   const iAsked = !!rematch[mySeat];

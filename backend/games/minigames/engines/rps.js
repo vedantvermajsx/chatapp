@@ -5,7 +5,6 @@ const MAX_ROUNDS_PLAYED = 30; // safety valve against endless ties
 export default {
   id: 'rps',
   label: 'Rock Paper Scissors',
-  icon: '✊',
   blurb: 'Lock in your pick and out-guess your friend.',
   turnMs: 30 * 1000,
 

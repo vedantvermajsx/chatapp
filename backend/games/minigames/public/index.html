@@ -16,7 +16,7 @@ if (new URLSearchParams(location.search).get('embed') === '1' || window.self !==
 
 <div id="loader" class="loader" role="status" aria-live="polite">
   <div class="loader-inner">
-    <div class="loader-icon">🎮</div>
+    <div class="loader-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 10v5M4.5 12.5h5"/><circle cx="16" cy="11.5" r="1"/><circle cx="18.5" cy="14" r="1"/></svg></div>
     <div class="loader-bar"><span></span></div>
     <p id="loaderText" class="loader-text">Loading…</p>
   </div>
@@ -25,7 +25,7 @@ if (new URLSearchParams(location.search).get('embed') === '1' || window.self !==
 <!-- Game picker -->
 <div id="screen-pick" class="screen">
   <div class="card">
-    <h1 class="logo">🎮 Minigames</h1>
+    <h1 class="logo"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 10v5M4.5 12.5h5"/><circle cx="16" cy="11.5" r="1"/><circle cx="18.5" cy="14" r="1"/></svg> Minigames</h1>
     <p class="subtitle">Pick a game, then share a code with a friend.</p>
     <div id="gameList" class="game-list"></div>
   </div>
@@ -44,6 +44,11 @@ if (new URLSearchParams(location.search).get('embed') === '1' || window.self !==
         <button type="button" class="seg-btn selected" data-rounds="3">Best of 3</button>
         <button type="button" class="seg-btn" data-rounds="5">Best of 5</button>
       </div>
+    </div>
+
+    <div id="sideOptions" class="section" hidden>
+      <label class="section-label">Your piece</label>
+      <div class="seg" id="sideSeg"></div>
     </div>
 
     <div class="section">

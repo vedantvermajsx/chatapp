@@ -192,7 +192,7 @@ export function setupMinigamesSocket(io) {
     throttle(socket);
 
     socket.on('createGame', safe('createGame', (payload) => {
-      const { game: type, name, options } = payload || {};
+      const { game: type, name, options, side } = payload || {};
       if (!isGame(type)) return socket.emit('createError', 'Unknown game.');
 
       const existing = games.get(socket.data.gameId);
@@ -206,6 +206,10 @@ export function setupMinigamesSocket(io) {
       const engine = ENGINES[type];
       const opts = engine.sanitizeOptions(options);
       const token = crypto.randomBytes(12).toString('hex');
+      // Piece choice: the creator takes seat 0 or 1 (seat index == piece). Only for games that define pieces.
+      const cs = !engine.pieces ? 0 : side === 0 || side === 1 ? side : Math.random() < 0.5 ? 0 : 1;
+      const players = [null, null];
+      players[cs] = { token, name: cleanName(name, 'Player ' + (cs + 1)), connected: true, socketId: socket.id, disconnectTimer: null };
 
       games.set(id, {
         id,
@@ -214,10 +218,8 @@ export function setupMinigamesSocket(io) {
         options: opts,
         firstSeat: 0,
         state: engine.create(opts, 0),
-        players: [
-          { token, name: cleanName(name, 'Player 1'), connected: true, socketId: socket.id, disconnectTimer: null },
-          null,
-        ],
+        creatorSeat: cs,
+        players,
         started: false,
         over: null,
         rematch: [false, false],
@@ -226,8 +228,8 @@ export function setupMinigamesSocket(io) {
         cleanupTimer: null,
       });
 
-      attach(socket, id, 0);
-      socket.emit('gameCreated', { id, game: type, options: opts, seat: 0, token });
+      attach(socket, id, cs);
+      socket.emit('gameCreated', { id, game: type, options: opts, seat: cs, token });
     }));
 
     socket.on('joinGame', safe('joinGame', (payload) => {
@@ -246,10 +248,12 @@ export function setupMinigamesSocket(io) {
         }
       }
 
-      if (g.players[1]) {
+      const cs = g.creatorSeat;
+      const js = 1 - cs;
+      if (g.players[js]) {
         return socket.emit('joinError', anyoneGone(g) ? 'A player is reconnecting to this game — try again shortly.' : 'Game is already full.');
       }
-      if (!g.players[0].connected) {
+      if (!g.players[cs].connected) {
         return socket.emit('joinError', 'The creator disconnected — waiting for them to reconnect.');
       }
       if (socket.data.gameId && socket.data.gameId !== id) {
@@ -259,14 +263,14 @@ export function setupMinigamesSocket(io) {
       }
 
       const newToken = crypto.randomBytes(12).toString('hex');
-      g.players[1] = { token: newToken, name: cleanName(name, 'Player 2'), connected: true, socketId: socket.id, disconnectTimer: null };
-      attach(socket, id, 1);
+      g.players[js] = { token: newToken, name: cleanName(name, 'Player ' + (js + 1)), connected: true, socketId: socket.id, disconnectTimer: null };
+      attach(socket, id, js);
       g.started = true;
       armTurnTimer(id, g);
 
       const base = { id, game: g.type, options: g.options, names: names(g) };
-      nsp.to(g.players[0].socketId).emit('gameStart', { ...base, seat: 0, ...snapshot(g, 0) });
-      socket.emit('gameStart', { ...base, seat: 1, token: newToken, ...snapshot(g, 1) });
+      nsp.to(g.players[cs].socketId).emit('gameStart', { ...base, seat: cs, ...snapshot(g, cs) });
+      socket.emit('gameStart', { ...base, seat: js, token: newToken, ...snapshot(g, js) });
     }));
 
     socket.on('move', safe('move', (payload) => {

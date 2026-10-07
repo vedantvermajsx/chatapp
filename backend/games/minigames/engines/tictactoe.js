@@ -7,7 +7,7 @@ const LINES = [
 export default {
   id: 'tictactoe',
   label: 'Tic-Tac-Toe',
-  icon: '⭕',
+  pieces: ['X', 'O'], // index = seat = value stored on the board; piece 0 moves first
   blurb: 'Get three in a row before your opponent does.',
   turnMs: 60 * 1000,
 

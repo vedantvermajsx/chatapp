@@ -7,7 +7,7 @@ const vIdx = (r, c) => r * (COLS + 1) + c;
 export default {
   id: 'dots',
   label: 'Dots and Boxes',
-  icon: '🔲',
+  pieces: ['Red', 'Yellow'], // index = seat = value stored on the board; piece 0 moves first
   blurb: 'Draw lines and claim the most boxes.',
   turnMs: 60 * 1000,
 

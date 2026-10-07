@@ -1056,3 +1056,13 @@ html.embed .card {
 .dots-board .edge.last {
   box-shadow: 0 0 0 2px #fff;
 }
+#stage[data-me="0"] { --me: var(--p0); }
+#stage[data-me="1"] { --me: var(--p1); }
+.ttt-cell.hint, .gmk-cell.hint { background-image: radial-gradient(circle, rgba(255,255,255,.3) 0 12%, transparent 14%); }
+.gmk-cell.hint { background-image: radial-gradient(circle, rgba(0,0,0,.35) 0 18%, transparent 20%); }
+.ttt-cell.hint:hover, .gmk-cell.hint:hover { background-image: none; }
+.c4-cell.land { background: color-mix(in srgb, var(--me) 40%, var(--bg)); }
+.dots-board .edge:not(:disabled):hover { background: var(--me); }
+
+.ico { width: 1em; height: 1em; vertical-align: -.125em; flex: none; }
+.rps-hand .ico { width: 46px; height: 46px; }
