@@ -1,11 +1,3 @@
-// Minigames client. The server is authoritative: this file only sends intents ("move") and
-// renders whatever snapshot the server last sent. Query params:
-//   ?game=tictactoe|connect4|rps   preselect a game (omit to show the picker)
-//   &embed=1                       compact layout + postMessage to the parent window
-//   &name=Alice                    prefill player name
-//   &rounds=3|5                    rock-paper-scissors match length
-//   &action=create                 create a game as soon as the socket connects
-//   &join=1234                     join game 1234 as soon as the socket connects
 const socket = io('/minigames');
 const $ = (id) => document.getElementById(id);
 
@@ -19,6 +11,9 @@ const HANDS = { rock: '✊', paper: '✋', scissors: '✌️' };
 const GAMES = {
   tictactoe: { label: 'Tic-Tac-Toe', icon: '⭕', blurb: 'Get three in a row before your opponent does.' },
   connect4: { label: 'Connect Four', icon: '🔴', blurb: 'Drop discs and line up four in any direction.' },
+  gomoku: { label: 'Gomoku', icon: '⚫', blurb: 'Line up five stones on a 13×13 board.' },
+  reversi: { label: 'Reversi', icon: '⚪', blurb: 'Flank your opponent’s discs to flip them.' },
+  dots: { label: 'Dots and Boxes', icon: '🔲', blurb: 'Draw lines and claim the most boxes.' },
   rps: { label: 'Rock Paper Scissors', icon: '✊', blurb: 'Lock in your pick and out-guess your friend.' },
 };
 
@@ -457,6 +452,102 @@ const RENDER = {
         col.disabled = s.board[c] !== null || !canAct();
       });
       prevMoves = s.moves;
+    },
+  },
+
+  gomoku: {
+    build(stage) {
+      const board = document.createElement('div');
+      board.className = 'gmk-board';
+      board.style.gridTemplateColumns = 'repeat(13, 1fr)';
+      for (let i = 0; i < 169; i++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'gmk-cell';
+        b.dataset.move = JSON.stringify({ cell: i });
+        board.appendChild(b);
+      }
+      stage.appendChild(board);
+    },
+    update(s, over) {
+      const line = over && over.line ? over.line : [];
+      $('stage').querySelectorAll('.gmk-cell').forEach((c, i) => {
+        const v = s.board[i];
+        c.classList.toggle('p0', v === 0);
+        c.classList.toggle('p1', v === 1);
+        c.classList.toggle('last', s.last === i);
+        c.classList.toggle('win', line.includes(i));
+        c.disabled = v !== null || !canAct();
+      });
+    },
+  },
+
+  reversi: {
+    build(stage) {
+      stage.innerHTML = '<div class="rev-info" id="revInfo"></div>';
+      const board = document.createElement('div');
+      board.className = 'rev-board';
+      for (let i = 0; i < 64; i++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'rev-cell';
+        b.dataset.move = JSON.stringify({ cell: i });
+        board.appendChild(b);
+      }
+      stage.appendChild(board);
+    },
+    update(s) {
+      const legal = new Set(s.legal || []);
+      $('revInfo').textContent = `Black ${s.scores[0]} · White ${s.scores[1]}` + (s.passed !== null && s.passed !== undefined ? ' · opponent passed' : '');
+      $('stage').querySelectorAll('.rev-cell').forEach((c, i) => {
+        const v = s.board[i];
+        c.classList.toggle('p0', v === 0);
+        c.classList.toggle('p1', v === 1);
+        c.classList.toggle('hint', v === null && canAct() && legal.has(i));
+        c.classList.toggle('last', s.last && s.last.cell === i);
+        c.disabled = v !== null || !canAct() || !legal.has(i);
+      });
+    },
+  },
+
+  dots: {
+    build(stage) {
+      stage.innerHTML = '<div class="dots-info" id="dotsInfo"></div><div class="dots-board" id="dotsBoard"></div>';
+      const bd = $('dotsBoard');
+      const R = 4, C = 4;
+      bd.style.gridTemplateColumns = 'repeat(' + (2 * C + 1) + ', auto)';
+      for (let gr = 0; gr <= 2 * R; gr++) {
+        for (let gc = 0; gc <= 2 * C; gc++) {
+          const el = document.createElement(gr % 2 === gc % 2 ? 'div' : 'button');
+          if (gr % 2 === 0 && gc % 2 === 0) el.className = 'dot';
+          else if (gr % 2 === 1 && gc % 2 === 1) { el.className = 'box'; el.dataset.box = (gr - 1) / 2 * C + (gc - 1) / 2; }
+          else {
+            el.type = 'button';
+            const h = gr % 2 === 0;
+            el.className = 'edge ' + (h ? 'eh' : 'ev');
+            el.dataset.k = h ? 'h' + gr / 2 + '_' + (gc - 1) / 2 : 'v' + (gr - 1) / 2 + '_' + gc / 2;
+            el.dataset.move = JSON.stringify(h ? { t: 'h', r: gr / 2, c: (gc - 1) / 2 } : { t: 'v', r: (gr - 1) / 2, c: gc / 2 });
+          }
+          bd.appendChild(el);
+        }
+      }
+    },
+    update(s) {
+      const C = s.cols;
+      $('dotsInfo').textContent = `You ${s.scores[mySeat] ?? 0} · Opponent ${s.scores[1 - mySeat] ?? 0}`;
+      $('dotsBoard').querySelectorAll('.edge').forEach((e) => {
+        const [t, r, c] = [e.dataset.k[0], ...e.dataset.k.slice(1).split('_').map(Number)];
+        const v = t === 'h' ? s.h[r * C + c] : s.v[r * (C + 1) + c];
+        e.classList.toggle('p0', v === 0);
+        e.classList.toggle('p1', v === 1);
+        e.classList.toggle('last', !!(s.last && s.last.t === t && s.last.r === r && s.last.c === c));
+        e.disabled = v !== null || !canAct();
+      });
+      $('dotsBoard').querySelectorAll('.box').forEach((b) => {
+        const v = s.boxes[Number(b.dataset.box)];
+        b.classList.toggle('p0', v === 0);
+        b.classList.toggle('p1', v === 1);
+      });
     },
   },
 
