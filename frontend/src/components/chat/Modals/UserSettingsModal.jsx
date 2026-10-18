@@ -7,6 +7,7 @@ import messageService from '../../../services/message.service';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import authService from '../../../services/auth.service';
+import { useNotifications } from '../../../hooks/useNotifications';
 
 const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   const { theme } = useTheme();
@@ -19,6 +20,7 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   const [usernameStatus, setUsernameStatus] = useState(null);
   const fileInputRef = useRef(null);
   const requestRef = useRef(0);
+  const { supported, configured, permission, enabled, busy, enable, disable } = useNotifications();
 
   useEffect(() => {
     const trimmed = username.trim();
@@ -94,6 +96,33 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
       toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const notificationsHint = !supported
+    ? 'Not supported in this browser'
+    : !configured
+      ? 'Not available'
+      : permission === 'denied'
+        ? 'Blocked in browser settings'
+        : enabled
+          ? 'On'
+          : 'Off';
+
+  const handleToggleNotifications = async () => {
+    if (busy) return;
+    if (enabled) {
+      await disable();
+      toast.success('Notifications disabled');
+      return;
+    }
+    const result = await enable();
+    if (result.ok) {
+      toast.success('Notifications enabled');
+    } else if (result.reason === 'denied') {
+      toast.error('Notifications blocked in browser settings');
+    } else {
+      toast.error('Could not enable notifications');
     }
   };
 
@@ -180,6 +209,30 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 }}
                 placeholder="Tell us about yourself..."
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold mb-2" style={{ color: theme.otherUsernameColor }}>Notifications</label>
+              <button
+                type="button"
+                onClick={handleToggleNotifications}
+                disabled={busy || !supported || !configured}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: theme.background,
+                  boxShadow: isLight
+                    ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
+                    : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'
+                }}
+              >
+                <span className="text-left">
+                  <span className="block text-sm font-semibold" style={{ color: theme.otherMessageText }}>Push notifications</span>
+                  <span className="block text-xs opacity-70" style={{ color: theme.otherUsernameColor }}>{notificationsHint}</span>
+                </span>
+                <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${enabled ? 'bg-green-500' : 'bg-gray-400'}`}>
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </span>
+              </button>
             </div>
 
           </form>

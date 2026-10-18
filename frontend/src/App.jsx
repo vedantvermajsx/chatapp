@@ -7,6 +7,8 @@ import { DownloadsProvider } from './contexts/DownloadsContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PageLoader from './components/common/PageLoader';
 import NotFound from './components/common/NotFound';
+import CookieConsent from './components/common/CookieConsent';
+import PushBridge from './components/common/PushBridge';
 
 const Login = lazy(() => import('./components/auth/Login'));
 const Chat = lazy(() => import('./components/Chat'));
@@ -87,11 +89,13 @@ function App() {
               duration={3000}
             />
             <IdlePrefetch />
+            <PushBridge />
             <ChunkErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 <AnimatedRoutes />
               </Suspense>
             </ChunkErrorBoundary>
+            <CookieConsent />
           </HashRouter>
         </DownloadsProvider>
       </ThemeProvider>
