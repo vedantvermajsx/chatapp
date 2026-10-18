@@ -4,6 +4,7 @@ import { updatePrivateChatOptimistically, catchUpNewerMessagesHandler } from '..
 import { dbService } from '../services/indexedDB.service.js';
 import keyManager from '../services/keyManager.js';
 import { decryptForRoom, decryptPrivateMessage } from '../utils/crypto.js';
+import { capNewest, withCap } from '../utils/messageList.js';
 
 async function decryptReplyPreviewForRoom(replyTo, roomPrivateKeyPem) {
   if (!replyTo?.iv || !replyTo?.wrappedKey || !roomPrivateKeyPem) return replyTo;
@@ -243,7 +244,7 @@ export const useChatSocket = (user, {
             return newMessages;
           }
           if ((msg._id || msg.id) && prev.some(m => m.id === (msg._id || msg.id))) return prev;
-          return [...prev, newMessage];
+          return capNewest([...prev, newMessage]);
         });
       }
 
@@ -268,7 +269,7 @@ export const useChatSocket = (user, {
             }
           }
           if (newCacheMessages && newCacheMessages !== prevMessages) {
-            messageCache.current[cacheKey] = { ...messageCache.current[cacheKey], messages: newCacheMessages };
+            messageCache.current[cacheKey] = withCap(messageCache.current[cacheKey], newCacheMessages);
           }
         }
 
@@ -295,7 +296,7 @@ export const useChatSocket = (user, {
       const otherUserId = msg.senderId === currentUserId ? msg.receiverId : msg.senderId;
       const isOwnMessage = msg.senderId === (currentUser?._id || currentUser?.id);
 
-      let otherUser = privateChats.find(c => c.otherUser.id === otherUserId)?.otherUser;
+      let otherUser = (privateChats || []).find(c => c.otherUser.id === otherUserId)?.otherUser;
       if (!otherUser) {
         otherUser = {
           id: otherUserId,
@@ -352,7 +353,7 @@ export const useChatSocket = (user, {
             newCacheMessages = already ? prevMessages : [...prevMessages, newMessageObj];
           }
           if (newCacheMessages !== prevMessages) {
-            messageCache.current[cacheKey] = { ...messageCache.current[cacheKey], messages: newCacheMessages };
+            messageCache.current[cacheKey] = withCap(messageCache.current[cacheKey], newCacheMessages);
           }
         } else {
           messageCache.current[cacheKey] = {
@@ -378,7 +379,7 @@ export const useChatSocket = (user, {
             return newMessages;
           }
           if ((msg._id || msg.id) && prev.some(m => m.id === (msg._id || msg.id))) return prev;
-          return [...prev, newMessageObj];
+          return capNewest([...prev, newMessageObj]);
         });
 
         if (!isOwnMessage && !newMessageObj.isSystemMessage) {
@@ -439,7 +440,7 @@ export const useChatSocket = (user, {
       const id = updatedRoom?._id || updatedRoom?.id;
       if (!id) return;
       if (setJoinedRooms) {
-        setJoinedRooms(prev => prev.map(r => (String(r._id) === String(id) ? { ...r, ...updatedRoom } : r)));
+        setJoinedRooms(prev => (prev || []).map(r => (String(r._id) === String(id) ? { ...r, ...updatedRoom } : r)));
       }
       if (setCurrentRoom && String(currentRoomRef.current?._id) === String(id)) {
         setCurrentRoom(prev => (prev ? { ...prev, ...updatedRoom } : prev));
@@ -450,7 +451,7 @@ export const useChatSocket = (user, {
       if (!roomId) return;
       if (setJoinedRooms) {
         setJoinedRooms(prev =>
-          prev.map(room =>
+          (prev || []).map(room =>
             String(room._id) === String(roomId) ? { ...room, isDeleted: true } : room
           )
         );

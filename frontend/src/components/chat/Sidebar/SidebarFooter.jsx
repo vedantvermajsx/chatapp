@@ -1,12 +1,16 @@
-import { Settings, Palette, LogOut, ShieldCheck } from 'lucide-react';
+import { Settings, Palette, LogOut, ShieldCheck, Download } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useDownloads } from '../../../contexts/DownloadsContext';
 import Avatar from '../../common/Avatar';
 import SecurityPolicyModal from '../Modals/SecurityPolicyModal';
+import DownloadsModal from '../Modals/DownloadsModal';
 
 const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) => {
   const [showSecurityPolicy, setShowSecurityPolicy] = useState(false);
+  const [showDownloads, setShowDownloads] = useState(false);
   const { theme } = useTheme();
+  const { activeCount } = useDownloads();
   const panelBg = theme.isLight ? '#f2f3f5' : '#232428';
   const borderColor = theme.isLight ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.4)';
   const iconColor = theme.isLight ? '#4e5058' : '#b5bac1';
@@ -50,6 +54,24 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
             </button>
           )}
           <button
+            onClick={() => setShowDownloads(true)}
+            className="relative p-1.5 rounded transition-colors flex items-center justify-center"
+            title="Downloads"
+            style={{ color: iconColor }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = iconHoverBg; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <Download className="w-4.5 h-4.5" style={{ width: '18px', height: '18px' }} />
+            {activeCount > 0 && (
+              <span
+                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center"
+                style={{ backgroundColor: theme.primary || '#6366f1', color: '#fff' }}
+              >
+                {activeCount > 9 ? '9+' : activeCount}
+              </span>
+            )}
+          </button>
+          <button
             onClick={onToggleThemePicker}
             className="p-1.5 rounded transition-colors flex items-center justify-center"
             title="Switch Theme"
@@ -84,6 +106,10 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
 
       {showSecurityPolicy && (
         <SecurityPolicyModal onClose={() => setShowSecurityPolicy(false)} />
+      )}
+
+      {showDownloads && (
+        <DownloadsModal onClose={() => setShowDownloads(false)} />
       )}
     </>
   );

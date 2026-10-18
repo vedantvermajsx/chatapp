@@ -1,8 +1,9 @@
-import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Component, lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { DownloadsProvider } from './contexts/DownloadsContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import PageLoader from './components/common/PageLoader';
 import NotFound from './components/common/NotFound';
@@ -11,7 +12,12 @@ const Login = lazy(() => import('./components/auth/Login'));
 const Chat = lazy(() => import('./components/Chat'));
 const TermsAndConditions = lazy(() => import('./components/auth/TermsAndConditions'));
 const CookiePolicy = lazy(() => import('./components/auth/CookiePolicy'));
-const LandingPage = lazy(() => import('./components/landing/LandingPage'));
+
+function RootRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />;
+}
 
 function IdlePrefetch() {
   const { user } = useAuth();
@@ -61,7 +67,7 @@ function AnimatedRoutes() {
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
@@ -72,20 +78,22 @@ function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <HashRouter>
-          <Toaster
-            position="top-right"
-            richColors
-            closeButton
-            duration={3000}
-          />
-          <IdlePrefetch />
-          <ChunkErrorBoundary>
-            <Suspense fallback={<PageLoader />}>
-              <AnimatedRoutes />
-            </Suspense>
-          </ChunkErrorBoundary>
-        </HashRouter>
+        <DownloadsProvider>
+          <HashRouter>
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              duration={3000}
+            />
+            <IdlePrefetch />
+            <ChunkErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <AnimatedRoutes />
+              </Suspense>
+            </ChunkErrorBoundary>
+          </HashRouter>
+        </DownloadsProvider>
       </ThemeProvider>
     </AuthProvider>
   );

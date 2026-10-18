@@ -2,6 +2,7 @@ import { readStateCache } from './CacheService.js';
 import MessageCountCacheService from './MessageCountCacheService.js';
 import RoomMessageRead from '../models/roomMessageRead.model.js';
 import Message from '../models/message.model.js';
+import UnreadCount from '../models/UnreadCount.model.js';
 
 // Serialise read-modify-write per (user, room). Without this, concurrent decrements on a
 // cold cache read the same value and one update is lost (and DB writes can land out of order).
@@ -31,6 +32,60 @@ function isRoomKey(chatKey) {
 
 function roomIdOf(chatKey) {
   return chatKey.slice('room_'.length);
+}
+
+const privateLoads = new Map();
+
+function isPrivateKey(chatKey) {
+  return typeof chatKey === 'string' && chatKey.startsWith('private_');
+}
+
+function senderIdOf(chatKey) {
+  return chatKey.slice('private_'.length);
+}
+
+async function loadPrivateState(userId) {
+  const cached = readStateCache.get(privKey(userId));
+  if (cached !== null) return cached;
+
+  let pending = privateLoads.get(userId);
+  if (!pending) {
+    pending = UnreadCount.find({ receiverId: userId }, { senderId: 1, totalCount: 1, readCount: 1, _id: 0 })
+      .lean()
+      .then((docs) => {
+        const state = {};
+        for (const d of docs) {
+          state[d.senderId] = { total: d.totalCount ?? 0, read: d.readCount ?? 0 };
+        }
+        readStateCache.set(privKey(userId), state, TTL);
+        return state;
+      })
+      .finally(() => privateLoads.delete(userId));
+    privateLoads.set(userId, pending);
+  }
+  return pending;
+}
+
+function unreadOf(entry) {
+  return entry ? Math.max(0, entry.total - entry.read) : 0;
+}
+
+async function persistPrivateRead(receiverId, senderId, readCount) {
+  // cacheService owns readCount only; $max keeps it monotonic against out-of-order writes.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await UnreadCount.updateOne(
+        { senderId, receiverId },
+        { $max: { readCount } },
+        { upsert: true }
+      );
+      return;
+    } catch (err) {
+      if (err.code === 11000 && attempt === 0) continue; // raced with queueService's upsert
+      console.error('[UnreadCacheService] private readCount persist error:', err.message);
+      return;
+    }
+  }
 }
 
 async function getRoomReadCount(userId, roomId) {
@@ -79,15 +134,22 @@ async function roomUnread(userId, roomId) {
 }
 
 const UnreadCacheService = {
-  getAll(userId) {
-    return readStateCache.get(privKey(userId)) ?? null;
+  // { private_<senderId>: unread } for every private chat with unread > 0
+  async getPrivateUnread(userId) {
+    const state = await loadPrivateState(userId);
+    const out = {};
+    for (const [senderId, entry] of Object.entries(state)) {
+      const n = unreadOf(entry);
+      if (n > 0) out[`private_${senderId}`] = n;
+    }
+    return out;
   },
 
   async getAllWithRooms(userId, roomIds = []) {
-    const privateCounts = this.getAll(userId) ?? {};
-    const roomPairs = await Promise.all(
-      roomIds.map(async (roomId) => [`room_${roomId}`, await roomUnread(userId, roomId)])
-    );
+    const [privateCounts, roomPairs] = await Promise.all([
+      this.getPrivateUnread(userId),
+      Promise.all(roomIds.map(async (roomId) => [`room_${roomId}`, await roomUnread(userId, roomId)])),
+    ]);
     const merged = { ...privateCounts };
     for (const [chatKey, count] of roomPairs) {
       if (count > 0) merged[chatKey] = count;
@@ -95,24 +157,16 @@ const UnreadCacheService = {
     return merged;
   },
 
-  seed(userId, counts) {
-    const existing = readStateCache.get(privKey(userId));
-    if (existing !== null) return;
-    const privateOnly = {};
-    for (const [chatKey, count] of Object.entries(counts || {})) {
-      if (!isRoomKey(chatKey)) privateOnly[chatKey] = count;
-    }
-    readStateCache.set(privKey(userId), privateOnly, TTL);
-  },
-
+  // A new message from chatKey's sender arrived: totalCount + 1 (in cache only;
+  // queueService persists totalCount to the DB).
   increment(userId, chatKey) {
-    if (isRoomKey(chatKey)) return;
-    const existing = readStateCache.get(privKey(userId));
-    // Cold cache: creating {chatKey:1} here would make getUnread think the map is already
-    // seeded and skip the DB recompute, losing every unread from before the restart.
-    if (existing === null) return;
-    existing[chatKey] = (existing[chatKey] ?? 0) + 1;
-    readStateCache.set(privKey(userId), existing, TTL);
+    if (!isPrivateKey(chatKey)) return;
+    const state = readStateCache.get(privKey(userId));
+    // Cold cache: skip. The next fetch loads totalCount/readCount from the DB.
+    if (state === null) return;
+    const senderId = senderIdOf(chatKey);
+    const entry = state[senderId] ?? (state[senderId] = { total: 0, read: 0 });
+    entry.total += 1;
   },
 
   async reset(userId, chatKey) {
@@ -124,10 +178,14 @@ const UnreadCacheService = {
         return 0;
       });
     }
-    const existing = readStateCache.get(privKey(userId));
-    if (!existing || !existing[chatKey]) return 0;
-    delete existing[chatKey];
-    readStateCache.set(privKey(userId), existing, TTL);
+    if (!isPrivateKey(chatKey)) return 0;
+
+    const senderId = senderIdOf(chatKey);
+    const state = await loadPrivateState(userId);
+    const entry = state[senderId];
+    if (!entry || entry.read >= entry.total) return 0;
+    entry.read = entry.total; // everything received so far is now read
+    await persistPrivateRead(userId, senderId, entry.read);
     return 0;
   },
 
@@ -146,17 +204,18 @@ const UnreadCacheService = {
         return Math.max(0, (total ?? 0) - nextRead);
       });
     }
-    const existing = readStateCache.get(privKey(userId));
-    if (existing === null) return 0; // cold: don't create a partial map that blocks the DB seed
-    const current = existing[chatKey] ?? 0;
-    const next = Math.max(0, current - Math.max(0, by));
-    if (next === 0) {
-      delete existing[chatKey];
-    } else {
-      existing[chatKey] = next;
+    if (!isPrivateKey(chatKey)) return 0;
+
+    const senderId = senderIdOf(chatKey);
+    const state = await loadPrivateState(userId);
+    const entry = state[senderId];
+    if (!entry) return 0;
+    const nextRead = Math.min(entry.read + Math.max(0, by), entry.total);
+    if (nextRead > entry.read) {
+      entry.read = nextRead;
+      await persistPrivateRead(userId, senderId, nextRead);
     }
-    readStateCache.set(privKey(userId), existing, TTL);
-    return next;
+    return unreadOf(entry);
   },
 
   async seedRoomOnJoin(userId, roomId) {
@@ -166,10 +225,6 @@ const UnreadCacheService = {
     });
     readStateCache.delete(`userRooms:${userId}`);
     return 0;
-  },
-
-  set(userId, counts) {
-    readStateCache.set(privKey(userId), { ...counts }, TTL);
   },
 
   invalidate(userId) {

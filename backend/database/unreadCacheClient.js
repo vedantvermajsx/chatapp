@@ -103,15 +103,6 @@ class UnreadCacheClient {
   }
 
   
-  async seed(userId, counts) {
-    try {
-      await this.client.post(`/unread/${userId}/seed`, { counts }, { timeout: 30000 });
-    } catch (err) {
-      console.error('[UnreadCacheClient] seed error:', err.message);
-    }
-  }
-
-  
   async invalidate(userId) {
     try {
       await this.client.delete(`/unread/${userId}`, { timeout: 30000 });

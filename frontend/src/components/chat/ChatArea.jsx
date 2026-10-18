@@ -7,7 +7,10 @@ import { ImageZoomModal } from './Modals/ImageZoomModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dbService } from '../../services/indexedDB.service.js';
 import messageService from '../../services/message.service.js';
+import { mergeNewer, persistable } from '../../utils/messageList.js';
 import { MessageSquare } from 'lucide-react';
+
+const TOP_SCROLL_THRESHOLD = 1;
 
 const ChatArea = memo(function ChatArea({
   user,
@@ -128,7 +131,7 @@ const ChatArea = memo(function ChatArea({
     if (!el) return;
     isUserAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     const key = activeChatKeyRef.current;
-    if (key != null) {
+    if (key != null && el.scrollTop >= TOP_SCROLL_THRESHOLD) {
       scrollPositions.current[key] = el.scrollTop;
       persistScrollPosition(key, el.scrollTop);
     }
@@ -138,18 +141,22 @@ const ChatArea = memo(function ChatArea({
     return () => {
       Object.values(scrollSaveTimers.current).forEach(clearTimeout);
       Object.entries(scrollPositions.current).forEach(([key, value]) => {
-        dbService.saveScrollPosition(key, value);
+        if (value >= TOP_SCROLL_THRESHOLD) dbService.saveScrollPosition(key, value);
       });
     };
   }, []);
 
   const getScrollPosition = useCallback(async (key) => {
     if (key == null) return null;
-    if (scrollPositions.current[key] != null) return scrollPositions.current[key];
+    const cached = scrollPositions.current[key];
+    if (cached != null && cached >= TOP_SCROLL_THRESHOLD) return cached;
     try {
       const persisted = await dbService.getScrollPosition(key);
-      if (persisted != null) scrollPositions.current[key] = persisted;
-      return persisted;
+      if (persisted != null && persisted >= TOP_SCROLL_THRESHOLD) {
+        scrollPositions.current[key] = persisted;
+        return persisted;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -194,7 +201,7 @@ const ChatArea = memo(function ChatArea({
 
     if (prevChatKey.current !== null && prevChatKey.current !== chatKey) {
       const leavingKey = prevChatKey.current;
-      if (leavingKey != null && scrollPositions.current[leavingKey] != null) {
+      if (leavingKey != null && scrollPositions.current[leavingKey] >= TOP_SCROLL_THRESHOLD) {
         if (scrollSaveTimers.current[leavingKey]) clearTimeout(scrollSaveTimers.current[leavingKey]);
         dbService.saveScrollPosition(leavingKey, scrollPositions.current[leavingKey]);
       }
@@ -261,7 +268,7 @@ const ChatArea = memo(function ChatArea({
 
       const applyRestore = (savedScrollTop) => {
         if (awayKey !== activeChatKeyRef.current) return;
-        if (savedScrollTop != null && messagesContainerRef.current) {
+        if (savedScrollTop != null && savedScrollTop >= TOP_SCROLL_THRESHOLD && messagesContainerRef.current) {
           messagesContainerRef.current.scrollTop = savedScrollTop;
         } else {
           scrollToBottom();
@@ -363,6 +370,7 @@ const ChatArea = memo(function ChatArea({
       let currentMessages = messages;
       let hasMore = hasMoreNewerMessages;
       let iterations = 0;
+      const fetched = [];
       const cacheKey = currentRoom?._id ? `room_${currentRoom._id}` : `private_${currentPrivateChat?.id}`;
 
       while (hasMore && iterations < 10) {
@@ -382,29 +390,26 @@ const ChatArea = memo(function ChatArea({
           break;
         }
 
-        const existingIds = new Set(currentMessages.map(m => String(m.id || m._id)));
-        const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id || m._id)));
-
-        if (reallyNew.length > 0) {
-          currentMessages = [...currentMessages, ...reallyNew];
-          if (cacheKey) {
-            await dbService.mergeNewMessages(cacheKey, reallyNew);
-          }
-        }
+        const merged = mergeNewer(currentMessages, res.messages);
+        currentMessages = merged.messages;
+        fetched.push(...res.messages);
+        if (cacheKey) await dbService.mergeNewMessages(cacheKey, persistable(res.messages));
 
         hasMore = res.hasMore || false;
         iterations++;
       }
 
-      if (cacheKey) {
+      if (cacheKey && fetched.length) {
+        const entry = messageCache.current[cacheKey];
+        const { messages: cached, evicted } = mergeNewer(entry?.messages ?? messages, fetched);
         messageCache.current[cacheKey] = {
-          messages: currentMessages,
-          hasMore: hasMore,
+          messages: cached,
+          hasMore: (entry?.hasMore ?? false) || evicted > 0,
           timestamp: Date.now(),
         };
       }
 
-      setMessages(currentMessages);
+      if (fetched.length) setMessages((prev) => mergeNewer(prev, fetched).messages);
       setHasMoreNewerMessages(hasMore);
       setShowNewMsgBanner(false);
       setNewMsgCount(0);

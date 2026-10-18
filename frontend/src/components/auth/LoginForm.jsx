@@ -24,7 +24,7 @@ function LoginForm({ setCurrForm }) {
       if (result.success) {
         navigate('/chat');
       } else {
-        setError(result.message || 'Login failed');
+        setError(result.message || 'Login failed. Please check your credentials.');
       }
     } finally {
       setIsLoading(false);
@@ -34,17 +34,21 @@ function LoginForm({ setCurrForm }) {
   return (
     <>
       {error && (
-        <div role="alert" className="alert alert-error bg-red-50 border border-red-100 text-red-600 text-[13.5px] py-2.5 px-3 mb-4 rounded-xl">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span className="font-sans">{error}</span>
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 bg-red-50 border border-red-100 text-red-600 text-[13px] py-3 px-3.5 mb-5 rounded-xl font-sans"
+        >
+          <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
+          <span>{error}</span>
         </div>
       )}
 
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        {/* Username */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="login-username">Username</Label>
           <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground pointer-events-none" />
             <Input
               id="login-username"
               name="username"
@@ -59,10 +63,11 @@ function LoginForm({ setCurrForm }) {
           </div>
         </div>
 
+        {/* Password */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="login-password">Password</Label>
           <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground" />
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] text-muted-foreground pointer-events-none" />
             <Input
               id="login-password"
               name="password"
@@ -72,16 +77,20 @@ function LoginForm({ setCurrForm }) {
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
               required
-              className="pl-10 pr-10"
+              className="pl-10 pr-11"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               tabIndex={-1}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-0 top-0 h-full px-3.5 flex items-center text-muted-foreground hover:text-foreground transition-colors"
             >
-              {showPassword ? <EyeOff className="w-[15px] h-[15px]" /> : <Eye className="w-[15px] h-[15px]" />}
+              {showPassword ? (
+                <EyeOff className="w-[15px] h-[15px]" />
+              ) : (
+                <Eye className="w-[15px] h-[15px]" />
+              )}
             </button>
           </div>
         </div>
@@ -91,11 +100,14 @@ function LoginForm({ setCurrForm }) {
         </Button>
       </form>
 
-      {/* daisyUI divider */}
-      <div className="divider text-[11px] text-muted-foreground uppercase tracking-widest my-5 before:bg-border after:bg-border">or</div>
+      <div className="relative flex items-center gap-3 my-5">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-[11px] text-muted-foreground uppercase tracking-widest font-sans select-none">or</span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
 
       <Button type="button" variant="outline" onClick={() => setCurrForm(1)} className="w-full">
-        <User className="w-[15px] h-[15px] text-muted-foreground" />
+        <User className="w-[15px] h-[15px]" />
         Continue as guest
       </Button>
     </>

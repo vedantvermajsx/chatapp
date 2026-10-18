@@ -1,6 +1,7 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
 import { applyLastRead } from '../../utils/applyLastRead.js';
+import { applyNewerMessages, idOf, persistable } from '../../utils/messageList.js';
 import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 const fetchNewerMessagesPage = async (
@@ -38,37 +39,18 @@ const fetchNewerMessagesPage = async (
     return { messages, hasMore: res.hasMore || false };
   }
 
-  const mergeNewer = (current) => {
-    const ids = new Set(current.map(m => String(m.id || m._id)));
-    const fresh = res.messages.filter(m => !ids.has(String(m.id || m._id)));
-    if (!fresh.length) return current;
-    const merged = [...current, ...fresh];
-    return type === 'private' && lastRead ? applyLastRead(merged, lastRead) : merged;
-  };
+  const known = new Set((messageCache.current[cacheKey]?.messages || messages).map(idOf));
+  const hadNew = res.messages.some(m => !known.has(idOf(m)));
 
-  let mergedMessages = messages;
-  const base = isActive() ? messages : (messageCache.current[cacheKey]?.messages || messages);
-  const reallyNew = res.messages.filter(m => !new Set(base.map(x => String(x.id || x._id))).has(String(m.id || m._id)));
-
-  if (reallyNew.length > 0) {
-    if (isActive()) {
-      setMessages((prev) => (mergedMessages = mergeNewer(prev)));
-    } else {
-      mergedMessages = mergeNewer(base);
-    }
-
-    messageCache.current[cacheKey] = {
-      messages: mergedMessages,
-      hasMore: messageCache.current[cacheKey]?.hasMore || false,
-      timestamp: Date.now(),
-    };
-
-    await dbService.mergeNewMessages(cacheKey, reallyNew);
-  }
+  const { messages: mergedMessages } = applyNewerMessages({
+    messageCache, cacheKey, incoming: res.messages, setMessages, isActive, fallback: messages,
+    transform: type === 'private' && lastRead ? (m) => applyLastRead(m, lastRead) : undefined,
+  });
+  await dbService.mergeNewMessages(cacheKey, persistable(res.messages));
 
   syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
 
-  return { messages: mergedMessages, hasMore: res.hasMore || false };
+  return { messages: mergedMessages, hasMore: hadNew ? (res.hasMore || false) : false };
 };
 
 export const loadNewerMessagesHandler = async (

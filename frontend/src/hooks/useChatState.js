@@ -26,7 +26,7 @@ export const useChatState = (user) => {
   const [taggedUserId, setTaggedUserId] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
   const [rooms, setRooms] = useState([]);
-  const [joinedRooms, setJoinedRooms] = useState([]);
+  const [joinedRooms, setJoinedRooms] = useState(null);
   const [loadingJoinedRooms, setLoadingJoinedRooms] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentRoom, setCurrentRoom] = useState(null);
@@ -36,7 +36,7 @@ export const useChatState = (user) => {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [roomMembers, setRoomMembers] = useState([]);
-  const [privateChats, setPrivateChats] = useState([]);
+  const [privateChats, setPrivateChats] = useState(null);
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [loadingPrivateChats, setLoadingPrivateChats] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -60,6 +60,14 @@ export const useChatState = (user) => {
   useEffect(() => {
     dbService.saveUnreadCounts(unreadCounts);
   }, [unreadCounts]);
+
+  useEffect(() => {
+    if (Array.isArray(privateChats)) dbService.savePrivateChats(privateChats);
+  }, [privateChats]);
+
+  useEffect(() => {
+    if (Array.isArray(joinedRooms)) dbService.saveJoinedRooms(joinedRooms);
+  }, [joinedRooms]);
 
   const messageCache = useRef({});
   const roomMembersCache = useRef({});
@@ -331,9 +339,10 @@ export const useChatState = (user) => {
 
     
     setJoinedRooms(prev => {
-      if (prev.some(r => r._id === roomId)) return prev;
-      const room = joinedRooms.find(r => r._id === roomId) || (roomObject && roomObject._id === roomId ? roomObject : null);
-      return room ? [...prev, room] : prev;
+      const list = Array.isArray(prev) ? prev : [];
+      if (list.some(r => r._id === roomId)) return list;
+      const room = (joinedRooms || []).find(r => r._id === roomId) || (roomObject && roomObject._id === roomId ? roomObject : null);
+      return room ? [...list, room] : list;
     });
 
     const cacheKey = `room_${roomId}`;
@@ -473,7 +482,7 @@ export const useChatState = (user) => {
             isOnline: status.isOnline,
             lastSeen: status.lastSeen
           }));
-          setPrivateChats(prev => prev.map(chat =>
+          setPrivateChats(prev => (Array.isArray(prev) ? prev : []).map(chat =>
             chat.otherUser.id === currentPrivateChat.id
               ? {
                   ...chat,

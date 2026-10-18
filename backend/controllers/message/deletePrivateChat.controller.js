@@ -1,5 +1,6 @@
 import Message from '../../models/message.model.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
+import unreadCacheClient from '../../database/unreadCacheClient.js';
 
 export const deletePrivateChat = async (req, res) => {
   try {
@@ -22,7 +23,10 @@ export const deletePrivateChat = async (req, res) => {
     );
 
     await messageCacheClient.invalidatePrivateMessages(userId, otherUserId);
-    
+
+    // A deleted chat must not keep showing unread: mark everything received so far as read.
+    await unreadCacheClient.reset(userId, `private_${otherUserId}`);
+
     res.status(200).json({ message: 'Chat removed successfully' });
   } catch (error) {
     console.error('Error deleting private chat:', error);

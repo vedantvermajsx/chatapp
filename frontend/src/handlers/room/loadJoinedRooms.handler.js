@@ -1,5 +1,8 @@
 import roomService from '../../services/room.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
+import { mergeByKey } from '../../utils/mergeCollections.js';
+
+const roomKey = (room) => room?._id ?? room?.id;
 
 export const loadJoinedRoomsHandler = async (
   setJoinedRooms,
@@ -21,37 +24,41 @@ export const loadJoinedRoomsHandler = async (
     });
   };
 
-  setLoadingJoinedRooms(true);
-  let joinedRooms = [];
+  const cached = await dbService.getCachedJoinedRooms();
+  if (cached.length > 0) {
+    setJoinedRooms(prev => mergeByKey(prev, cached, roomKey));
+    subscribeAll(cached);
+  } else {
+    setLoadingJoinedRooms(true);
+  }
+
+  let joinedRooms = cached;
+
   try {
-
-    const cached = await dbService.getCachedJoinedRooms();
-    if (cached.length > 0) {
-      setJoinedRooms(cached);
-      joinedRooms = cached;
-      subscribeAll(cached);
-    }
-
     const [roomData, unreadRes] = await Promise.all([
       roomService.getJoinedRooms(),
       roomService.getUnreadCounts()
     ]);
 
-    joinedRooms = Array.isArray(roomData.data) ? roomData.data : roomData?.rooms ?? [];
-    hasMore=roomData.hasMore;
-    setJoinedRooms(joinedRooms);
-    await dbService.saveJoinedRooms(joinedRooms);
-    subscribeAll(joinedRooms);
+    const fetched = Array.isArray(roomData.data) ? roomData.data : roomData?.rooms ?? [];
+    hasMore = roomData.hasMore;
+
+    setJoinedRooms(prev => mergeByKey(prev, fetched, roomKey));
+    joinedRooms = mergeByKey(cached, fetched, roomKey);
+    await dbService.saveJoinedRooms(fetched);
+    subscribeAll(fetched);
 
     if (unreadRes && typeof unreadRes === 'object') {
       setUnreadCounts(prev => ({ ...prev, ...unreadRes }));
     }
   } catch (error) {
-   const cached = await dbService.getCachedJoinedRooms();
-    if (cached.length > 0) {
-      setJoinedRooms(cached);
-      joinedRooms = cached;
-      subscribeAll(cached);
+    if (cached.length === 0) {
+      const fallback = await dbService.getCachedJoinedRooms();
+      if (fallback.length > 0) {
+        setJoinedRooms(prev => mergeByKey(prev, fallback, roomKey));
+        joinedRooms = fallback;
+        subscribeAll(fallback);
+      }
     }
     console.error('Failed to load joined rooms:', error);
   } finally {

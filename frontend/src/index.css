@@ -148,13 +148,13 @@ body,
 }
 
 *:focus {
-    outline: none;
+    outline: none !important;
 }
 
 *:focus-visible {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-    border-radius: 4px;
+    outline: none;
+    box-shadow: 0 0 0 2.5px rgba(0, 0, 0, 0.18);
+    border-radius: 6px;
 }
 
 .msg-row:hover .msg-tools,
@@ -327,3 +327,109 @@ body,
 
 @keyframes pop-in { from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: none; } }
 .pop-in { animation: pop-in 0.16s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+
+/* Hide browser-native password reveal (duplicate of our custom toggle) */
+input::-ms-reveal,
+input::-ms-clear,
+input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+}
+
+/* ── Auth pages: dark neon-edge theme (login / register / guest) ──────── */
+@media (prefers-color-scheme: dark) {
+    .auth-shell {
+        --background: 220 8% 13%;
+        --foreground: 210 20% 95%;
+        --card: 220 7% 16%;
+        --card-foreground: 210 20% 95%;
+        --primary: 187 85% 55%;
+        --primary-foreground: 200 50% 8%;
+        --secondary: 220 6% 30%;
+        --secondary-foreground: 210 20% 95%;
+        --muted: 220 6% 24%;
+        --muted-foreground: 215 10% 72%;
+        --accent: 220 6% 24%;
+        --accent-foreground: 210 20% 95%;
+        --border: 220 6% 26%;
+        --input: 220 6% 30%;
+        --ring: 187 85% 55%;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+    /* Asymmetric card: big top-left / bottom-right corners, neon edge accents */
+    .auth-shell .auth-card {
+        position: relative;
+        border: none;
+        border-radius: 52px 10px 52px 10px;
+        background: transparent;
+        box-shadow: none;
+    }
+    .auth-shell .auth-card::before,
+    .auth-shell .auth-card::after {
+        content: '';
+        position: absolute;
+        pointer-events: none;
+        width: 62%;
+        height: 42%;
+    }
+    .auth-shell .auth-card::before { /* cyan: top + right edge */
+        top: 0; right: 0;
+        border-top: 2px solid #22d3ee;
+        border-right: 2px solid #22d3ee;
+        border-radius: 0 10px 0 0;
+    }
+    .auth-shell .auth-card::after { /* pink: bottom + left edge */
+        bottom: 0; left: 0;
+        border-bottom: 2px solid #ec4899;
+        border-left: 2px solid #ec4899;
+        border-radius: 0 0 0 10px;
+    }
+    .auth-shell h1 { color: #22d3ee; }
+    /* Gray pill inputs */
+    .auth-shell input:not([type="checkbox"]) {
+        height: 46px;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background-color: hsl(220 6% 30%);
+        color: #fff;
+    }
+    .auth-shell select {
+        height: 46px; border-radius: 999px; border-color: transparent;
+        background-color: hsl(220 6% 30%); color: #fff;
+    }
+    .auth-shell input:not([type="checkbox"])::placeholder { color: hsl(215 8% 72%); }
+    .auth-shell input:not([type="checkbox"]):focus {
+        background-color: hsl(220 6% 33%);
+        border-color: rgba(34, 211, 238, 0.6);
+        box-shadow: none;
+    }
+    .auth-shell input:-webkit-autofill {
+        -webkit-text-fill-color: #fff;
+        -webkit-box-shadow: 0 0 0 40px hsl(220 6% 30%) inset;
+    }
+    /* Cyan pill button, only a faint glow */
+    .auth-shell button[type="submit"],
+    .auth-shell .bg-primary {
+        border-radius: 999px;
+        background: #22d3ee;
+        color: #0b2530;
+        box-shadow: 0 4px 14px -6px rgba(34, 211, 238, 0.45);
+    }
+    .auth-shell .border.border-border.bg-card { /* outline (guest) button */
+        border-radius: 999px;
+        border-color: rgba(34, 211, 238, 0.45);
+        background: transparent;
+        color: #22d3ee;
+    }
+    .auth-shell .border.border-border.bg-card:hover { background: rgba(34, 211, 238, 0.08); }
+    /* Tabs */
+    .auth-shell .auth-tabs { background-color: hsl(220 6% 22%); border-radius: 999px; }
+    .auth-shell .auth-tab-pill { border-radius: 999px; background-color: hsl(220 6% 32%); box-shadow: none; }
+    .auth-shell button.auth-tab { border-radius: 999px; }
+    /* Links / accents in pink, status colours readable on dark */
+    .auth-shell a:not([class*="bg-"]), .auth-shell .text-primary { color: #f472b6; }
+    .auth-shell .text-red-500, .auth-shell .text-red-600 { color: #fca5a5; }
+    .auth-shell .text-emerald-600 { color: #6ee7b7; }
+    .auth-shell .bg-red-50 { background-color: rgba(248, 113, 113, 0.12); }
+    .auth-shell .border-red-100 { border-color: rgba(248, 113, 113, 0.28); }
+}

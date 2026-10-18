@@ -1,5 +1,6 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
+import { applyNewerMessages, idOf, persistable } from '../../utils/messageList.js';
 import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 export const loadRoomMessagesHandler = async (
@@ -22,7 +23,7 @@ export const loadRoomMessagesHandler = async (
   if (inMemory?.messages?.length && Date.now() - inMemory.timestamp < CACHE_TTL) {
     setMessages(inMemory.messages);
     setHasMoreMessages(inMemory.hasMore);
-    if (unreadCount > 0) {
+    {
       setLoadingNewerMessages?.(true);
       _fetchNewRoomMessages(roomId, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey)
         .finally(() => setLoadingNewerMessages?.(false));
@@ -41,7 +42,7 @@ export const loadRoomMessagesHandler = async (
     };
     setLoadingMessages(false);
 
-    if (unreadCount > 0) {
+    {
       setLoadingNewerMessages?.(true);
       _fetchNewRoomMessages(roomId, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey)
         .finally(() => setLoadingNewerMessages?.(false));
@@ -69,9 +70,10 @@ export const loadRoomMessagesHandler = async (
 };
 
 async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts, roomPrivateKey = null) {
+  // setMessages / setHasMoreNewerMessages are guarded by the caller's switch id, so a room switch can't clobber state.
   try {
-    let mergedMessages = currentCache.messages;
-    let latestTimestamp = mergedMessages?.[mergedMessages.length - 1]?.timestamp;
+    const lastConfirmed = (list) => [...(list || [])].reverse().find(m => !m.isPending)?.timestamp;
+    let latestTimestamp = lastConfirmed(messageCache.current[cacheKey]?.messages ?? currentCache.messages);
     if (!latestTimestamp) return;
 
     let hasMore = true;
@@ -81,29 +83,24 @@ async function _fetchNewRoomMessages(roomId, cacheKey, currentCache, setMessages
       const res = await messageService.getRoomMessages(roomId, 20, null, latestTimestamp, roomPrivateKey);
       lastUnreadCount = res.unreadCount;
       hasMore = res.hasMore || false;
-
       if (!res.messages?.length) break;
 
-      const existingIds = new Set(mergedMessages.map(m => String(m.id || m._id)));
-      const reallyNew = res.messages.filter(m => !existingIds.has(String(m.id || m._id)));
+      const known = new Set((messageCache.current[cacheKey]?.messages || []).map(idOf));
+      const hadNew = res.messages.some(m => !known.has(idOf(m)));
 
-      if (reallyNew.length) {
-        mergedMessages = [...mergedMessages, ...reallyNew];
-        await dbService.mergeNewMessages(cacheKey, reallyNew);
-        latestTimestamp = mergedMessages[mergedMessages.length - 1].timestamp;
-      } else if (hasMore) {
-        break;
-      }
+      const { messages } = applyNewerMessages({
+        messageCache, cacheKey, incoming: res.messages, setMessages, fallback: currentCache.messages,
+      });
+      await dbService.mergeNewMessages(cacheKey, persistable(res.messages));
+
+      const next = lastConfirmed(messages);
+      if (!hadNew || !next || next === latestTimestamp) break;
+      latestTimestamp = next;
     }
 
-    messageCache.current[cacheKey] = {
-      messages: mergedMessages,
-      hasMore: currentCache.hasMore,
-      timestamp: Date.now(),
-    };
-    setMessages(mergedMessages);
     if (setHasMoreNewerMessages) setHasMoreNewerMessages(hasMore);
     syncUnreadFromResponse(setUnreadCounts, cacheKey, lastUnreadCount);
-  } catch {
+  } catch (error) {
+    console.error('Failed to fetch new room messages:', error);
   }
 }

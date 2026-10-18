@@ -8,7 +8,6 @@ const MAX_GAMES = parseInt(process.env.MINIGAMES_MAX_GAMES, 10) || 2000;
 
 const cleanName = (n, fallback) => {
   if (typeof n !== 'string') return fallback;
-  // eslint-disable-next-line no-control-regex
   const s = n.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 20);
   return s || fallback;
 };
@@ -86,7 +85,6 @@ export function setupMinigamesSocket(io) {
     scheduleCleanup(id, g);
   };
 
-  // Inactivity: whoever the game is waiting on forfeits; if it is waiting on both, it's a draw.
   const armTurnTimer = (id, g) => {
     clearTurnTimer(g);
     if (!g.started || g.over || anyoneGone(g)) return;

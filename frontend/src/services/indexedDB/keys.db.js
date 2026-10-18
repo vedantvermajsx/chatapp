@@ -1,4 +1,4 @@
-import { STORES, getStore, promisifyRequest } from './core.js';
+import { STORES, getStore, promisifyRequest, notifyStoresCleared } from './core.js';
 
 export const dbKeys = {
   async savePrivateKey(id, privateKeyPem) {
@@ -24,5 +24,6 @@ export const dbKeys = {
   async clearAllKeys() {
     const store = await getStore(STORES.keys, 'readwrite');
     await promisifyRequest(store.clear());
+    notifyStoresCleared();
   },
 };

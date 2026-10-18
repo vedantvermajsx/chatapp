@@ -1,41 +1,10 @@
 import mongoose from 'mongoose';
-
 const unreadCountSchema = new mongoose.Schema(
   {
-    senderId: {
-      type: String,
-      required: true,
-      index: true,
-    },
-
-    senderType: {
-      type: String,
-      enum: ['User', 'Guest', 'Room'],
-      required: true,
-    },
-
-    receiverId: {
-      type: String,
-      required: true,
-      index: true,
-    },
-
-    receiverType: {
-      type: String,
-      enum: ['User', 'Guest'],
-      required: true,
-    },
-
-    count: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-
-    lastUnreadAt: {
-      type: Date,
-      default: null,
-    },
+    senderId: { type: String, required: true },
+    receiverId: { type: String, required: true },
+    totalCount: { type: Number, default: 0, min: 0 },
+    readCount: { type: Number, default: 0, min: 0 },
   },
   {
     versionKey: false,
@@ -44,48 +13,19 @@ const unreadCountSchema = new mongoose.Schema(
 );
 
 unreadCountSchema.index({ senderId: 1, receiverId: 1 }, { unique: true });
+// "all conversations of this receiver" -> the unread-count fetch
+unreadCountSchema.index({ receiverId: 1 });
 
-unreadCountSchema.index({ receiverId: 1, count: 1 });
-
-unreadCountSchema.statics.increment = function (
-  senderId,
-  senderType,
-  receiverId,
-  receiverType,
-  timestamp = new Date()
-) {
-  return this.findOneAndUpdate(
-    { senderId, receiverId },
-    {
-      $inc: { count: 1 },
-      $set: { senderType, receiverType, lastUnreadAt: timestamp },
-    },
-    { upsert: true, new: true }
-  );
-};
-
-
-unreadCountSchema.statics.reset = function (senderId, receiverId) {
-  return this.findOneAndUpdate(
-    { senderId, receiverId },
-    { $set: { count: 0, lastUnreadAt: null } },
-    { new: true }
-  );
-};
-
-unreadCountSchema.statics.clearChat = function (senderId, receiverId) {
-  return this.findOneAndUpdate(
-    { senderId, receiverId },
-    { $set: { count: 0, lastUnreadAt: null } },
-    { new: true }
-  );
-};
-
-unreadCountSchema.statics.getAllForReceiver = function (receiverId) {
-  return this.find(
-    { receiverId, count: { $gt: 0 } },
-    { senderId: 1, senderType: 1, count: 1, lastUnreadAt: 1, _id: 0 }
-  ).lean();
+unreadCountSchema.statics.incrementTotal = async function (senderId, receiverId) {
+  const run = () =>
+    this.updateOne({ senderId, receiverId }, { $inc: { totalCount: 1 } }, { upsert: true });
+  try {
+    return await run();
+  } catch (err) {
+    // Two concurrent upserts raced on the unique index; the doc exists now, so retry once.
+    if (err.code === 11000) return run();
+    throw err;
+  }
 };
 
 export default mongoose.models.UnreadCount ||

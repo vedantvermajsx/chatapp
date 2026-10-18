@@ -1,29 +1,55 @@
 import { openDB, getStore, promisifyRequest, STORES, MAX_MESSAGES_PER_CHAT } from './core.js';
+import { sealMessage, openMessage } from './atRest.js';
+import { compareMessages, persistable } from '../../utils/messageList.js';
 
-const _enforceCapInTransaction = (msgStore, metaStore, chatKey, currentCount) => {
-  const excess = currentCount - MAX_MESSAGES_PER_CHAT;
-  if (excess <= 0) return;
+const runTx = async (fn) => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORES.messages, STORES.chatMeta], 'readwrite');
+    let result;
+    tx.oncomplete = () => resolve(result);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+    Promise.resolve(fn(tx.objectStore(STORES.messages), tx.objectStore(STORES.chatMeta)))
+      .then((r) => { result = r; }, (err) => { try { tx.abort(); } catch {} reject(err); });
+  });
+};
 
-  const range = IDBKeyRange.bound([chatKey, ''], [chatKey, '\uffff']);
-  const index = msgStore.index('chatKey_timestamp');
-  let deleted = 0;
+const prepare = async (chatKey, messages) =>
+  Promise.all(
+    persistable(messages).map((m) => {
+      const id = m.id || m._id;
+      return sealMessage({ ...m, id, chatKey });
+    })
+  );
 
-  const cursorReq = index.openCursor(range);
-  cursorReq.onsuccess = (e) => {
-    const cursor = e.target.result;
-    if (!cursor || deleted >= excess) return;
-    msgStore.delete(cursor.value.id);
-    deleted++;
-    cursor.continue();
-  };
+// Single owner of count / latestTimestamp / hasMore / eviction: derived from actual rows.
+const reconcile = async (msgStore, metaStore, chatKey, hasMoreOverride) => {
+  const rows = await promisifyRequest(msgStore.index('chatKey').getAll(chatKey));
+  rows.sort(compareMessages);
+  const excess = rows.length - MAX_MESSAGES_PER_CHAT;
+  if (excess > 0) rows.splice(0, excess).forEach((r) => msgStore.delete(r.id));
+  const meta = await promisifyRequest(metaStore.get(chatKey));
+  metaStore.put({
+    ...(meta ?? {}),
+    chatKey,
+    count: rows.length,
+    latestTimestamp: rows.length ? rows[rows.length - 1].timestamp : null,
+    hasMore: (hasMoreOverride ?? meta?.hasMore ?? false) || excess > 0,
+  });
+};
 
-  const metaGet = metaStore.get(chatKey);
-  metaGet.onsuccess = () => {
-    const meta = metaGet.result;
-    if (meta) {
-      metaStore.put({ ...meta, count: Math.max(0, meta.count - excess) });
-    }
-  };
+const upsert = async (chatKey, messages, hasMore) => {
+  const sealed = await prepare(chatKey, messages);
+  if (!sealed.length) return;
+  try {
+    await runTx(async (msgStore, metaStore) => {
+      sealed.forEach((row) => msgStore.put(row));
+      await reconcile(msgStore, metaStore, chatKey, hasMore);
+    });
+  } catch (error) {
+    console.error('Error saving messages:', error);
+  }
 };
 
 export const dbMessages = {
@@ -67,84 +93,46 @@ export const dbMessages = {
   },
 
   async saveMessages(chatKey, messages, hasMore = false) {
-    if (!messages.length) return;
+    const sealed = await prepare(chatKey, messages);
+    if (!sealed.length) return;
     try {
-      const db = await openDB();
-      const tx = db.transaction([STORES.messages, STORES.chatMeta], 'readwrite');
-      const msgStore = tx.objectStore(STORES.messages);
-      const metaStore = tx.objectStore(STORES.chatMeta);
-
-      const index = msgStore.index('chatKey');
-      const cursorReq = index.openCursor(IDBKeyRange.only(chatKey));
-      cursorReq.onsuccess = (e) => {
-        const cursor = e.target.result;
-        if (cursor) { msgStore.delete(cursor.value.id); cursor.continue(); }
-      };
-
-      const toSave = messages.slice(-MAX_MESSAGES_PER_CHAT);
-      toSave.forEach(msg => {
-        const id = msg.id || msg._id;
-        if (!id) return;
-        msgStore.put({ ...msg, id, chatKey });
+      await runTx(async (msgStore, metaStore) => {
+        const keys = await promisifyRequest(msgStore.index('chatKey').getAllKeys(chatKey));
+        keys.forEach((k) => msgStore.delete(k));
+        sealed.forEach((row) => msgStore.put(row));
+        await reconcile(msgStore, metaStore, chatKey, hasMore);
       });
-
-      const latestTimestamp = toSave[toSave.length - 1]?.timestamp ?? null;
-      metaStore.put({ chatKey, latestTimestamp, hasMore, count: toSave.length });
     } catch (error) {
       console.error('Error saving messages:', error);
     }
   },
 
-  async mergeNewMessages(chatKey, newMessages) {
-    if (!newMessages.length) return;
-    try {
-      const db = await openDB();
-      const tx = db.transaction([STORES.messages, STORES.chatMeta], 'readwrite');
-      const msgStore = tx.objectStore(STORES.messages);
-      const metaStore = tx.objectStore(STORES.chatMeta);
+  // Upsert newer messages; evicts oldest beyond cap and sets hasMore=true when it does.
+  mergeNewMessages(chatKey, newMessages, hasMore) {
+    return upsert(chatKey, newMessages, hasMore);
+  },
 
-      newMessages.forEach(msg => {
-        const id = msg.id || msg._id;
-        if (!id) return;
-        msgStore.put({ ...msg, id, chatKey });
-      });
+  // Upsert an older page (caller guarantees total stays within cap).
+  mergeOlderMessages(chatKey, olderMessages, hasMore) {
+    return upsert(chatKey, olderMessages, hasMore);
+  },
 
-      const metaReq = metaStore.get(chatKey);
-      metaReq.onsuccess = () => {
-        const meta = metaReq.result ?? { chatKey, count: 0, hasMore: false, latestTimestamp: null };
-        const newCount = meta.count + newMessages.length;
-        const latestTimestamp = newMessages[newMessages.length - 1]?.timestamp ?? meta.latestTimestamp;
-
-        if (newCount > MAX_MESSAGES_PER_CHAT) {
-          _enforceCapInTransaction(msgStore, metaStore, chatKey, newCount);
-        }
-
-        metaStore.put({
-          ...meta,
-          latestTimestamp,
-          count: Math.min(newCount, MAX_MESSAGES_PER_CHAT),
-        });
-      };
-    } catch (error) {
-      console.error('Error merging new messages:', error);
-    }
+  addMessage(chatKey, message) {
+    return upsert(chatKey, [message]);
   },
 
   async getMessages(chatKey) {
     try {
       const db = await openDB();
       const tx = db.transaction([STORES.messages, STORES.chatMeta], 'readonly');
-      const msgStore = tx.objectStore(STORES.messages);
-      const metaStore = tx.objectStore(STORES.chatMeta);
-
-      const [msgs, meta] = await Promise.all([
-        promisifyRequest(msgStore.index('chatKey').getAll(chatKey)),
-        promisifyRequest(metaStore.get(chatKey)),
+      const [rows, meta] = await Promise.all([
+        promisifyRequest(tx.objectStore(STORES.messages).index('chatKey').getAll(chatKey)),
+        promisifyRequest(tx.objectStore(STORES.chatMeta).get(chatKey)),
       ]);
-
-      const sorted = (msgs || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const opened = (await Promise.all((rows || []).map(openMessage))).filter(Boolean);
+      opened.sort(compareMessages);
       return {
-        messages: sorted,
+        messages: opened,
         hasMore: meta?.hasMore ?? false,
         latestTimestamp: meta?.latestTimestamp ?? null,
       };
@@ -154,49 +142,13 @@ export const dbMessages = {
     }
   },
 
-  async addMessage(chatKey, message) {
-    if (!message?.id) return;
-    try {
-      const db = await openDB();
-      const tx = db.transaction([STORES.messages, STORES.chatMeta], 'readwrite');
-      const msgStore = tx.objectStore(STORES.messages);
-      const metaStore = tx.objectStore(STORES.chatMeta);
-
-      const existing = await promisifyRequest(msgStore.get(message.id));
-      msgStore.put({ ...message, chatKey });
-
-      if (!existing) {
-        const metaReq = metaStore.get(chatKey);
-        metaReq.onsuccess = () => {
-          const meta = metaReq.result ?? { chatKey, count: 0, hasMore: false, latestTimestamp: null };
-          const newCount = meta.count + 1;
-          const msgTs = message.timestamp;
-          const latestTimestamp =
-            !meta.latestTimestamp || msgTs > meta.latestTimestamp
-              ? msgTs
-              : meta.latestTimestamp;
-
-          if (newCount > MAX_MESSAGES_PER_CHAT) {
-            _enforceCapInTransaction(msgStore, metaStore, chatKey, newCount);
-          }
-
-          metaStore.put({
-            ...meta,
-            latestTimestamp,
-            count: Math.min(newCount, MAX_MESSAGES_PER_CHAT),
-          });
-        };
-      }
-    } catch (error) {
-      console.error('Error adding message:', error);
-    }
-  },
-
   async removeMessage(chatKey, id) {
     if (!id) return;
     try {
-      const store = await getStore(STORES.messages, 'readwrite');
-      store.delete(id);
+      await runTx(async (msgStore, metaStore) => {
+        msgStore.delete(id);
+        await reconcile(msgStore, metaStore, chatKey);
+      });
     } catch (error) {
       console.error('Error removing message:', error);
     }
@@ -204,20 +156,13 @@ export const dbMessages = {
 
   async deleteMessages(chatKey) {
     try {
-      const db = await openDB();
-      const tx = db.transaction([STORES.messages, STORES.chatMeta], 'readwrite');
-      const msgStore = tx.objectStore(STORES.messages);
-      const metaStore = tx.objectStore(STORES.chatMeta);
-
-      const index = msgStore.index('chatKey');
-      const cursorReq = index.openCursor(IDBKeyRange.only(chatKey));
-      cursorReq.onsuccess = (e) => {
-        const cursor = e.target.result;
-        if (cursor) { msgStore.delete(cursor.value.id); cursor.continue(); }
-      };
-      metaStore.delete(chatKey);
+      await runTx(async (msgStore, metaStore) => {
+        const keys = await promisifyRequest(msgStore.index('chatKey').getAllKeys(chatKey));
+        keys.forEach((k) => msgStore.delete(k));
+        metaStore.delete(chatKey);
+      });
     } catch (error) {
       console.error('Error deleting messages:', error);
     }
-  }
+  },
 };

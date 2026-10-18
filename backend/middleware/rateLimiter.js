@@ -16,9 +16,6 @@ export const globalLimiter = rateLimit({
 });
 
 export const authLimiter = rateLimit({
-  // Login/signup: a real user doesn't retry these in quick succession, so
-  // a short window with a low cap is fine and blunts credential-stuffing/
-  // signup-spam attempts.
   windowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 10) || 5 * 60 * 1000, 
   max: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 20,
   standardHeaders: true,
@@ -27,8 +24,6 @@ export const authLimiter = rateLimit({
 });
 
 export const messagingLimiter = rateLimit({
-  // Sending/fetching messages happens continuously while chatting, so this
-  // needs a per-minute window rather than a long one.
   windowMs: parseInt(process.env.MESSAGE_RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000, 
   max: parseInt(process.env.MESSAGE_RATE_LIMIT_MAX, 10) || 100,
   standardHeaders: true,

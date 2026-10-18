@@ -10,12 +10,6 @@ const EDGE = 12;
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 const labelOf = (game) => (MINIGAMES[game] ? MINIGAMES[game].label : 'Minigames');
 
-// Hosts the backend's /start-minigame page (games/minigames) in an iframe. Same windowing
-// behaviour as ChessWindow: fullscreen by default, can be floated, dragged and minimized, and
-// stays mounted while minimized so a running game keeps going.
-//
-// `game` preselects a game inside the iframe (omit it to show the picker). `joinCode` joins an
-// existing game straight away (from a chat invite).
 const MinigameWindow = ({ game, username, joinCode, onClose, onGameCreated, onActiveChange }) => {
   const [minimized, setMinimized] = useState(false);
   const [fullscreen, setFullscreen] = useState(true);

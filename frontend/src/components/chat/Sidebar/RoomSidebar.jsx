@@ -24,6 +24,15 @@ import ThemePicker from './ThemePicker';
 
 const TABS = ['Chats', 'Explore'];
 
+const lastMessageTime = (chat) => {
+  const msg = chat?.lastMessage;
+  const raw = msg?.timestamp ?? msg?.createdAt ?? chat?.updatedAt;
+  const ms = raw ? new Date(raw).getTime() : 0;
+  return Number.isNaN(ms) ? 0 : ms;
+};
+
+const byMostRecent = (a, b) => lastMessageTime(b) - lastMessageTime(a);
+
 function RoomSidebar({
   user,
   logout,
@@ -104,7 +113,7 @@ function RoomSidebar({
         await deletePrivateChatMutation.mutateAsync(otherUserId);
         toast.success('Chat deleted');
         if (setPrivateChats) {
-          setPrivateChats(prev => prev.filter(c => c.otherUser.id !== otherUserId));
+          setPrivateChats(prev => (Array.isArray(prev) ? prev : []).filter(c => c.otherUser.id !== otherUserId));
         }
         await dbService.deletePrivateChat(otherUserId);
         await dbService.deleteMessages(`private_${otherUserId}`);
@@ -129,8 +138,9 @@ function RoomSidebar({
       setShowCreateForm(false);
       if (newRoom && setJoinedRooms) {
         setJoinedRooms(prev => {
-          const exists = prev.some(r => r._id === newRoom._id);
-          return exists ? prev : [newRoom, ...prev];
+          const list = Array.isArray(prev) ? prev : [];
+          const exists = list.some(r => r._id === newRoom._id);
+          return exists ? list : [newRoom, ...list];
         });
       }
       if (newRoom && onRoomCreated) {
@@ -210,13 +220,16 @@ function RoomSidebar({
     </div>
   );
 
-  const filteredJoinedRooms = searchQuery
-    ? joinedRooms.filter(r => r.name?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : joinedRooms;
+  const joinedRoomsList = Array.isArray(joinedRooms) ? joinedRooms : [];
+  const privateChatsList = Array.isArray(privateChats) ? privateChats : [];
 
-  const filteredPrivateChats = searchQuery
-    ? privateChats.filter(c => c.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : privateChats;
+  const filteredJoinedRooms = (searchQuery
+    ? joinedRoomsList.filter(r => r.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [...joinedRoomsList]).sort(byMostRecent);
+
+  const filteredPrivateChats = (searchQuery
+    ? privateChatsList.filter(c => c.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : [...privateChatsList]).sort(byMostRecent);
 
   const renderMyChats = () => (
     <div className="space-y-4">

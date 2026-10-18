@@ -1,6 +1,7 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
 import { applyLastRead } from '../../utils/applyLastRead.js';
+import { applyNewerMessages, idOf, persistable } from '../../utils/messageList.js';
 import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 export const startPrivateChatHandler = async (
@@ -33,7 +34,7 @@ export const startPrivateChatHandler = async (
     setHasMoreMessages(inMemory.hasMore);
     setLoadingMessages(false);
     _refreshLastReadStatus(otherUser.id, cacheKey, messageCache, setMessages);
-    if (unreadCount > 0) {
+    {
       setLoadingNewerMessages?.(true);
       _fetchNewPrivateMessages(otherUser.id, cacheKey, inMemory, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts)
         .finally(() => setLoadingNewerMessages?.(false));
@@ -52,7 +53,7 @@ export const startPrivateChatHandler = async (
       timestamp: Date.now(),
     };
     _refreshLastReadStatus(otherUser.id, cacheKey, messageCache, setMessages);
-    if (unreadCount > 0) {
+    {
       setLoadingNewerMessages?.(true);
       _fetchNewPrivateMessages(otherUser.id, cacheKey, messageCache.current[cacheKey], setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts)
         .finally(() => setLoadingNewerMessages?.(false));
@@ -104,46 +105,37 @@ async function _refreshLastReadStatus(otherUserId, cacheKey, messageCache, setMe
 
 async function _fetchNewPrivateMessages(otherUserId, cacheKey, currentCache, setMessages, setHasMoreMessages, setHasMoreNewerMessages, messageCache, unreadCount, setUnreadCounts) {
   try {
-    let mergedMessages = currentCache.messages;
-    let latestTimestamp = mergedMessages?.[mergedMessages.length - 1]?.timestamp;
-    if (!latestTimestamp) {
-      return;
-    }
+    const lastConfirmed = (list) => [...(list || [])].reverse().find(m => !m.isPending)?.timestamp;
+    let latestTimestamp = lastConfirmed(messageCache.current[cacheKey]?.messages ?? currentCache.messages);
+    if (!latestTimestamp) return;
 
     let hasMore = true;
-    let lastRead = null;
     let lastUnreadCount = unreadCount;
 
     while (hasMore) {
       const res = await messageService.getPrivateMessages(otherUserId, 20, null, latestTimestamp);
-      lastRead = res.lastRead ?? lastRead;
       lastUnreadCount = res.unreadCount;
-
-      const existingIds = new Set(mergedMessages.map(m => String(m.id || m._id)));
-      const reallyNew = (res.messages || []).filter(m => !existingIds.has(String(m.id || m._id)));
-
-      if (reallyNew.length) {
-        mergedMessages = [...mergedMessages, ...reallyNew];
-        await dbService.mergeNewMessages(cacheKey, reallyNew);
-        latestTimestamp = mergedMessages[mergedMessages.length - 1].timestamp;
-      }
-
       hasMore = res.hasMore || false;
-      if (!reallyNew.length && hasMore) break;
+      const lastRead = res.lastRead ?? null;
+      if (!res.messages?.length) break;
+
+      const known = new Set((messageCache.current[cacheKey]?.messages || []).map(idOf));
+      const hadNew = res.messages.some(m => !known.has(idOf(m)));
+
+      const { messages } = applyNewerMessages({
+        messageCache, cacheKey, incoming: res.messages, setMessages, fallback: currentCache.messages,
+        transform: lastRead ? (m) => applyLastRead(m, lastRead) : undefined,
+      });
+      await dbService.mergeNewMessages(cacheKey, persistable(res.messages));
+
+      const next = lastConfirmed(messages);
+      if (!hadNew || !next || next === latestTimestamp) break;
+      latestTimestamp = next;
     }
 
-    if (lastRead) {
-      mergedMessages = applyLastRead(mergedMessages, lastRead);
-    }
-
-    messageCache.current[cacheKey] = {
-      messages: mergedMessages,
-      hasMore: currentCache.hasMore,
-      timestamp: Date.now(),
-    };
-    setMessages(mergedMessages);
     if (setHasMoreNewerMessages) setHasMoreNewerMessages(hasMore);
     syncUnreadFromResponse(setUnreadCounts, cacheKey, lastUnreadCount);
-  } catch {
+  } catch (error) {
+    console.error('Failed to fetch new private messages:', error);
   }
 }

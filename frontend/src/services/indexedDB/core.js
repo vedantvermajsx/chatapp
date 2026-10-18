@@ -15,6 +15,10 @@ export const STORES = {
 
 let dbInstance = null;
 
+const clearedHooks = [];
+export const onStoresCleared = (fn) => { clearedHooks.push(fn); };
+export const notifyStoresCleared = () => clearedHooks.forEach((fn) => { try { fn(); } catch {} });
+
 export const openDB = () => {
   return new Promise((resolve, reject) => {
     if (dbInstance) { resolve(dbInstance); return; }
@@ -109,6 +113,20 @@ export const promisifyRequest = (request) =>
     request.onerror = () => reject(request.error);
   });
 
+export const sortByStoredOrder = (rows) => {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((row) => ({
+      row,
+      order: typeof row?.__order === 'number' ? row.__order : Number.POSITIVE_INFINITY,
+    }))
+    .sort((a, b) => a.order - b.order)
+    .map(({ row }) => {
+      const { __order, ...rest } = row;
+      return rest;
+    });
+};
+
 export const deleteDB = () => {
   return clearAllStores();
 };
@@ -126,6 +144,7 @@ export const clearAllStores = async () => {
     tx.onabort = () => reject(tx.error);
     existing.forEach(name => tx.objectStore(name).clear());
   });
+  notifyStoresCleared();
 };
 
 export const hardResetDB = () => {
@@ -134,6 +153,7 @@ export const hardResetDB = () => {
       dbInstance.close();
       dbInstance = null;
     }
+    notifyStoresCleared();
     const request = indexedDB.deleteDatabase(DB_NAME);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);

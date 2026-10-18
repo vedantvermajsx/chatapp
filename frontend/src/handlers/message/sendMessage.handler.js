@@ -1,6 +1,7 @@
 import messageService from '../../services/message.service.js';
 import { updatePrivateChatOptimistically } from '../private/updatePrivateChatOptimistically.handler.js';
 import { dbService } from '../../services/indexedDB.service.js';
+import { capNewest, withCap } from '../../utils/messageList.js';
 
 function replaceAndDedupe(prev, tempId, finalMessage) {
   const finalId = finalMessage.id ?? finalMessage._id;
@@ -78,23 +79,17 @@ export const sendMessageHandler = async (
 };
 
   if (currentRoom) {
-    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessages((prev) => capNewest([...prev, optimisticMessage]));
     const cacheKey = `room_${currentRoom._id}`;
     if (messageCache.current[cacheKey]) {
-      messageCache.current[cacheKey] = {
-        ...messageCache.current[cacheKey],
-        messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
-      };
+      messageCache.current[cacheKey] = withCap(messageCache.current[cacheKey], [...messageCache.current[cacheKey].messages, optimisticMessage]);
     }
     await dbService.addMessage(cacheKey, optimisticMessage);
   } else if (currentPrivateChat) {
-    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessages((prev) => capNewest([...prev, optimisticMessage]));
     const cacheKey = `private_${currentPrivateChat.id}`;
     if (messageCache.current[cacheKey]) {
-      messageCache.current[cacheKey] = {
-        ...messageCache.current[cacheKey],
-        messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
-      };
+      messageCache.current[cacheKey] = withCap(messageCache.current[cacheKey], [...messageCache.current[cacheKey].messages, optimisticMessage]);
     }
     await dbService.addMessage(cacheKey, optimisticMessage);
   }
@@ -162,15 +157,17 @@ export const sendMessageHandler = async (
       : `private_${currentPrivateChat.id}`;
 
     if (messageCache.current[cacheKey]) {
-      messageCache.current[cacheKey].messages =
-        messageCache.current[cacheKey].messages.map(msg =>
+      messageCache.current[cacheKey] = {
+        ...messageCache.current[cacheKey],
+        messages: messageCache.current[cacheKey].messages.map(msg =>
           (msg.id || msg._id) === tempId
             ? {
                 ...msg,
                 uploadProgress: progress
               }
             : msg
-        );
+        )
+      };
     }
   }
 );
@@ -196,15 +193,17 @@ export const sendMessageHandler = async (
           : `private_${currentPrivateChat.id}`;
 
         if (messageCache.current[cacheKeyAfterUpload]) {
-          messageCache.current[cacheKeyAfterUpload].messages =
-            messageCache.current[cacheKeyAfterUpload].messages.map(msg =>
+          messageCache.current[cacheKeyAfterUpload] = {
+            ...messageCache.current[cacheKeyAfterUpload],
+            messages: messageCache.current[cacheKeyAfterUpload].messages.map(msg =>
               (msg.id || msg._id) === tempId
                 ? {
                     ...msg,
                     uploadProgress: null
                   }
                 : msg
-            );
+            )
+          };
         }
         
         if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
@@ -336,23 +335,17 @@ export const sendStickerHandler = async (
   };
 
   if (currentRoom) {
-    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessages((prev) => capNewest([...prev, optimisticMessage]));
     const cacheKey = `room_${currentRoom._id}`;
     if (messageCache.current[cacheKey]) {
-      messageCache.current[cacheKey] = {
-        ...messageCache.current[cacheKey],
-        messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
-      };
+      messageCache.current[cacheKey] = withCap(messageCache.current[cacheKey], [...messageCache.current[cacheKey].messages, optimisticMessage]);
     }
     await dbService.addMessage(cacheKey, optimisticMessage);
   } else if (currentPrivateChat) {
-    setMessages((prev) => [...prev, optimisticMessage]);
+    setMessages((prev) => capNewest([...prev, optimisticMessage]));
     const cacheKey = `private_${currentPrivateChat.id}`;
     if (messageCache.current[cacheKey]) {
-      messageCache.current[cacheKey] = {
-        ...messageCache.current[cacheKey],
-        messages: [...messageCache.current[cacheKey].messages, optimisticMessage]
-      };
+      messageCache.current[cacheKey] = withCap(messageCache.current[cacheKey], [...messageCache.current[cacheKey].messages, optimisticMessage]);
     }
     await dbService.addMessage(cacheKey, optimisticMessage);
   }

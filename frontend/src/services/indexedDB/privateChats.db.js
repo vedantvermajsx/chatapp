@@ -1,11 +1,15 @@
-import { getStore, promisifyRequest, STORES } from './core.js';
+import { getStore, promisifyRequest, sortByStoredOrder, STORES } from './core.js';
 
 export const dbPrivateChats = {
   async savePrivateChats(privateChats) {
     try {
+      if (!Array.isArray(privateChats)) return;
       const store = await getStore(STORES.privateChats, 'readwrite');
-      store.clear();
-      privateChats.forEach(chat => store.put({ ...chat, id: chat.otherUser.id }));
+      privateChats.forEach((chat, index) => {
+        const id = chat?.otherUser?.id || chat?.otherUser?._id;
+        if (!id) return;
+        store.put({ ...chat, id, __order: index });
+      });
     } catch (error) {
       console.error('Error saving private chats:', error);
     }
@@ -14,7 +18,8 @@ export const dbPrivateChats = {
   async getPrivateChats() {
     try {
       const store = await getStore(STORES.privateChats);
-      return promisifyRequest(store.getAll()).catch(() => []);
+      const rows = await promisifyRequest(store.getAll()).catch(() => []);
+      return sortByStoredOrder(rows);
     } catch {
       return [];
     }

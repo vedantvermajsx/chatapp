@@ -29,7 +29,7 @@ function VideoShowcase({ src = '/demo.mp4', poster = '/demo-poster.jpg', classNa
           className="absolute inset-0 flex items-center justify-center group"
         >
           <span className="absolute inset-0 bg-neutral-900/10 group-hover:bg-neutral-900/15 transition-colors" />
-          <span className="relative w-14 h-14 rounded-full bg-white/95 shadow-md flex items-center justify-center group-hover:scale-105 transition-transform">
+          <span className="relative w-14 h-14 rounded-full bg-white/95 shadow-md flex items-center justify-center group-hover:bg-white transition-colors">
             <Play className="w-5 h-5 text-foreground ml-0.5" fill="currentColor" />
           </span>
         </button>

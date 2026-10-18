@@ -22,8 +22,8 @@ const PrivateChat = memo(function PrivateChat({
       <div
         className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full transition-all duration-150`}
         style={{
-          height: isActive ? '20px' : unread > 0 ? '8px' : '0px',
-          backgroundColor: unread > 0 || isActive ? (theme.isLight ? '#4e5058' : '#f2f3f5') : 'transparent',
+          height: isActive ? '20px' : '0px',
+          backgroundColor: isActive ? theme.otherMessageText : 'transparent',
         }}
       />
       <div
@@ -46,6 +46,7 @@ const PrivateChat = memo(function PrivateChat({
             : 'transparent';
         }}
       >
+        {/* Avatar */}
         <div className="flex-shrink-0 relative">
           <Avatar
             url={chat.otherUser.avatar}
@@ -58,57 +59,62 @@ const PrivateChat = memo(function PrivateChat({
           />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3
-              className="font-semibold text-[15px] truncate leading-tight"
-              style={{
-                color: isActive
-                  ? (theme.isLight ? '#060607' : '#f2f3f5')
-                  : unread > 0
-                      ? (theme.isLight ? '#313338' : '#dbdee1')
-                      : (theme.isLight ? '#4e5058' : '#949ba4'),
-              }}
-            >
-              {chat.otherUser.username}
-            </h3>
-            <div className="flex items-center gap-1">
-              {unread > 0 && (
-                <span
-                  className="flex-shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold"
-                  style={{
-                    backgroundColor: '#f23f43',
-                    color: '#ffffff',
-                  }}
-                >
-                  {unread > 99 ? '99+' : unread}
-                </span>
-              )}
-              <button
-                onClick={(e) => handleDeletePrivateChat(chatId, e)}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity flex-shrink-0 translate-y-2"
-                title="Delete Chat"
-                style={{ color: theme.isLight ? '#b5bac1' : '#4e5058' }}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+          <h3
+            className="font-semibold text-[15px] truncate leading-tight"
+            style={{
+              color: isActive
+                ? theme.otherMessageText
+                : unread > 0
+                  ? theme.otherMessageText
+                  : theme.muted,
+            }}
+          >
+            {chat.otherUser.username}
+          </h3>
           <p
             className="text-[13px] truncate leading-tight mt-0.5"
             style={{
               color: unread > 0
-                ? (theme.isLight ? '#313338' : '#dbdee1')
-                : (theme.isLight ? '#7d8088' : '#6d727c'),
+                ? theme.otherMessageText
+                : theme.muted,
               fontWeight: unread > 0 ? 600 : 400,
             }}
           >
-            {unread > 0
-              ? `${unread} new`
-              : (chat.lastMessage?.content
-                  ? chat.lastMessage.content.replace('__SYSTEM_CALL__', '')
-                  : 'No messages yet')
-            }
+            {(() => {
+              if (unread > 0) return `${unread} new ${unread === 1 ? 'message' : 'messages'}`;
+              const msg = chat.lastMessage;
+              if (!msg) return 'No messages yet';
+              if (!msg.content && msg.media) {
+                const t = msg.media?.type;
+                if (t === 'image') return 'Photo';
+                if (t === 'video') return 'Video';
+                if (t === 'audio') return 'Audio';
+                return 'Attachment';
+              }
+              if (!msg.content) return 'No messages yet';
+              const text = msg.content.replace('__SYSTEM_CALL__', '');
+              return text.length > 30 ? text.slice(0, 30) + '…' : text;
+            })()}
           </p>
+        </div>
+        {unread > 0 && (
+          <span
+            className="flex-shrink-0 ml-1 min-w-[18px] h-[18px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-bold leading-none"
+            style={{ backgroundColor: '#d92d31', color: '#ffffff' }}
+          >
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
+        {/* Delete button — always occupies the same space, no layout shift */}
+        <div className="flex-shrink-0">
+          <button
+            onClick={(e) => handleDeletePrivateChat(chatId, e)}
+            className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity"
+            title="Delete Chat"
+            style={{ color: theme.muted }}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </div>

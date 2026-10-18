@@ -5,7 +5,6 @@ import { seedRoomOnJoin } from '../controllers/unread/seedRoomOnJoin.controller.
 import { resetUnread } from '../controllers/unread/resetUnread.controller.js';
 import { resetMultipleUnread } from '../controllers/unread/resetMultipleUnread.controller.js';
 import { decrementUnread } from '../controllers/unread/decrementUnread.controller.js';
-import { seedUnread } from '../controllers/unread/seedUnread.controller.js';
 import { invalidateUnread } from '../controllers/unread/invalidateUnread.controller.js';
 
 const router = express.Router();
@@ -16,7 +15,6 @@ router.post('/:userId/increment', incrementUnread);
 router.post('/reset-multiple', resetMultipleUnread);
 router.post('/:userId/reset', resetUnread);
 router.post('/:userId/decrement', decrementUnread);
-router.post('/:userId/seed', seedUnread);
 router.delete('/:userId', invalidateUnread);
 
 export default router;

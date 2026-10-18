@@ -23,8 +23,6 @@ export async function grantRoomKey(req, res) {
       return res.status(400).json({ message: 'Target user is not a member of this room' });
     }
 
-    // Whoever gets there first wins; don't clobber a grant that already
-    // exists (e.g. another member raced this one).
     const existing = await ConversationKey.findOne({
       conversationId: roomId,
       conversationType: 'room',

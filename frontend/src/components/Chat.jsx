@@ -13,6 +13,7 @@ import ChessWindow from './chat/Chess/ChessWindow';
 import MinigameWindow from './chat/Minigames/MinigameWindow';
 import { MINIGAME_COMMANDS, inviteText } from '../utils/minigames';
 import { sendMessageHandler } from '../handlers/message/sendMessage.handler.js';
+import { dbService } from '../services/indexedDB.service';
 
 function Chat() {
   const { user, logout } = useAuth();
@@ -222,7 +223,8 @@ function Chat() {
   }, [user, navigate]);
 
   const handleLeaveRoom = useCallback((roomId) => {
-    setJoinedRooms(prev => prev.filter(r => r._id !== roomId));
+    setJoinedRooms(prev => (Array.isArray(prev) ? prev : []).filter(r => r._id !== roomId));
+    dbService.deleteJoinedRoom(roomId);
   }, [setJoinedRooms]);
 
 

@@ -1,5 +1,6 @@
 import { X, Download } from "lucide-react";
 import { useTheme } from "../../../contexts/ThemeContext";
+import { useDownloads } from "../../../contexts/DownloadsContext";
 
 export const ImageZoomModal = ({
   imageUrl,
@@ -9,6 +10,7 @@ export const ImageZoomModal = ({
   onClose,
 }) => {
   const { theme } = useTheme();
+  const { startDownload } = useDownloads();
 
   const isLight =
     theme.background === "#e6e6e6" ||
@@ -24,30 +26,18 @@ export const ImageZoomModal = ({
 
   const displayUrl = isVideo ? imageUrl : media?.mid || imageUrl;
 
-  const addAttachmentFlag = (url, filename) => {
-    if (!url || !url.includes("/upload/")) return url;
-
-    const encodedName = encodeURIComponent(filename);
-
-    return url.replace(
-      /\/upload\/((?:(?!\/v\d+\/).)*)?(\/v\d+\/)/,
-      (_, transformations = "", version) => {
-        const prefix = transformations
-          ? `fl_attachment:${encodedName},${transformations}`
-          : `fl_attachment:${encodedName}`;
-
-        return `/upload/${prefix}${version}`;
-      }
-    );
-  };
-
   const handleDownload = (url, label) => {
     if (!url) return;
 
-    const filename = `chat-${isVideo ? "video" : "image"}-${label}-${Date.now()}`;
-    const downloadUrl = addAttachmentFlag(url, filename);
+    const ext = isVideo ? "mp4" : "jpg";
+    const filename = `chat-${isVideo ? "video" : "image"}-${label}-${Date.now()}.${ext}`;
 
-    window.open(downloadUrl, "_blank", "noopener,noreferrer");
+    startDownload({
+      url,
+      filename,
+      mediaType: isVideo ? "video" : "image",
+      label,
+    });
   };
 
   const handleBackgroundClick = (e) => {
@@ -99,7 +89,7 @@ export const ImageZoomModal = ({
             <button
               key={label}
               onClick={() => handleDownload(url, label.toLowerCase())}
-              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all hover:scale-100 active:scale-95"
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-[filter] hover:brightness-110 active:brightness-95"
               style={{
                 backgroundColor: isLight
                   ? "#ffffff"
@@ -115,7 +105,7 @@ export const ImageZoomModal = ({
         ) : (
           <button
             onClick={() => handleDownload(imageUrl, "original")}
-            className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-[filter] hover:brightness-110 active:brightness-95"
             style={{
               backgroundColor: isLight
                 ? "#ffffff"

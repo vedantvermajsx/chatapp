@@ -178,7 +178,7 @@ const StickerPicker = memo(({ onStickerSelect, pickerRef, onClose }) => {
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleSelect(item)}
-                className="rounded-xl overflow-hidden flex items-center justify-center transition-transform hover:scale-105 hover:opacity-90"
+                className="rounded-xl overflow-hidden flex items-center justify-center transition-opacity hover:opacity-80"
                 style={{ backgroundColor: cardBg, aspectRatio: '1 / 1' }}
               >
                 <img

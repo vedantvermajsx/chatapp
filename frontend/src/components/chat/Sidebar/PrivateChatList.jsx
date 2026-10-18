@@ -4,7 +4,7 @@ import Spinner from '../../common/Spinner';
 import { useTheme } from '../../../contexts/ThemeContext';
 import PrivateChat from './PrivateChat';
 
-const PrivateChatList = memo(function PrivateChatList({ privateChats, currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat, unreadCounts = {} }) {
+const PrivateChatList = memo(function PrivateChatList({ privateChats = [], currentPrivateChat, handleStartPrivateChat, loadingPrivateChats, handleDeletePrivateChat, unreadCounts = {} }) {
   const { theme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const headerColor = theme.isLight ? '#4e5058' : '#949ba4';

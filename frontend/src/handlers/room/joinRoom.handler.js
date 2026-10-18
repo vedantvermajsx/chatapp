@@ -19,8 +19,9 @@ export const joinRoomHandler = async (
   if (currentRoom && currentRoom._id === roomId) return;
 
   
-  const alreadyJoined = joinedRooms.some(r => r._id === roomId);
-let room = joinedRooms.find(r => r._id === roomId) || roomObject || null;
+  const joinedRoomsList = Array.isArray(joinedRooms) ? joinedRooms : [];
+  const alreadyJoined = joinedRoomsList.some(r => r._id === roomId);
+let room = joinedRoomsList.find(r => r._id === roomId) || roomObject || null;
 
 
   if (room) setCurrentRoom(room);

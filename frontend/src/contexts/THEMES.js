@@ -1,5 +1,5 @@
 
-export const THEMES = [
+const BASE_THEMES = [
   {
     id: 'white',
     name: 'White',
@@ -29,11 +29,11 @@ export const THEMES = [
     name: 'Fresh Campus',
     background: '#f6faf7',
     myMessageBubble: '#16a34a',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
-    otherMessageBubble: '#eaf4ec',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
+    otherMessageBubble: '#e3ede5',
     otherMessageText: '#0d1a14',
-    otherUsernameColor: '#15803d',
+    otherUsernameColor: '#147a3a',
     isLight: true
   },
 {
@@ -42,7 +42,7 @@ export const THEMES = [
   background: '#121212',
   myMessageBubble: '#f5f5f5',
   myMessageText: '#121212',
-  myUsernameColor: '#f5f5f5',
+  myUsernameColor: '#121212',
   otherMessageBubble: '#2a2a2a',
   otherMessageText: '#eeeeee',
   otherUsernameColor: '#bdbdbd',
@@ -53,8 +53,8 @@ export const THEMES = [
     name: 'One Dark Pro',
     background: '#282c34',
     myMessageBubble: '#61afef',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#3e4451',
     otherMessageText: '#abb2bf',
     otherUsernameColor: '#98c379',
@@ -65,8 +65,8 @@ export const THEMES = [
     name: 'Tokyo Night',
     background: '#1a1b26',
     myMessageBubble: '#7aa2f7',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#24283b',
     otherMessageText: '#a9b1d6',
     otherUsernameColor: '#bb9af7',
@@ -91,9 +91,9 @@ export const THEMES = [
     myMessageBubble: '#8839ef',
     myMessageText: '#ffffff',
     myUsernameColor: '#ffffff',
-    otherMessageBubble: '#e6e9ef',
+    otherMessageBubble: '#dfe2e8',
     otherMessageText: '#4c4f69',
-    otherUsernameColor: '#8839ef',
+    otherUsernameColor: '#8136e3',
     isLight: true
   },
   {
@@ -127,9 +127,9 @@ export const THEMES = [
     myMessageBubble: '#238636',
     myMessageText: '#ffffff',
     myUsernameColor: '#ffffff',
-    otherMessageBubble: '#f3f4f6',
+    otherMessageBubble: '#ecedef',
     otherMessageText: '#1f2328',
-    otherUsernameColor: '#0969da',
+    otherUsernameColor: '#0964cf',
     isLight: true
   },
   {
@@ -137,8 +137,8 @@ export const THEMES = [
     name: 'Nord',
     background: '#2e3440',
     myMessageBubble: '#5e81ac',
-    myMessageText: '#eceff4',
-    myUsernameColor: '#eceff4',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#3b4252',
     otherMessageText: '#d8dee9',
     otherUsernameColor: '#88c0d0',
@@ -149,11 +149,11 @@ export const THEMES = [
     name: 'Pink',
     background: '#fce4ec',
     myMessageBubble: '#ec407a',
-    myMessageText: '#ffffff',
+    myMessageText: '#000000',
     myUsernameColor: '#ffffff',
     otherMessageBubble: '#f8bbd9',
     otherMessageText: '#880e4f',
-    otherUsernameColor: '#c2185b',
+    otherUsernameColor: '#a5144d',
     isLight: true
   },
   {
@@ -173,11 +173,11 @@ export const THEMES = [
     name: 'Lime Green',
     background: '#e8f5e9',
     myMessageBubble: '#32cd32',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#c8e6c9',
     otherMessageText: '#1b5e20',
-    otherUsernameColor: '#388e3c',
+    otherUsernameColor: '#2a6b2d',
     isLight: true
   },
   {
@@ -185,11 +185,11 @@ export const THEMES = [
     name: 'Rose Gold',
     background: '#fdf2f0',
     myMessageBubble: '#d7837f',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#f5d0ce',
     otherMessageText: '#6f4241',
-    otherUsernameColor: '#b15e5b',
+    otherUsernameColor: '#8e4b49',
     isLight: true
   },
   {
@@ -197,11 +197,11 @@ export const THEMES = [
     name: 'Blush',
     background: '#fff0f3',
     myMessageBubble: '#ff758f',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#ffc2d1',
     otherMessageText: '#590d22',
-    otherUsernameColor: '#ff4d6d',
+    otherUsernameColor: '#992e41',
     isLight: true
   },
   {
@@ -209,11 +209,11 @@ export const THEMES = [
     name: 'Cherry Blossom',
     background: '#fff5f7',
     myMessageBubble: '#ff8fab',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#ffc8dd',
     otherMessageText: '#720026',
-    otherUsernameColor: '#ff4d6d',
+    otherUsernameColor: '#a63247',
     isLight: true
   },
   {
@@ -225,7 +225,7 @@ export const THEMES = [
     myUsernameColor: '#4e342e',
     otherMessageBubble: '#ffe0b2',
     otherMessageText: '#5d4037',
-    otherUsernameColor: '#ff8a65',
+    otherUsernameColor: '#99533d',
     isLight: true
   },
   {
@@ -245,11 +245,11 @@ export const THEMES = [
     name: 'Sky Blue',
     background: '#e0f7fa',
     myMessageBubble: '#4dd0e1',
-    myMessageText: '#006064',
+    myMessageText: '#000000',
     myUsernameColor: '#006064',
     otherMessageBubble: '#b2ebf2',
-    otherMessageText: '#00838f',
-    otherUsernameColor: '#26c6da',
+    otherMessageText: '#006f7a',
+    otherUsernameColor: '#156d78',
     isLight: true
   },
   {
@@ -257,11 +257,11 @@ export const THEMES = [
     name: 'Mint',
     background: '#e0f2f1',
     myMessageBubble: '#4db6ac',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#b2dfdb',
     otherMessageText: '#004d40',
-    otherUsernameColor: '#00897b',
+    otherUsernameColor: '#00675c',
     isLight: true
   },
   {
@@ -281,11 +281,11 @@ export const THEMES = [
     name: 'Sunset',
     background: '#fff8e1',
     myMessageBubble: '#ff8a65',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#ffe0b2',
-    otherMessageText: '#bf360c',
-    otherUsernameColor: '#ff5722',
+    otherMessageText: '#b5330b',
+    otherUsernameColor: '#b33d18',
     isLight: true
   },
   {
@@ -293,23 +293,23 @@ export const THEMES = [
     name: 'Coral',
     background: '#fff3e0',
     myMessageBubble: '#ff7043',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#ffccbc',
-    otherMessageText: '#bf360c',
-    otherUsernameColor: '#f4511e',
+    otherMessageText: '#ac310b',
+    otherUsernameColor: '#9f3514',
     isLight: true
   },
   {
     id: 'amber',
     name: 'Amber',
     background: '#fff8e1',
-    myMessageBubble: '#ffca28',
+    myMessageBubble: '#f2c026',
     myMessageText: '#3e2723',
     myUsernameColor: '#3e2723',
     otherMessageBubble: '#ffe082',
     otherMessageText: '#5d4037',
-    otherUsernameColor: '#ffb300',
+    otherUsernameColor: '#805a00',
     isLight: true
   },
   {
@@ -317,11 +317,11 @@ export const THEMES = [
     name: 'Teal',
     background: '#e0f2f1',
     myMessageBubble: '#26a69a',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#b2dfdb',
     otherMessageText: '#004d40',
-    otherUsernameColor: '#00897b',
+    otherUsernameColor: '#00675c',
     isLight: true
   },
   {
@@ -329,8 +329,8 @@ export const THEMES = [
     name: 'Purple Rain',
     background: '#2d1b4e',
     myMessageBubble: '#a78bfa',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#4c3566',
     otherMessageText: '#ddd6fe',
     otherUsernameColor: '#c4b5fd',
@@ -341,8 +341,8 @@ export const THEMES = [
     name: 'Midnight Pink',
     background: '#1a0f1f',
     myMessageBubble: '#f472b6',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#3d2644',
     otherMessageText: '#fbcfe8',
     otherUsernameColor: '#f9a8d4',
@@ -356,8 +356,8 @@ export const THEMES = [
     myMessageText: '#0c4a6e',
     myUsernameColor: '#0c4a6e',
     otherMessageBubble: '#bae6fd',
-    otherMessageText: '#0369a1',
-    otherUsernameColor: '#38bdf8',
+    otherMessageText: '#036499',
+    otherUsernameColor: '#1f6888',
     isLight: true
   },
   {
@@ -365,11 +365,11 @@ export const THEMES = [
     name: 'Berry',
     background: '#fef3c7',
     myMessageBubble: '#f43f5e',
-    myMessageText: '#ffffff',
+    myMessageText: '#000000',
     myUsernameColor: '#ffffff',
     otherMessageBubble: '#fecdd3',
     otherMessageText: '#881337',
-    otherUsernameColor: '#f43f5e',
+    otherUsernameColor: '#ab2c42',
     isLight: true
   },
   {
@@ -377,11 +377,11 @@ export const THEMES = [
     name: 'Olive',
     background: '#f9fbe7',
     myMessageBubble: '#aed581',
-    myMessageText: '#33691e',
+    myMessageText: '#000000',
     myUsernameColor: '#33691e',
     otherMessageBubble: '#dcedc8',
-    otherMessageText: '#558b2f',
-    otherUsernameColor: '#8bc34a',
+    otherMessageText: '#446f26',
+    otherUsernameColor: '#4c6b29',
     isLight: true
   },
   {
@@ -389,11 +389,11 @@ export const THEMES = [
     name: 'Neon Pink',
     background: '#1e1e2e',
     myMessageBubble: '#ff006e',
-    myMessageText: '#ffffff',
+    myMessageText: '#000000',
     myUsernameColor: '#ffffff',
     otherMessageBubble: '#45475a',
     otherMessageText: '#f5c2e7',
-    otherUsernameColor: '#ff006e',
+    otherUsernameColor: '#ff99c5',
     isLight: false
   },
   {
@@ -401,11 +401,11 @@ export const THEMES = [
     name: 'Ocean Breeze',
     background: '#e0f7fa',
     myMessageBubble: '#00bcd4',
-    myMessageText: '#ffffff',
-    myUsernameColor: '#ffffff',
+    myMessageText: '#000000',
+    myUsernameColor: '#000000',
     otherMessageBubble: '#b2ebf2',
-    otherMessageText: '#00838f',
-    otherUsernameColor: '#00acc1',
+    otherMessageText: '#006f7a',
+    otherUsernameColor: '#006774',
     isLight: true
   },
   {
@@ -415,7 +415,7 @@ export const THEMES = [
     myMessageBubble: '#5865f2',
     myMessageText: '#ffffff',
     myUsernameColor: '#ffffff',
-    otherMessageBubble: '#2b2d31',
+    otherMessageBubble: '#3d3f43',
     otherMessageText: '#dbdee1',
     otherUsernameColor: '#f2f3f5',
     sidebarBg: '#2b2d31',
@@ -428,7 +428,7 @@ export const THEMES = [
     myMessageBubble: '#5865f2',
     myMessageText: '#ffffff',
     myUsernameColor: '#ffffff',
-    otherMessageBubble: '#313338',
+    otherMessageBubble: '#37393e',
     otherMessageText: '#dbdee1',
     otherUsernameColor: '#f2f3f5',
     sidebarBg: '#1e1f22',
@@ -448,3 +448,34 @@ export const THEMES = [
     isLight: true
   }
 ];
+
+const _rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const _hex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+const _lum = h => {
+  const c = _rgb(h).map(v => v / 255).map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+const _cr = (a, b) => {
+  const x = _lum(a), y = _lum(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+};
+const _mix = (a, b, t) => _hex(_rgb(a).map((v, i) => v + (_rgb(b)[i] - v) * t));
+const _push = (c, bgs, min, dir) => {
+  if (bgs.every(b => _cr(c, b) >= min)) return c;
+  for (let t = 0.05; t <= 1.001; t += 0.05) {
+    const n = _mix(c, dir, t);
+    if (bgs.every(b => _cr(n, b) >= min)) return n;
+  }
+  return dir;
+};
+
+
+// muted: secondary text readable on background, sidebar and other bubble
+export const THEMES = BASE_THEMES.map(t => {
+  const dir = t.isLight ? '#000000' : '#ffffff';
+  const surfaces = [t.background, t.otherMessageBubble].concat(t.sidebarBg ? [t.sidebarBg] : []);
+  const muted = _push(t.isLight ? '#6b7280' : '#9ca3af', surfaces, 5.5, dir);
+  const accent = t.myMessageBubble;
+  const onPrimary = _cr('#ffffff', accent) >= _cr('#000000', accent) ? '#ffffff' : '#000000';
+  return { ...t, muted, onPrimary };
+});
