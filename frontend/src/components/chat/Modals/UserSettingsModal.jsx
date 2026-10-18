@@ -104,11 +104,15 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
     ? 'Not supported in this browser'
     : !configured
       ? 'Not available'
-      : permission === 'denied'
-        ? 'Blocked in browser settings'
-        : enabled
-          ? 'On'
-          : 'Off';
+      : busy
+        ? enabled
+          ? 'Turning off...'
+          : 'Enabling...'
+        : permission === 'denied'
+          ? 'Blocked in browser settings'
+          : enabled
+            ? 'On'
+            : 'Off';
 
   const handleToggleNotifications = async () => {
     if (busy) return;
@@ -222,7 +226,8 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 type="button"
                 onClick={handleToggleNotifications}
                 disabled={busy || !supported || !configured}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-busy={busy}
+                className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all disabled:cursor-not-allowed ${busy ? '' : 'disabled:opacity-50'}`}
                 style={{
                   backgroundColor: theme.background,
                   boxShadow: isLight
@@ -234,9 +239,16 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                   <span className="block text-sm font-semibold" style={{ color: theme.otherMessageText }}>Push notifications</span>
                   <span className="block text-xs opacity-70" style={{ color: theme.otherUsernameColor }}>{notificationsHint}</span>
                 </span>
-                <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${enabled ? 'bg-green-500' : 'bg-gray-400'}`}>
-                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                </span>
+                {busy ? (
+                  <span className="shrink-0 flex items-center gap-2" style={{ color: theme.otherUsernameColor }}>
+                    <LoaderMini className="w-5 h-5 animate-spin" />
+                    <span className="text-xs font-semibold">Please wait</span>
+                  </span>
+                ) : (
+                  <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${enabled ? 'bg-green-500' : 'bg-gray-400'}`}>
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  </span>
+                )}
               </button>
             </div>
 

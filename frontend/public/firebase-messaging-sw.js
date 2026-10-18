@@ -15,18 +15,7 @@ const config = {
 
 if (config.apiKey && config.projectId) {
   firebase.initializeApp(config);
-  const messaging = firebase.messaging();
-
-  messaging.onBackgroundMessage((payload) => {
-    const notification = payload?.notification || {};
-    const data = payload?.data || {};
-    self.registration.showNotification(notification.title || data.title || 'GatherUp', {
-      body: notification.body || data.body || 'You have a new message',
-      icon: '/icon.png',
-      badge: '/icon.png',
-      data,
-    });
-  });
+  firebase.messaging();
 }
 
 self.addEventListener('notificationclick', (event) => {

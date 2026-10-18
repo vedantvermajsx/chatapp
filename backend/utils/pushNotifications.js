@@ -39,6 +39,12 @@ function toStringMap(data = {}) {
   return out;
 }
 
+function collapseTag(data = {}) {
+  if (data.type === 'room' && data.roomId) return `room_${data.roomId}`;
+  if (data.type === 'private' && data.senderId) return `private_${data.senderId}`;
+  return 'chat';
+}
+
 /**
  * Sends a push notification to every registered device of a single user.
  * Silently no-ops if push isn't configured or the user has no tokens.
@@ -58,23 +64,38 @@ export async function sendPushToUser(userId, { title, body, data = {} } = {}) {
     return;
   }
 
-  const registrationTokens = (tokens || []).map((t) => t.token).filter(Boolean);
+  const registrationTokens = [
+    ...new Set((tokens || []).map((t) => t.token).filter(Boolean)),
+  ];
   if (!registrationTokens.length) return;
 
   const stringData = toStringMap(data);
+  const tag = collapseTag(stringData);
 
   try {
     const response = await admin.messaging(app).sendEachForMulticast({
       tokens: registrationTokens,
       notification: { title, body },
       data: stringData,
-      android: { priority: 'high' },
-      apns: { payload: { aps: { sound: 'default' } } },
+      android: { priority: 'high', collapseKey: tag },
+      apns: {
+        headers: { 'apns-collapse-id': tag },
+        payload: { aps: { sound: 'default' } },
+      },
+      webpush: {
+        headers: { Urgency: 'high' },
+        notification: {
+          title,
+          body,
+          tag,
+          renotify: true,
+          icon: '/icon.png',
+          badge: '/icon.png',
+        },
+      },
     });
 
     response.responses.forEach((res, i) => {
-
-      console.log(res);
       if (res.success) return;
       const code = res.error?.code;
       if (
