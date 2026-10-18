@@ -113,6 +113,12 @@ async function enable() {
     if (!messaging) return { ok: false, reason: 'unsupported' };
 
     const registration = await registerServiceWorker();
+
+    if (!getStoredToken()) {
+      const stale = await registration.pushManager.getSubscription();
+      if (stale) await stale.unsubscribe();
+    }
+
     const { getToken } = await import('firebase/messaging');
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
     if (!token) return { ok: false, reason: 'token' };
