@@ -123,7 +123,7 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
     } else if (result.reason === 'denied') {
       toast.error('Notifications blocked in browser settings');
     } else {
-      toast.error('Could not enable notifications');
+      toast.error('Could not enable notifications', { description: result.reason });
     }
   };
 

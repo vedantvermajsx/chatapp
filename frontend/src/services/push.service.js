@@ -102,16 +102,16 @@ async function requestPermission() {
  * @returns {Promise<{ ok: boolean, reason?: string }>}
  */
 async function enable() {
-  if (!isBrowserSupported()) return { ok: false, reason: 'unsupported' };
-  if (!isConfigured()) return { ok: false, reason: 'config' };
-
-  const permission = await requestPermission();
-  if (permission !== 'granted') return { ok: false, reason: permission };
-
-  const messaging = await getMessagingInstance();
-  if (!messaging) return { ok: false, reason: 'unsupported' };
-
   try {
+    if (!isBrowserSupported()) return { ok: false, reason: 'unsupported' };
+    if (!isConfigured()) return { ok: false, reason: 'config' };
+
+    const permission = await requestPermission();
+    if (permission !== 'granted') return { ok: false, reason: permission };
+
+    const messaging = await getMessagingInstance();
+    if (!messaging) return { ok: false, reason: 'unsupported' };
+
     const registration = await registerServiceWorker();
     const { getToken } = await import('firebase/messaging');
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
@@ -121,8 +121,8 @@ async function enable() {
     localStorage.setItem(TOKEN_KEY, token);
     return { ok: true };
   } catch (err) {
-    console.error('[push] enable failed:', err.message);
-    return { ok: false, reason: err.message };
+    console.error('[push] enable failed:', err);
+    return { ok: false, reason: err?.message || 'error' };
   }
 }
 

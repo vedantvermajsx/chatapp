@@ -16,17 +16,24 @@ export function useNotifications() {
 
   const enable = useCallback(async () => {
     setBusy(true);
-    const result = await pushService.enable();
-    refresh();
-    setBusy(false);
-    return result;
+    try {
+      return await pushService.enable();
+    } catch (err) {
+      return { ok: false, reason: err?.message || 'error' };
+    } finally {
+      refresh();
+      setBusy(false);
+    }
   }, [refresh]);
 
   const disable = useCallback(async () => {
     setBusy(true);
-    await pushService.disable();
-    refresh();
-    setBusy(false);
+    try {
+      await pushService.disable();
+    } finally {
+      refresh();
+      setBusy(false);
+    }
   }, [refresh]);
 
   return { supported, configured, permission, enabled, busy, enable, disable };
