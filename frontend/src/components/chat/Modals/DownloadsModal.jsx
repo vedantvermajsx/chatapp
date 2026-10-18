@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, HardDriveDownload, FileImage, FileVideoCamera, FileText, Trash2, FolderOpen, Download, Eye, ExternalLink, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, HardDriveDownload, FileImage, FileVideoCamera, FileText, Trash2, Download, Eye, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useDownloads, formatBytes } from '../../../contexts/DownloadsContext';
 
@@ -27,13 +27,9 @@ const DownloadsModal = ({ onClose }) => {
   const {
     downloads,
     activeCount,
-    native,
-    downloadsDir,
     removeDownload,
     clearDownloads,
     ensureBlobUrl,
-    openFile,
-    openDownloadsFolder,
   } = useDownloads();
   const [busyId, setBusyId] = useState(null);
 
@@ -60,10 +56,6 @@ const DownloadsModal = ({ onClose }) => {
     } finally {
       setBusyId(null);
     }
-  };
-
-  const handleOpenFile = (item) => {
-    openFile(item);
   };
 
   const IconBtn = ({ onClick, title, disabled, danger, children }) => (
@@ -107,27 +99,10 @@ const DownloadsModal = ({ onClose }) => {
         </div>
 
         {/* Location bar */}
-        <div className="px-5 py-3 border-b flex items-center gap-3" style={{ borderColor: border }}>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px]" style={{ color: subText }}>
-              Saved to {native ? 'app downloads folder' : "browser's Downloads folder"}
-            </p>
-            {native && downloadsDir && (
-              <p className="text-[10px] font-mono truncate mt-0.5" style={{ color: titleColor, opacity: 0.8 }} title={downloadsDir}>
-                {downloadsDir}
-              </p>
-            )}
-          </div>
-          {native && (
-            <button
-              onClick={openDownloadsFolder}
-              className="dl-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex-shrink-0"
-              style={{ color: accent, border: `1px solid ${border}`, '--dl-hover': hoverBg, '--dl-hover-color': accent }}
-            >
-              <FolderOpen className="w-3.5 h-3.5" />
-              Open folder
-            </button>
-          )}
+        <div className="px-5 py-3 border-b" style={{ borderColor: border }}>
+          <p className="text-[11px]" style={{ color: subText }}>
+            Saved to your browser's Downloads folder
+          </p>
         </div>
 
         {/* List */}
@@ -200,11 +175,6 @@ const DownloadsModal = ({ onClose }) => {
                         {isCompleted && isMedia && (
                           <IconBtn onClick={() => handleView(item)} disabled={isBusy} title="View">
                             {isBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                          </IconBtn>
-                        )}
-                        {isCompleted && native && (
-                          <IconBtn onClick={() => handleOpenFile(item)} title="Open file">
-                            <ExternalLink className="w-4 h-4" />
                           </IconBtn>
                         )}
                         <IconBtn onClick={() => removeDownload(item.id)} title="Remove" danger>
