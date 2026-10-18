@@ -41,9 +41,8 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
         </div>
 
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          {user.role !== 'guest' && (
-            <button
-              onClick={onShowSettings}
+          <button
+            onClick={onShowSettings}
             className="p-1.5 rounded transition-colors flex items-center justify-center"
             title="User Settings"
             style={{ color: iconColor }}
@@ -51,8 +50,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
             <Settings className="w-4.5 h-4.5" style={{ width: '18px', height: '18px' }} />
-            </button>
-          )}
+          </button>
           <button
             onClick={() => setShowDownloads(true)}
             className="relative p-1.5 rounded transition-colors flex items-center justify-center"

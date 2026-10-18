@@ -1,6 +1,6 @@
 import deviceTokenCacheClient from '../../database/deviceTokenCacheClient.js';
 
-const ALLOWED_PLATFORMS = ['android', 'ios'];
+const ALLOWED_PLATFORMS = ['android', 'ios', 'web'];
 
 export async function registerDeviceToken(req, res) {
   try {

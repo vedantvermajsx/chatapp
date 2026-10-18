@@ -52,14 +52,27 @@ async function getMessagingInstance() {
   return messagingInstance;
 }
 
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ]);
+}
+
 async function registerServiceWorker() {
-  if (swRegistration) return swRegistration;
+  if (swRegistration?.active) return swRegistration;
 
   const params = new URLSearchParams(
     Object.entries(firebaseConfig).filter(([, value]) => Boolean(value))
   );
-  swRegistration = await navigator.serviceWorker.register(`${SW_URL}?${params.toString()}`);
-  return swRegistration;
+  let registration = await navigator.serviceWorker.register(`${SW_URL}?${params.toString()}`);
+
+  if (!registration.active) {
+    registration = await withTimeout(navigator.serviceWorker.ready, 15000, 'service-worker-timeout');
+  }
+
+  swRegistration = registration;
+  return registration;
 }
 
 function getPermission() {
