@@ -1,10 +1,15 @@
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
+import { cloudinaryService } from '../../utils/cloudinary.utils.js';
 dotenv.config();
 
 export async function getUploadSignature(req, res) {
   try {
-    const { folder = 'data' } = req.query;
+    const { folder = 'data', type = '', size } = req.query;
+    const maxSize = cloudinaryService.getMaxFileSize(type);
+    if (size !== undefined && Number(size) > maxSize) {
+      return res.status(413).json({ message: `File size exceeds the ${maxSize / 1024 / 1024}MB limit` });
+    }
     const targetFolder = ['avatar', 'data'].includes(folder) ? folder : 'data';
     const timestamp = Math.round((new Date()).getTime() / 1000);
 
@@ -22,6 +27,7 @@ export async function getUploadSignature(req, res) {
       signature,
       timestamp,
       folder: targetFolder,
+      max_size: maxSize,
       api_key: process.env.CLOUDINARY_API_KEY,
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     });

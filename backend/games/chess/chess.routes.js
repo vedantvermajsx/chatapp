@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TAURI_ORIGINS } from '../../utils/clientOrigins.js';
 import { createChessLimiter } from './chess.limiter.js';
 
 const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
@@ -11,7 +12,7 @@ const embedOrigins = () => {
     .split(',')
     .map((s) => s.trim().replace(/\/+$/, ''))
     .filter(Boolean);
-  return list.includes('*') ? ['*'] : ["'self'", ...list];
+  return list.includes('*') ? ['*'] : ["'self'", ...new Set([...list, ...TAURI_ORIGINS])];
 };
 
 const allowEmbedding = (req, res, next) => {

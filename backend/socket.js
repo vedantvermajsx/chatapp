@@ -1,3 +1,4 @@
+import { getClientOrigins } from './utils/clientOrigins.js';
 import { Server } from 'socket.io';
 import { connectToBroker } from './utils/messageBroker.js';
 import { registerBrokerBridge } from './utils/brokerBridge.js';
@@ -16,7 +17,7 @@ export const setupSocket = (server) => {
 
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : ['http://localhost:5173'],
+      origin: getClientOrigins(),
       methods: ['GET', 'POST'],
       credentials: true
     },

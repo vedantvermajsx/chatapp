@@ -34,6 +34,12 @@ class CloudinaryService {
     }
     return { mediaType: 'image', resourceType: 'image' };
   }
+
+  // Cloudinary free plan: 100MB for video/audio, 10MB for everything else
+  getMaxFileSize(mimetype = '') {
+    const { resourceType } = this.getMediaMeta(mimetype);
+    return (resourceType === 'video' ? 100 : 10) * 1024 * 1024;
+  }
 }
 
 export const cloudinaryService = new CloudinaryService();

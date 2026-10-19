@@ -15,6 +15,11 @@ export async function uploadMedia(req, res) {
       });
     }
 
+    const maxSize = cloudinaryService.getMaxFileSize(req.file.mimetype);
+    if (req.file.size > maxSize) {
+      return res.status(413).json({ message: `File size exceeds the ${maxSize / 1024 / 1024}MB limit` });
+    }
+
     const { folder } = req.body;
     const targetFolder = ['avatar', 'data'].includes(folder) ? folder : 'data';
 

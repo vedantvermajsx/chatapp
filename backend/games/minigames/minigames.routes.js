@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TAURI_ORIGINS } from '../../utils/clientOrigins.js';
 import { createMinigamesLimiter } from './minigames.limiter.js';
 import { GAME_LIST } from './engines/index.js';
 
@@ -16,7 +17,7 @@ const embedOrigins = () => {
     .split(',')
     .map((s) => s.trim().replace(/\/+$/, ''))
     .filter(Boolean);
-  return list.includes('*') ? ['*'] : ["'self'", ...list];
+  return list.includes('*') ? ['*'] : ["'self'", ...new Set([...list, ...TAURI_ORIGINS])];
 };
 
 const allowEmbedding = (req, res, next) => {
