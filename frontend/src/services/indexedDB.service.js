@@ -4,7 +4,7 @@ import { dbMessages } from './indexedDB/messages.db.js';
 import { dbPendingMessages } from './indexedDB/pendingMessages.db.js';
 import { dbUnreadCounts } from './indexedDB/unreadCounts.db.js';
 import { dbKeys } from './indexedDB/keys.db.js';
-import { deleteDB } from './indexedDB/core.js';
+import { deleteDB, ensureDBOwner } from './indexedDB/core.js';
 
 export const dbService = {
   ...dbRooms,
@@ -13,5 +13,6 @@ export const dbService = {
   ...dbPendingMessages,
   ...dbUnreadCounts,
   ...dbKeys,
-  clearAllData: deleteDB
+  clearAllData: deleteDB,
+  ensureOwner: ensureDBOwner
 };

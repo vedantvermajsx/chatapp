@@ -3,6 +3,7 @@ import authService from '../services/auth.service';
 import { dbService } from '../services/indexedDB.service';
 import keyManager from '../services/keyManager';
 import { generateRsaKeyPairPem } from '../utils/crypto';
+import { resetOfflineHandler } from '../services/offlineMessageHandler';
 
 const AuthContext = createContext();
 
@@ -11,25 +12,29 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const userStr = localStorage.getItem('user');
-      if (userStr && userStr !== 'undefined') {
-        try {
-          const storedUser = JSON.parse(userStr);
-          setUser(storedUser);
-          if (storedUser?._id) keyManager.loadSelfPrivateKey(storedUser._id);
-        } catch (e) {
-          console.error('Failed to parse user from localStorage:', e);
+    (async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const userStr = localStorage.getItem('user');
+        if (userStr && userStr !== 'undefined') {
+          try {
+            const storedUser = JSON.parse(userStr);
+            if (storedUser?._id) await dbService.ensureOwner(storedUser._id);
+            setUser(storedUser);
+            if (storedUser?._id) keyManager.loadSelfPrivateKey(storedUser._id);
+          } catch (e) {
+            console.error('Failed to restore user from localStorage:', e);
+          }
         }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    })();
   }, []);
 
   const login = useCallback(async (username, password) => {
     try {
       const res = await authService.login({ username, password });
+      await dbService.ensureOwner(res.user._id, { wipeIfUnknown: true });
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
@@ -43,6 +48,7 @@ export const AuthProvider = ({ children }) => {
   const register = useCallback(async (username, email, gender, password) => {
     try {
       const res = await authService.register({ username, email, gender, password });
+      await dbService.ensureOwner(res.user._id, { wipeIfUnknown: true });
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
@@ -57,6 +63,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { publicKeyPem, privateKeyPem } = await generateRsaKeyPairPem();
       const res = await authService.guestLogin({ username, gender, publicKey: publicKeyPem });
+      await dbService.ensureOwner(res.user._id, { wipeIfUnknown: true });
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
@@ -70,6 +77,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    resetOfflineHandler();
     setUser(null);
     await keyManager.clear();
     try {

@@ -160,3 +160,23 @@ export const hardResetDB = () => {
     request.onblocked = () => resolve();
   });
 };
+
+const OWNER_KEY = 'gatherup.dbOwner';
+
+// The local DB belongs to one user. If a different user signs in, wipe it so no chat data leaks across accounts.
+// wipeIfUnknown: on a fresh login with no owner stamp (legacy data) we can't prove ownership, so wipe.
+export const ensureDBOwner = async (userId, { wipeIfUnknown = false } = {}) => {
+  if (!userId) return;
+  const id = String(userId);
+  let owner = null;
+  try { owner = localStorage.getItem(OWNER_KEY); } catch { /* ignore */ }
+  if (owner !== id && (owner || wipeIfUnknown)) {
+    try {
+      await clearAllStores();
+    } catch (error) {
+      console.error('clearAllStores failed, deleting database instead:', error);
+      await hardResetDB();
+    }
+  }
+  try { localStorage.setItem(OWNER_KEY, id); } catch { /* ignore */ }
+};

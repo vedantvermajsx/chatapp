@@ -77,8 +77,22 @@ const catchUpChat = async (type, chatId, cacheKey) => {
   syncUnreadFromResponse(dependencies.setUnreadCounts, cacheKey, res.unreadCount);
 };
 
+export const resetOfflineHandler = () => {
+  dependencies = {
+    messageCache: null,
+    setUnreadCounts: null,
+    setHasMoreNewerMessages: null,
+    setMessages: null,
+    currentRoom: null,
+    currentPrivateChat: null,
+    getRoom: null
+  };
+};
+
+const isLoggedIn = () => !!localStorage.getItem('token');
+
 export const sendPendingMessages = async () => {
-  if (!isOnline || isSending) return;
+  if (!isOnline || isSending || !isLoggedIn()) return;
   isSending = true;
 
   try {
@@ -90,9 +104,11 @@ export const sendPendingMessages = async () => {
     const pendingMessages = await dbService.getPendingMessages();
     if (!pendingMessages.length) return;
 
+    // 1) catch up every chat that has pending messages
     const failedChats = new Set();
     const seen = new Set();
     for (const p of pendingMessages) {
+      if (!isLoggedIn()) return;
       if (isUploadCancelled(p.id || p._id)) continue;
       const { chatId, cacheKey } = chatInfoOf(p);
       if (seen.has(cacheKey)) continue;
@@ -107,6 +123,7 @@ export const sendPendingMessages = async () => {
 
     // 2) send
     for (const pendingMsg of pendingMessages) {
+      if (!isLoggedIn()) return;
       const tempId = pendingMsg.id || pendingMsg._id;
       if (isUploadCancelled(tempId)) continue;
       const { cacheKey } = chatInfoOf(pendingMsg);
