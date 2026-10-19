@@ -39,7 +39,7 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
       className={`msg-row group relative flex items-end gap-2 w-full px-3 sm:px-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
       style={{
         marginTop: grouped && !replyTo ? 2 : 10,
-        opacity: msg.isPending ? 0.6 : 1,
+        opacity: msg.isPending && !msg.media?.isPending ? 0.6 : 1,
         backgroundColor: isTagged ? 'rgba(250,166,26,0.10)' : undefined,
       }}
       aria-label={`${msg.username || 'Message'}, ${time}`}

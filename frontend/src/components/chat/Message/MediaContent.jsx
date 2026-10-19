@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import LoaderMini from '../../common/Loader';
 import AudioPlayer from './AudioPlayer';
 import ProgressLoader from './ProgressLoader';
+import { cancelUpload } from '../../../services/uploadCancel.js';
 
 function MediaContent({ msg, isOwn, theme }) {
   const [showMedia, setShowMedia] = useState(false);
@@ -16,7 +17,7 @@ function MediaContent({ msg, isOwn, theme }) {
   return (
     <div className="mt-1 relative">
       {msg?.media.isPending && (
-        <ProgressLoader progress={msg.uploadProgress || 0} />
+        <ProgressLoader progress={msg.uploadProgress || 0} onCancel={() => cancelUpload(msg.id || msg._id)} />
       )}
 
       {shouldAutoRender && (

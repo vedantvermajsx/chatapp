@@ -78,6 +78,34 @@ export const useChatState = (user) => {
   const CACHE_TTL = 30000;
 
   useEffect(() => {
+    const handleUploadCancelled = async (e) => {
+      const { tempId } = e.detail || {};
+      if (!tempId) return;
+
+      const drop = (list) => list.filter(m => (m.id || m._id) !== tempId);
+      const pending = (await dbService.getPendingMessages()).find(p => (p.id || p._id) === tempId);
+
+      const keys = new Set(Object.keys(messageCache.current));
+      if (pending) keys.add(pending.type === 'room' ? `room_${pending.roomId}` : `private_${pending.receiverId}`);
+
+      for (const key of keys) {
+        const cached = messageCache.current[key];
+        if (cached?.messages?.some(m => (m.id || m._id) === tempId)) {
+          messageCache.current[key] = { ...cached, messages: drop(cached.messages) };
+        }
+        await dbService.removeMessage(key, tempId);
+      }
+
+      setMessages(prev => drop(prev));
+      await dbService.removePendingMessage(tempId);
+      await dbService.removeFile(tempId);
+    };
+
+    window.addEventListener('upload-cancelled', handleUploadCancelled);
+    return () => window.removeEventListener('upload-cancelled', handleUploadCancelled);
+  }, []);
+
+  useEffect(() => {
     const handlePendingSent = (e) => {
       const { cacheKey, tempId, message } = e.detail || {};
       if (!cacheKey || !tempId || !message) return;

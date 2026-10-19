@@ -2,6 +2,7 @@ import { dbService } from './indexedDB.service';
 import messageService from './message.service';
 import roomService from './room.service';
 import { toast } from 'sonner';
+import { registerUpload, releaseUpload, isUploadCancelled, cancelUpload } from './uploadCancel.js';
 import { catchUpNewerMessagesHandler } from '../handlers/chat.handlers';
 
 let isOnline = navigator.onLine;
@@ -36,6 +37,7 @@ export const sendPendingMessages = async () => {
 
     for (const pendingMsg of pendingMessages) {
       const tempId = pendingMsg.id || pendingMsg._id;
+      if (isUploadCancelled(tempId)) continue;
       const cacheKey = pendingMsg.type === 'room'
         ? `room_${pendingMsg.roomId}`
         : `private_${pendingMsg.receiverId}`;
@@ -70,6 +72,11 @@ export const sendPendingMessages = async () => {
         let finalMedia = pendingMsg.media || null;
         if (pendingMsg.mediaType && pendingMsg.mediaId) {
           const file = await dbService.getFile(pendingMsg.mediaId);
+          if (!file) {
+            // file was lost (app closed before it was saved) - nothing to upload, drop the message
+            cancelUpload(tempId);
+            continue;
+          }
           if (file) {
             const isCurrentChat =
               (pendingMsg.type === 'room' && dependencies.currentRoom?._id === pendingMsg.roomId) ||
@@ -96,7 +103,27 @@ export const sendPendingMessages = async () => {
             // Reflect that the upload is actively resuming rather than stuck at 0%
             updateProgress(0);
 
-            const uploadResult = await messageService.uploadFile(file, 'data', true, updateProgress);
+            // blob: preview URLs from the previous session are dead after a restart - rebuild it from the stored file
+            const previewUrl = URL.createObjectURL(file);
+            const setPreview = (list) => list.map((msg) =>
+              (msg.id || msg._id) === tempId && msg.media ? { ...msg, media: { ...msg.media, url: previewUrl } } : msg
+            );
+            if (dependencies.messageCache?.current?.[cacheKey]) {
+              dependencies.messageCache.current[cacheKey] = {
+                ...dependencies.messageCache.current[cacheKey],
+                messages: setPreview(dependencies.messageCache.current[cacheKey].messages)
+              };
+            }
+            if (isCurrentChat && dependencies.setMessages) dependencies.setMessages(setPreview);
+
+            const uploadController = registerUpload(tempId);
+            let uploadResult;
+            try {
+              uploadResult = await messageService.uploadFile(file, 'data', true, updateProgress, uploadController.signal);
+            } finally {
+              releaseUpload(tempId);
+              URL.revokeObjectURL(previewUrl);
+            }
             finalMedia = {
               type: uploadResult.type,
               url: uploadResult.url,
@@ -156,6 +183,7 @@ export const sendPendingMessages = async () => {
         await dbService.removePendingMessage(tempId);
         if (pendingMsg.mediaId) await dbService.removeFile(pendingMsg.mediaId);
       } catch (error) {
+        if (isUploadCancelled(tempId)) continue;
         console.error('Failed to send pending message:', error);
       }
     }

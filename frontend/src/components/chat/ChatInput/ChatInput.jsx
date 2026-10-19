@@ -10,6 +10,7 @@ import StickerPicker from './StickerPicker';
 import MentionDropdown from './MentionDropdown';
 import { SUPPORTED_FORMATS } from '../../../utils/constants.js';
 import roomService from '../../../services/room.service.js';
+import { getMaxFileSize } from '../../../utils/media.utils.js';
 
 const ChatInput = memo(forwardRef(({
   user,
@@ -236,8 +237,6 @@ const ChatInput = memo(forwardRef(({
     }
   }));
 
-  const MAX_SIZE = 8 * 1024 * 1024;
-
   const getFormatCategory = (mimeType) => {
     for (const [category, types] of Object.entries(SUPPORTED_FORMATS)) {
       if (types.includes(mimeType)) return category;
@@ -255,8 +254,9 @@ const ChatInput = memo(forwardRef(({
       return;
     }
 
-    if (file.size > MAX_SIZE) {
-      toast.error('File size must be less than 8MB!');
+    const maxSize = getMaxFileSize(file.type);
+    if (file.size > maxSize) {
+      toast.error(`File size must be less than ${maxSize / 1024 / 1024}MB!`);
       return;
     }
 

@@ -20,3 +20,9 @@ export function getMediaMeta(mimetype) {
   }
   return { mediaType: 'image', resourceType: 'image' };
 }
+
+// Cloudinary free plan: 100MB for video/audio, 10MB for everything else
+export function getMaxFileSize(mimetype = '') {
+  const { resourceType } = getMediaMeta(mimetype);
+  return (resourceType === 'video' ? 100 : 10) * 1024 * 1024;
+}

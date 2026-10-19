@@ -1,3 +1,4 @@
+import { registerUpload, releaseUpload, isUploadCancelled } from '../../services/uploadCancel.js';
 import messageService from '../../services/message.service.js';
 import { updatePrivateChatOptimistically } from '../private/updatePrivateChatOptimistically.handler.js';
 import { dbService } from '../../services/indexedDB.service.js';
@@ -136,7 +137,10 @@ export const sendMessageHandler = async (
 
       let finalMediaToUse = finalMedia;
       if (selectedFile) {
-        const uploadResult = await messageService.uploadFile(
+        const uploadController = registerUpload(tempId);
+        let uploadResult;
+        try {
+        uploadResult = await messageService.uploadFile(
   selectedFile,
   'data',
   false,
@@ -169,8 +173,12 @@ export const sendMessageHandler = async (
         )
       };
     }
-  }
+  },
+  uploadController.signal
 );
+        } finally {
+          releaseUpload(tempId);
+        }
 
         finalMediaToUse = {
           ...uploadResult,
@@ -296,6 +304,7 @@ export const sendMessageHandler = async (
         updatePrivateChatOptimistically(privateChats, setPrivateChats, currentPrivateChat, trimmedMessage);
       }
     } catch (error) {
+      if (isUploadCancelled(tempId)) return;
       console.error('Failed to send message immediately:', error);
     }
   })();

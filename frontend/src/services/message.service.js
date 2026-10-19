@@ -1,7 +1,7 @@
 import api from './api.js';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { _addQualities, getMediaMeta } from '../utils/media.utils.js';
+import { _addQualities, getMediaMeta, getMaxFileSize } from '../utils/media.utils.js';
 
 import userService from './user.service.js';
 import keyManager from './keyManager.js';
@@ -132,6 +132,7 @@ class MessageService {
       const response = await api.post(`${this.basePath}/send`, body);
       return response.data;
     } catch (error) {
+      if (axios.isCancel(error)) throw error;
       if (navigator.onLine && !skipToast) {
         toast.error(error.response?.data?.message || 'Failed to send message');
       }
@@ -174,6 +175,7 @@ class MessageService {
       const response = await api.post(`${this.basePath}/private/send`, body);
       return response.data;
     } catch (error) {
+      if (axios.isCancel(error)) throw error;
       if (navigator.onLine && !skipToast) {
         toast.error(error.response?.data?.message || 'Failed to send message');
       }
@@ -240,15 +242,18 @@ class MessageService {
     }
   }
 
-  async uploadFile(file, folder = 'data', skipToast = false, onProgress = null) {
-    const MAX_FILE_SIZE = 8 * 1024 * 1024; 
-    if (file.size > MAX_FILE_SIZE) {
-      if (!skipToast) toast.error('File size exceeds the 8MB limit');
-      throw new Error('File size exceeds 8MB limit');
+  async uploadFile(file, folder = 'data', skipToast = false, onProgress = null, signal = null) {
+    const maxSize = getMaxFileSize(file.type);
+    if (file.size > maxSize) {
+      const msg = `File size exceeds the ${maxSize / 1024 / 1024}MB limit`;
+      if (!skipToast) toast.error(msg);
+      throw new Error(msg);
     }
 
     try {
-      const sigResponse = await api.get(`${this.basePath}/upload-signature?folder=${folder}`);
+      const sigResponse = await api.get(`${this.basePath}/upload-signature`, {
+        params: { folder, type: file.type, size: file.size }
+      });
       const { signature, timestamp, api_key, cloud_name, folder: targetFolder } = sigResponse.data;
 
       const formData = new FormData();
@@ -262,12 +267,14 @@ class MessageService {
 
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/${resourceType}/upload`;
       const uploadResponse = await axios.post(cloudinaryUrl, formData, {
+        signal,
         onUploadProgress: ({ loaded, total }) => {
           if (!total) return;
-          const percentage = Math.min(100, Math.round((loaded * 100) / total));
-          onProgress?.(percentage);
+          // hold at 99 until Cloudinary has actually responded
+          onProgress?.(Math.min(99, Math.floor((loaded * 100) / total)));
         }
       });
+      onProgress?.(100);
 
       const result = {
         url: uploadResponse.data.secure_url,
@@ -276,8 +283,9 @@ class MessageService {
 
       return _addQualities(result);
     } catch (error) {
+      if (axios.isCancel(error)) throw error;
       if (navigator.onLine && !skipToast) {
-        toast.error(error.response?.data?.message || error.message || 'Failed to upload file');
+        toast.error(error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Failed to upload file');
       }
       throw error;
     }
