@@ -1,5 +1,6 @@
-import { memo } from 'react';
-import { Reply, CornerUpRight } from 'lucide-react';
+import { memo, useRef, useState, useCallback } from 'react';
+import { Reply, CornerUpRight, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import LoaderMini from '../../common/Loader';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -10,8 +11,44 @@ import TextContent, { isEmojiOnly } from './TextContent';
 
 const REPLY_MEDIA_LABELS = { image: 'Photo', video: 'Video', audio: 'Voice message', sticker: 'Sticker', gif: 'GIF' };
 
+const copyText = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (!ok) throw new Error('copy failed');
+  }
+};
+
 const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false, progress = 0, isTagged = false, grouped = false, onReplyClick, onReplyQuoteClick }) {
   const { theme } = useTheme();
+  const [copied, setCopied] = useState(false);
+  const pressTimer = useRef(null);
+
+  const handleCopy = useCallback(async () => {
+    if (!msg?.text) return;
+    try {
+      await copyText(msg.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success('Copied');
+    } catch {
+      toast.error('Could not copy');
+    }
+  }, [msg?.text]);
+
+  const startPress = () => {
+    if (!msg?.text) return;
+    pressTimer.current = setTimeout(handleCopy, 600);
+  };
+  const cancelPress = () => clearTimeout(pressTimer.current);
 
   if (msg?.media?.type === 'sticker') {
     return (
@@ -73,6 +110,10 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
 
         <div
           className={hasBubble ? 'rounded-2xl px-3 py-2 min-w-0 max-w-full' : 'min-w-0 max-w-full'}
+          onTouchStart={startPress}
+          onTouchMove={cancelPress}
+          onTouchEnd={cancelPress}
+          onTouchCancel={cancelPress}
           style={hasBubble ? {
             backgroundColor: bubbleBg,
             color: bubbleText,
@@ -121,6 +162,19 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
 
       {!msg.isPending && (
         <div className="msg-tools self-center opacity-0 transition-opacity flex flex-shrink-0">
+          {msg.text && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+              aria-label="Copy message"
+              title="Copy"
+            >
+              {copied
+                ? <Check className="w-4 h-4" style={{ color: outerMuted }} aria-hidden="true" />
+                : <Copy className="w-4 h-4" style={{ color: outerMuted }} aria-hidden="true" />}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onReplyClick?.(msg)}

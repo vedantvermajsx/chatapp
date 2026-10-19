@@ -83,7 +83,8 @@ export const catchUpNewerMessagesHandler = async (
   setHasMoreNewerMessages,
   messageCache,
   setUnreadCounts = null,
-  roomPrivateKey = null
+  roomPrivateKey = null,
+  rethrow = false
 ) => {
   if (!messages || messages.length === 0) return messages;
 
@@ -99,6 +100,7 @@ export const catchUpNewerMessagesHandler = async (
     setHasMoreNewerMessages(false);
   } catch (error) {
     console.error('Failed to catch up on newer messages:', error);
+    if (rethrow) throw error;
   }
 
   return currentMessages;

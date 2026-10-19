@@ -4,6 +4,8 @@ import roomService from './room.service';
 import { toast } from 'sonner';
 import { registerUpload, releaseUpload, isUploadCancelled, cancelUpload } from './uploadCancel.js';
 import { catchUpNewerMessagesHandler } from '../handlers/chat.handlers';
+import { applyLastRead } from '../utils/applyLastRead.js';
+import { syncUnreadFromResponse } from '../utils/syncUnreadCount.js';
 
 let isOnline = navigator.onLine;
 let isSending = false;
@@ -13,11 +15,66 @@ let dependencies = {
   setHasMoreNewerMessages: null,
   setMessages: null,
   currentRoom: null,
-  currentPrivateChat: null
+  currentPrivateChat: null,
+  getRoom: null
 };
 
 export const setOfflineHandlerDependencies = (deps) => {
   dependencies = { ...dependencies, ...deps };
+};
+
+const chatInfoOf = (p) => p.type === 'room'
+  ? { chatId: p.roomId, cacheKey: `room_${p.roomId}` }
+  : { chatId: p.receiverId, cacheKey: `private_${p.receiverId}` };
+
+const catchUpChat = async (type, chatId, cacheKey) => {
+  const cache = dependencies.messageCache?.current;
+  if (!cache) throw new Error('message cache not ready');
+
+  let roomKey = null;
+  if (type === 'room') {
+    const room = dependencies.getRoom?.(chatId);
+    if (!room) throw new Error('room not loaded yet');
+    roomKey = room.privateKey ?? null;
+  }
+
+  let entry = cache[cacheKey];
+  if (!entry?.messages?.length) {
+    const idb = await dbService.getMessages(cacheKey);
+    if (idb.messages.length) {
+      entry = { messages: idb.messages, hasMore: idb.hasMore, timestamp: Date.now() };
+      cache[cacheKey] = entry;
+    }
+  }
+
+  if (entry?.messages?.length) {
+    const isCurrent =
+      (type === 'room' && dependencies.currentRoom?._id === chatId) ||
+      (type === 'private' && dependencies.currentPrivateChat?.id === chatId);
+    await catchUpNewerMessagesHandler(
+      chatId,
+      type,
+      entry.messages,
+      isCurrent ? dependencies.setMessages : () => {},
+      isCurrent ? dependencies.setHasMoreNewerMessages : () => {},
+      dependencies.messageCache,
+      dependencies.setUnreadCounts,
+      roomKey,
+      true
+    );
+    return;
+  }
+
+  // no local history: load the latest page first so the chat isn't left with only our own sent messages
+  const res = type === 'room'
+    ? await messageService.getRoomMessages(chatId, 20, null, null, roomKey)
+    : await messageService.getPrivateMessages(chatId, 20);
+  const msgs = type === 'private' ? applyLastRead(res.messages, res.lastRead) : res.messages;
+  if (msgs?.length) {
+    await dbService.saveMessages(cacheKey, msgs, res.hasMore);
+    cache[cacheKey] = { messages: msgs, hasMore: res.hasMore, timestamp: Date.now() };
+  }
+  syncUnreadFromResponse(dependencies.setUnreadCounts, cacheKey, res.unreadCount);
 };
 
 export const sendPendingMessages = async () => {
@@ -33,40 +90,27 @@ export const sendPendingMessages = async () => {
     const pendingMessages = await dbService.getPendingMessages();
     if (!pendingMessages.length) return;
 
-    const caughtUpChats = new Set();
+    const failedChats = new Set();
+    const seen = new Set();
+    for (const p of pendingMessages) {
+      if (isUploadCancelled(p.id || p._id)) continue;
+      const { chatId, cacheKey } = chatInfoOf(p);
+      if (seen.has(cacheKey)) continue;
+      seen.add(cacheKey);
+      try {
+        await catchUpChat(p.type, chatId, cacheKey);
+      } catch (error) {
+        console.error(`Catch-up failed for ${cacheKey}, keeping its messages pending:`, error);
+        failedChats.add(cacheKey);
+      }
+    }
 
+    // 2) send
     for (const pendingMsg of pendingMessages) {
       const tempId = pendingMsg.id || pendingMsg._id;
       if (isUploadCancelled(tempId)) continue;
-      const cacheKey = pendingMsg.type === 'room'
-        ? `room_${pendingMsg.roomId}`
-        : `private_${pendingMsg.receiverId}`;
-
-      if (!caughtUpChats.has(cacheKey) && dependencies.messageCache) {
-        const chatData = dependencies.messageCache.current[cacheKey];
-        if (chatData?.messages && chatData.messages.length > 0) {
-          const chatId = pendingMsg.type === 'room' ? pendingMsg.roomId : pendingMsg.receiverId;
-          const type = pendingMsg.type;
-
-          const setMessagesForCache = () => {
-            const isCurrentRoom = type === 'room' && dependencies.currentRoom?._id === chatId;
-            const isCurrentPrivate = type === 'private' && dependencies.currentPrivateChat?.id === chatId;
-            return (isCurrentRoom || isCurrentPrivate) ? dependencies.setMessages : () => {};
-          };
-
-          await catchUpNewerMessagesHandler(
-            chatId,
-            type,
-            chatData.messages,
-            setMessagesForCache(),
-            dependencies.setHasMoreNewerMessages,
-            dependencies.messageCache,
-            dependencies.setUnreadCounts,
-            type === 'room' ? (dependencies.currentRoom?.privateKey ?? null) : null
-          );
-          caughtUpChats.add(cacheKey);
-        }
-      }
+      const { cacheKey } = chatInfoOf(pendingMsg);
+      if (failedChats.has(cacheKey)) continue;
 
       try {
         let finalMedia = pendingMsg.media || null;

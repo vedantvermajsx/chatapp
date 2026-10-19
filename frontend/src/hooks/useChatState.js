@@ -17,7 +17,7 @@ import roomService from '../services/room.service';
 import userService from '../services/user.service';
 import { toast } from 'sonner';
 import { dbService } from '../services/indexedDB.service';
-import { setOfflineHandlerDependencies, setupOfflineHandler } from '../services/offlineMessageHandler.js';
+import { setOfflineHandlerDependencies, setupOfflineHandler, sendPendingMessages } from '../services/offlineMessageHandler.js';
 
 export const useChatState = (user) => {
   const [messages, setMessages] = useState([]);
@@ -145,9 +145,16 @@ export const useChatState = (user) => {
       setHasMoreNewerMessages,
       setMessages,
       currentRoom,
-      currentPrivateChat
+      currentPrivateChat,
+      getRoom: (id) =>
+        (joinedRooms || []).find(r => String(r._id) === String(id)) ||
+        (currentRoom && String(currentRoom._id) === String(id) ? currentRoom : null)
     });
-  }, [messageCache, setUnreadCounts, setHasMoreNewerMessages, setMessages, currentRoom, currentPrivateChat]);
+  }, [messageCache, setUnreadCounts, setHasMoreNewerMessages, setMessages, currentRoom, currentPrivateChat, joinedRooms]);
+
+  useEffect(() => {
+    if (Array.isArray(joinedRooms) && joinedRooms.length) sendPendingMessages();
+  }, [joinedRooms]);
 
   useEffect(() => {
     setupOfflineHandler();
