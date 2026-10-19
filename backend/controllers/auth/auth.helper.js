@@ -21,6 +21,8 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
   const cacheProfile = {
     _id: userData._id,
     username: userData.username,
+    bio: userData.bio,
+    age: userData.age,
     email: userData.email,
     avatar: userData.avatar,
     gender: userData.gender,
@@ -38,6 +40,8 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
     username: userDocument.username,
     avatar: userDocument.avatar,
     gender: userDocument.gender,
+    age: userDocument.age,
+    bio: userDocument.bio,
     isOnline: true,
     lastSeen: userDocument.lastSeen ?? new Date(),
     isGuest,

@@ -78,9 +78,10 @@ export const sendPendingMessages = async () => {
             continue;
           }
           if (file) {
-            const isCurrentChat =
+            const checkCurrentChat = () =>
               (pendingMsg.type === 'room' && dependencies.currentRoom?._id === pendingMsg.roomId) ||
               (pendingMsg.type === 'private' && dependencies.currentPrivateChat?.id === pendingMsg.receiverId);
+            const isCurrentChat = checkCurrentChat();
 
             const updateProgress = (progress) => {
               if (dependencies.messageCache?.current?.[cacheKey]) {
@@ -91,7 +92,7 @@ export const sendPendingMessages = async () => {
                   )
                 };
               }
-              if (isCurrentChat && dependencies.setMessages) {
+              if (checkCurrentChat() && dependencies.setMessages) {
                 dependencies.setMessages((prev) =>
                   prev.map((msg) =>
                     (msg.id || msg._id) === tempId ? { ...msg, uploadProgress: progress } : msg
@@ -114,7 +115,7 @@ export const sendPendingMessages = async () => {
                 messages: setPreview(dependencies.messageCache.current[cacheKey].messages)
               };
             }
-            if (isCurrentChat && dependencies.setMessages) dependencies.setMessages(setPreview);
+            if (checkCurrentChat() && dependencies.setMessages) dependencies.setMessages(setPreview);
 
             const uploadController = registerUpload(tempId);
             let uploadResult;
@@ -124,9 +125,9 @@ export const sendPendingMessages = async () => {
               releaseUpload(tempId);
               URL.revokeObjectURL(previewUrl);
             }
+            // keep thumbnail/low/mid/hd so the sender sees a preview (video/image) after the upload
             finalMedia = {
-              type: uploadResult.type,
-              url: uploadResult.url,
+              ...uploadResult,
               isPending: false
             };
 

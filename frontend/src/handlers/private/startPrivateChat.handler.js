@@ -1,3 +1,4 @@
+import { withPendingMessages } from '../../services/pendingMessageView.js';
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
 import { applyLastRead } from '../../utils/applyLastRead.js';
@@ -30,7 +31,7 @@ export const startPrivateChatHandler = async (
 
   const inMemory = messageCache.current[cacheKey];
   if (inMemory?.messages?.length && Date.now() - inMemory.timestamp < CACHE_TTL) {
-    setMessages(inMemory.messages);
+    setMessages(await withPendingMessages(cacheKey, inMemory.messages, messageCache));
     setHasMoreMessages(inMemory.hasMore);
     setLoadingMessages(false);
     _refreshLastReadStatus(otherUser.id, cacheKey, messageCache, setMessages);
@@ -44,11 +45,12 @@ export const startPrivateChatHandler = async (
 
   const idbData = await dbService.getMessages(cacheKey);
   if (idbData.messages.length > 0) {
-    setMessages(idbData.messages);
+    const withPending = await withPendingMessages(cacheKey, idbData.messages);
+    setMessages(withPending);
     setHasMoreMessages(idbData.hasMore);
     setLoadingMessages(false);
     messageCache.current[cacheKey] = {
-      messages: idbData.messages,
+      messages: withPending,
       hasMore: idbData.hasMore,
       timestamp: Date.now(),
     };
@@ -66,12 +68,13 @@ export const startPrivateChatHandler = async (
   try {
     const res = await messageService.getPrivateMessages(otherUser.id, 20);
     const messagesWithRead = applyLastRead(res.messages, res.lastRead);
+    const shown = await withPendingMessages(cacheKey, messagesWithRead);
     messageCache.current[cacheKey] = {
-      messages: messagesWithRead,
+      messages: shown,
       hasMore: res.hasMore,
       timestamp: Date.now(),
     };
-    setMessages(messagesWithRead);
+    setMessages(shown);
     setHasMoreMessages(res.hasMore);
     await dbService.saveMessages(cacheKey, messagesWithRead, res.hasMore);
     syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);

@@ -1,6 +1,7 @@
 import messageService from '../../services/message.service.js';
 import { dbService } from '../../services/indexedDB.service.js';
 import { applyNewerMessages, idOf, persistable } from '../../utils/messageList.js';
+import { withPendingMessages } from '../../services/pendingMessageView.js';
 import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
 export const loadRoomMessagesHandler = async (
@@ -21,7 +22,7 @@ export const loadRoomMessagesHandler = async (
 
   const inMemory = messageCache.current[cacheKey];
   if (inMemory?.messages?.length && Date.now() - inMemory.timestamp < CACHE_TTL) {
-    setMessages(inMemory.messages);
+    setMessages(await withPendingMessages(cacheKey, inMemory.messages, messageCache));
     setHasMoreMessages(inMemory.hasMore);
     {
       setLoadingNewerMessages?.(true);
@@ -33,10 +34,11 @@ export const loadRoomMessagesHandler = async (
 
   const idbData = await dbService.getMessages(cacheKey);
   if (idbData && idbData.messages && idbData.messages.length > 0) {
-    setMessages(idbData.messages);
+    const withPending = await withPendingMessages(cacheKey, idbData.messages);
+    setMessages(withPending);
     setHasMoreMessages(idbData.hasMore);
     messageCache.current[cacheKey] = {
-      messages: idbData.messages,
+      messages: withPending,
       hasMore: idbData.hasMore,
       timestamp: Date.now(),
     };
@@ -53,12 +55,13 @@ export const loadRoomMessagesHandler = async (
   setLoadingMessages(true);
   try {
     const res = await messageService.getRoomMessages(roomId, 20, null, null, roomPrivateKey);
+    const withPending = await withPendingMessages(cacheKey, res.messages);
     messageCache.current[cacheKey] = {
-      messages: res.messages,
+      messages: withPending,
       hasMore: res.hasMore,
       timestamp: Date.now(),
     };
-    setMessages(res.messages);
+    setMessages(withPending);
     setHasMoreMessages(res.hasMore);
     await dbService.saveMessages(cacheKey, res.messages, res.hasMore);
     syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
