@@ -191,24 +191,20 @@ const ChatHeader = memo(function ChatHeader({
               </div>
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">
-              {currentPrivateChat.isOnline && (
-                <>
-                  <button
-                    onClick={() => startCall && startCall(currentPrivateChat.id, false, currentPrivateChat)}
-                    {...iconBtn()}
-                    title="Voice Call"
-                  >
-                    <Phone className="w-5 h-5" style={{ color: '#23a559' }} />
-                  </button>
-                  <button
-                    onClick={() => startCall && startCall(currentPrivateChat.id, true, currentPrivateChat)}
-                    {...iconBtn()}
-                    title="Video Call"
-                  >
-                    <Video className="w-5 h-5" style={{ color: '#5865f2' }} />
-                  </button>
-                </>
-              )}
+              <button
+                onClick={() => startCall && startCall(currentPrivateChat.id, false, currentPrivateChat)}
+                {...iconBtn()}
+                title="Voice Call"
+              >
+                <Phone className="w-5 h-5" style={{ color: '#23a559' }} />
+              </button>
+              <button
+                onClick={() => startCall && startCall(currentPrivateChat.id, true, currentPrivateChat)}
+                {...iconBtn()}
+                title="Video Call"
+              >
+                <Video className="w-5 h-5" style={{ color: '#5865f2' }} />
+              </button>
             </div>
           </>
         ) : (
