@@ -15,8 +15,13 @@ export const compareMessages = (a, b) =>
 export const persistable = (list) =>
   (list || []).filter((m) => m && !m.isPending && (m.id || m._id));
 
+// The on-screen list and the in-memory cache are NOT capped: the user can load as much history
+// as they want. Only the IndexedDB cache is limited to the newest MAX_MESSAGES, and that limit is
+// enforced by IndexedDB itself (reconcile in indexedDB/messages.db.js). Kept as pass-throughs so
+// existing call sites don't change.
 export const capNewest = (list) => list;
 
+// In-memory cache entry with `messages` replaced (no eviction).
 export const withCap = (entry, list) => ({
   ...entry,
   messages: list,

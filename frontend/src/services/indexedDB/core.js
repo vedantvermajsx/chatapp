@@ -1,6 +1,8 @@
 export const DB_NAME = 'GatherUpDB';
-export const DB_VERSION = 6; 
+export const DB_VERSION = 7; 
 export const MAX_MESSAGES_PER_CHAT = 100;
+// Recently used stickers + GIFs (combined) kept locally so they work offline.
+export const MAX_RECENT_STICKERS = 100;
 
 export const STORES = {
   rooms: 'rooms',
@@ -11,6 +13,7 @@ export const STORES = {
   chatMeta: 'chatMeta',
   unreadCounts: 'unreadCounts',
   keys: 'keys',
+  recentStickers: 'recentStickers',
 };
 
 let dbInstance = null;
@@ -90,6 +93,11 @@ export const openDB = () => {
 
       if (!db.objectStoreNames.contains(STORES.keys)) {
         db.createObjectStore(STORES.keys, { keyPath: 'id' });
+      }
+
+      if (!db.objectStoreNames.contains(STORES.recentStickers)) {
+        const recentStore = db.createObjectStore(STORES.recentStickers, { keyPath: 'key' });
+        recentStore.createIndex('usedAt', 'usedAt', { unique: false });
       }
     };
   });
