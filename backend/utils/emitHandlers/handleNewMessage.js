@@ -69,17 +69,15 @@ function _warmCacheForRoomMessage(roomId, senderId, isSystemMessage) {
 async function _pushForRoomMessage(roomId, payload) {
   const senderId = String(payload.userId);
 
-  const activeViewerIds = new Set([senderId]);
-  for (const [userId, viewingRoomId] of activeRooms.entries()) {
-    if (viewingRoomId === String(roomId)) activeViewerIds.add(String(userId));
-  }
+  const skipIds = new Set([senderId]);
+  for (const userId of onlineUsers.keys()) skipIds.add(String(userId));
 
   const memberIds = await roomCacheClient.getRoomMemberIds(roomId);
   if (!memberIds?.length) return;
 
   const recipientIds = memberIds
     .map(String)
-    .filter((id) => !activeViewerIds.has(id));
+    .filter((id) => !skipIds.has(id));
   if (!recipientIds.length) return;
 
   let roomName = 'New message';
@@ -87,7 +85,6 @@ async function _pushForRoomMessage(roomId, payload) {
     const room = await roomCacheClient.getRoomById(roomId);
     roomName = room?.groupName || room?.name || roomName;
   } catch {
-    // fall back to default title
   }
 
   await sendPushToUsers(recipientIds, {

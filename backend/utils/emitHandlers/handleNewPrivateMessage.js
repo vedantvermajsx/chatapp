@@ -1,4 +1,4 @@
-import { getIO } from '../../socket.js';
+import { getIO, onlineUsers } from '../../socket.js';
 import { publish } from '../messageBroker.js';
 import unreadCacheClient from '../../database/unreadCacheClient.js';
 import messageCountCacheClient from '../../database/messageCountCacheClient.js';
@@ -43,6 +43,8 @@ export async function handleNewPrivateMessage(data) {
     } catch (err) {
       console.error('[emitQueue] newPrivateMessage cache warm error:', err.message);
     }
+
+    if (onlineUsers.has(receiverStr)) return;
 
     sendPushToUser(receiverStr, {
       title: payload.senderUsername || payload.username || 'Unknown',
