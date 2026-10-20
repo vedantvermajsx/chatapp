@@ -3,6 +3,8 @@ import { dbService } from '../../services/indexedDB.service.js';
 import { mergeOlder, MAX_MESSAGES } from '../../utils/messageList.js';
 import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
+const emptyCursors = new Map();
+
 export const loadMoreRoomMessagesHandler = async (
   roomId,
   messages,
@@ -20,10 +22,13 @@ export const loadMoreRoomMessagesHandler = async (
   try {
     const anchor = messages.find(m => !m.isPending);
     if (!anchor) return;
+    const cursorKey = `room_${roomId}`;
+    if (emptyCursors.get(cursorKey) === anchor.timestamp) return;
     const res = await messageService.getRoomMessages(roomId, 20, anchor.timestamp, null, roomPrivateKey);
 
     const cacheKey = `room_${roomId}`;
     const incoming = res.messages || [];
+    if (!incoming.length) emptyCursors.set(cursorKey, anchor.timestamp);
     const entry = messageCache?.current?.[cacheKey];
     const { messages: merged, dropped } = mergeOlder(entry?.messages ?? messages, incoming);
     const hasMore = !!res.hasMore || dropped > 0;

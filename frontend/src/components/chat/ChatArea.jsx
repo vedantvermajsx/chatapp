@@ -343,8 +343,7 @@ const ChatArea = memo(function ChatArea({
   const handleFirstMessageVisible = useCallback(async () => {
     if (
       loadingOlderRef.current ||
-      loadingMessages ||
-      !hasMoreMessages
+      loadingMessages
     ) {
       return;
     }
@@ -360,7 +359,7 @@ const ChatArea = memo(function ChatArea({
         loadingOlderRef.current = false;
       }, 300);
     }
-  }, [loadingMessages, hasMoreMessages, loadMoreMessages]);
+  }, [loadingMessages, loadMoreMessages]);
 
 
   const jumpToPresent = useCallback(async () => {

@@ -43,7 +43,7 @@ const MessageList = ({
     return -1;
   })();
 
-  const firstMessageIndex = hasMoreMessages && messages.length > 3 ? 3 : (hasMoreMessages && messages.length > 0 ? 0 : -1);
+  const firstMessageIndex = messages.length > 3 ? 3 : (messages.length > 0 ? 0 : -1);
   const lastMessagePaginationIndex = hasMoreNewerMessages && messages.length > 3 ? messages.length - 4 : (hasMoreNewerMessages && messages.length > 0 ? messages.length - 1 : -1);
 
   useEffect(() => {

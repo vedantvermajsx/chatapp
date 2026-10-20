@@ -4,6 +4,8 @@ import { applyLastRead } from '../../utils/applyLastRead.js';
 import { mergeOlder, MAX_MESSAGES } from '../../utils/messageList.js';
 import { syncUnreadFromResponse } from '../../utils/syncUnreadCount.js';
 
+const emptyCursors = new Map();
+
 export const loadMoreMessagesHandler = async (
   otherUser,
   user,
@@ -21,10 +23,13 @@ export const loadMoreMessagesHandler = async (
   try {
     const anchor = messages.find(m => !m.isPending);
     if (!anchor) return;
+    const cursorKey = `private_${otherUser.id}`;
+    if (emptyCursors.get(cursorKey) === anchor.timestamp) return;
     const res = await messageService.getPrivateMessages(otherUser.id, 20, anchor.timestamp);
 
     const cacheKey = `private_${otherUser.id}`;
     const incoming = res.messages || [];
+    if (!incoming.length) emptyCursors.set(cursorKey, anchor.timestamp);
     const entry = messageCache?.current?.[cacheKey];
     const { messages: merged, dropped } = mergeOlder(entry?.messages ?? messages, incoming);
     const mergedRead = applyLastRead(merged, res.lastRead);
