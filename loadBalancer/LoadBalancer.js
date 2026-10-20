@@ -102,6 +102,7 @@ class LoadBalancer {
 
     this.server = null;
     this.app = express();
+    this.app.set('trust proxy', 1);
 
     this.app.use(
       cors({
@@ -156,6 +157,7 @@ class LoadBalancer {
     });
 
     this.app.use(async (req, res) => {
+      this.stampClientIp(req);
       const isSocketIO = req.path.startsWith('/socket.io');
 
       if (isSocketIO) {
@@ -183,12 +185,24 @@ class LoadBalancer {
   }
 
   getClientIp(req) {
-    return (
-      req.headers['x-forwarded-for']?.split(',')[0].trim() ||
-      req.socket?.remoteAddress ||
-      req.ip ||
-      '0.0.0.0'
-    );
+    // req.ip is correct for HTTP requests because of `trust proxy` (see constructor).
+    // WebSocket upgrades bypass Express, so parse X-Forwarded-For ourselves:
+    // with one trusted proxy (Render) the real client is the last entry.
+    if (req.ip) return req.ip;
+    const xff = req.headers['x-forwarded-for'];
+    if (xff) {
+      const parts = xff.split(',').map((s) => s.trim()).filter(Boolean);
+      if (parts.length) return parts[parts.length - 1];
+    }
+    return req.socket?.remoteAddress || '0.0.0.0';
+  }
+
+  // Tell backends the real user IP (and prove it came from us).
+  stampClientIp(req) {
+    delete req.headers['x-client-ip'];
+    delete req.headers['x-lb-secret'];
+    req.headers['x-client-ip'] = this.getClientIp(req);
+    if (process.env.LB_SECRET) req.headers['x-lb-secret'] = process.env.LB_SECRET;
   }
 
   
@@ -250,7 +264,8 @@ class LoadBalancer {
     
     
     this.server.on('upgrade', (req, socket, head) => {
-      const clientIp = this.getClientIp(req);
+      this.stampClientIp(req);
+      const clientIp = req.headers['x-client-ip'];
       const target = this.getStickyServer(clientIp);
 
       if (!target) {
