@@ -93,7 +93,11 @@ export const dbMessages = {
   },
 
   async saveMessages(chatKey, messages, hasMore = false) {
-    const sealed = await prepare(chatKey, messages);
+    // The UI list may be far longer than the cache; only the newest MAX_MESSAGES_PER_CHAT are stored.
+    const all = persistable(messages).sort(compareMessages);
+    const list = all.length > MAX_MESSAGES_PER_CHAT ? all.slice(-MAX_MESSAGES_PER_CHAT) : all;
+    if (list.length < all.length) hasMore = true;
+    const sealed = await prepare(chatKey, list);
     if (!sealed.length) return;
     try {
       await runTx(async (msgStore, metaStore) => {

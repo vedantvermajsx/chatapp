@@ -15,17 +15,13 @@ export const compareMessages = (a, b) =>
 export const persistable = (list) =>
   (list || []).filter((m) => m && !m.isPending && (m.id || m._id));
 
-export const capNewest = (list) =>
-  list.length > MAX_MESSAGES ? list.slice(list.length - MAX_MESSAGES) : list;
+export const capNewest = (list) => list;
 
-export const withCap = (entry, list) => {
-  const capped = capNewest(list);
-  return {
-    ...entry,
-    messages: capped,
-    hasMore: (entry?.hasMore ?? false) || capped.length < list.length,
-  };
-};
+export const withCap = (entry, list) => ({
+  ...entry,
+  messages: list,
+  hasMore: entry?.hasMore ?? false,
+});
 
 export const mergeNewer = (current, incoming) => {
   const byId = new Map((incoming || []).map((m) => [idOf(m), m]));
@@ -42,19 +38,16 @@ export const mergeNewer = (current, incoming) => {
     ...all.filter((m) => !m.isPending).sort(compareMessages),
     ...all.filter((m) => m.isPending),
   ];
-  const messages = capNewest(merged);
-  return { messages, evicted: merged.length - messages.length };
+  return { messages: merged, evicted: 0 };
 };
 
+// Older page: prepended in full (no cap). `dropped` is always 0; kept for API compatibility.
 export const mergeOlder = (current, incoming) => {
-  const room = MAX_MESSAGES - current.length;
-  if (room <= 0) return { messages: current, dropped: (incoming || []).length };
   const ids = new Set(current.map(idOf));
   const older = (incoming || []).filter((m) => !ids.has(idOf(m))).sort(compareMessages);
-  const kept = older.slice(-room);
   return {
-    messages: kept.length ? [...kept, ...current] : current,
-    dropped: older.length - kept.length,
+    messages: older.length ? [...older, ...current] : current,
+    dropped: 0,
   };
 };
 

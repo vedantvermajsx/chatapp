@@ -15,7 +15,6 @@ export const loadMoreRoomMessagesHandler = async (
   isActive = () => true
 ) => {
   if (!messages || messages.length === 0 || loadingMoreMessages.current) return;
-  if (messages.length >= MAX_MESSAGES) return;
   loadingMoreMessages.current = true;
 
   try {
@@ -36,7 +35,10 @@ export const loadMoreRoomMessagesHandler = async (
       setMessages((prev) => mergeOlder(prev, incoming).messages);
       setHasMoreMessages(hasMore);
     }
-    await dbService.mergeOlderMessages(cacheKey, incoming, hasMore);
+    const meta = await dbService.getChatMeta(cacheKey);
+    if ((meta?.count ?? 0) < MAX_MESSAGES) {
+      await dbService.mergeOlderMessages(cacheKey, incoming, hasMore);
+    }
 
     syncUnreadFromResponse(setUnreadCounts, cacheKey, res.unreadCount);
   } catch (error) {
