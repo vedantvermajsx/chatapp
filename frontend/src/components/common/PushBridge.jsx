@@ -3,6 +3,13 @@ import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 import pushService from '../../services/push.service';
 
+const pushSound = typeof Audio !== 'undefined' ? new Audio('/notification.mp3') : null;
+const playPushSound = () => {
+  if (!pushSound) return;
+  pushSound.currentTime = 0;
+  pushSound.play().catch(() => {});
+};
+
 export default function PushBridge() {
   const { user } = useAuth();
   const userId = user?._id || user?.id;
@@ -17,6 +24,7 @@ export default function PushBridge() {
       .watchForeground((payload) => {
         const notification = payload?.notification || {};
         const data = payload?.data || {};
+        playPushSound();
         toast(notification.title || data.title || 'GatherUp', {
           description: notification.body || data.body || 'You have a new message',
           id: data.messageId || undefined,

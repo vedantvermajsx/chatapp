@@ -1,7 +1,10 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useAuth } from './AuthContext';
-import ringtoneAudio from '../assets/music.mp3';
+
+const RINGTONE_SRC = '/ringtone.mp3'; // receiver side
+const DIAL_SRC = '/calling.mp3';      // caller side
+const DIAL_TIMEOUT_MS = 30000;        // caller auto-ends if unanswered
 
 const CallContext = createContext();
 
@@ -18,11 +21,32 @@ export const CallProvider = ({ children, socket }) => {
   const callStartTimeRef = useRef(null);
   const callConnectedTimeRef = useRef(null);
   const ringtoneRef = useRef(null);
+  const dialRef = useRef(null);
+  const dialTimeoutRef = useRef(null);
+  const endCallRef = useRef(null);
   const isAcceptingRef = useRef(false);
 
   useEffect(() => {
-    ringtoneRef.current = new Audio(ringtoneAudio);
+    ringtoneRef.current = new Audio(RINGTONE_SRC);
     ringtoneRef.current.loop = true;
+    dialRef.current = new Audio(DIAL_SRC);
+    dialRef.current.loop = true;
+    return () => {
+      clearTimeout(dialTimeoutRef.current);
+      ringtoneRef.current?.pause();
+      dialRef.current?.pause();
+    };
+  }, []);
+
+  const playDialTone = useCallback(() => {
+    if (dialRef.current) {
+      dialRef.current.currentTime = 0;
+      dialRef.current.play().catch((e) => console.warn('Dial tone play error:', e));
+    }
+    clearTimeout(dialTimeoutRef.current);
+    dialTimeoutRef.current = setTimeout(() => {
+      if (activeCallRef.current?.status === 'calling') endCallRef.current?.();
+    }, DIAL_TIMEOUT_MS);
   }, []);
 
   const playRingtone = useCallback(() => {
@@ -36,6 +60,12 @@ export const CallProvider = ({ children, socket }) => {
     if (ringtoneRef.current) {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
+    }
+    // also stops the caller's dial tone + 30s timer (answered / rejected / ended)
+    clearTimeout(dialTimeoutRef.current);
+    if (dialRef.current) {
+      dialRef.current.pause();
+      dialRef.current.currentTime = 0;
     }
   }, []);
 
@@ -67,6 +97,7 @@ export const CallProvider = ({ children, socket }) => {
   }, [rtc.connectionState, activeCall]);
 
   const endCallLocally = useCallback(() => {
+    stopRingtone();
     rtc.cleanup();
     setIncomingCall(null);
     setActiveCall(null);
@@ -74,7 +105,7 @@ export const CallProvider = ({ children, socket }) => {
     isAcceptingRef.current = false;
     callConnectedTimeRef.current = null;
     setCallConnectedTime(null);
-  }, [rtc]);
+  }, [rtc, stopRingtone]);
 
   useEffect(() => { endCallLocallyRef.current = endCallLocally; }, [endCallLocally]);
 
@@ -195,6 +226,7 @@ export const CallProvider = ({ children, socket }) => {
       const stream = await rtc.initLocalStream(isVideo);
       callStartTimeRef.current = Date.now();
       setActiveCall({ targetId, isVideo, status: 'calling', targetData });
+      playDialTone();
       await rtc.createOffer(
         targetId,
         { username: user.username, avatar: user.avatar, isVideo },
@@ -203,11 +235,10 @@ export const CallProvider = ({ children, socket }) => {
     } catch (err) {
       console.error('[Call] startCall failed:', err);
       setCallError('Failed to access camera/microphone. Please allow permissions and try again.');
-      endCallLocally();
-    } finally {
       stopRingtone();
+      endCallLocally();
     }
-  }, [rtc, user, endCallLocally, stopRingtone]);
+  }, [rtc, user, endCallLocally, stopRingtone, playDialTone]);
 
   const acceptCall = useCallback(async () => {
     const incoming = incomingCallRef.current;
@@ -301,6 +332,8 @@ export const CallProvider = ({ children, socket }) => {
     stopRingtone();
     endCallLocally();
   }, [socket, endCallLocally, stopRingtone]);
+
+  useEffect(() => { endCallRef.current = endCall; }, [endCall]);
 
   return (
     <CallContext.Provider
