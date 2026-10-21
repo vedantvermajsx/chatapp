@@ -1000,6 +1000,6 @@ function showOver(over, rematch) {
   const theyAsked = !!rematch[1 - mySeat];
   const btn = $('rematchBtn');
   btn.disabled = iAsked;
-  btn.textContent = iAsked ? 'Waiting for opponent…' : theyAsked ? 'Accept rematch' : 'Rematch';
-  $('rematchNote').textContent = theyAsked && !iAsked ? `${names[1 - mySeat] || 'Your opponent'} wants a rematch.` : '';
+  btn.textContent = iAsked ? 'Waiting for opponent…' : theyAsked ? 'Play again' : 'Play again';
+  $('rematchNote').textContent = theyAsked && !iAsked ? `${names[1 - mySeat] || 'Your opponent'} wants to play again.` : '';
 }
