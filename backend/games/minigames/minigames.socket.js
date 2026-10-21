@@ -26,7 +26,7 @@ export function setupMinigamesSocket(io) {
 
   const connected = (p) => !!(p && p.connected && p.socketId);
   const bothHere = (g) => connected(g.players[0]) && connected(g.players[1]);
-  const anyoneGone = (g) => !g.players[0] || !g.players[1] || !g.players[0].connected || !g.players[1].connected;
+  const anyoneGone = (g) => g.solo ? !connected(g.players[g.creatorSeat]) : !g.players[0] || !g.players[1] || !g.players[0].connected || !g.players[1].connected;
   const seatOf = (socket, g) => {
     const s = socket.data.seat;
     return s === 0 || s === 1 ? (g.players[s] && g.players[s].socketId === socket.id ? s : null) : null;
@@ -78,6 +78,7 @@ export function setupMinigamesSocket(io) {
     if (g.over) return;
     clearTurnTimer(g);
     clearPlayerTimers(g);
+    if (g.engine.finish) g.engine.finish(g.state);
     g.over = { winner: result.winner ?? null, reason: result.reason, line: result.line || null };
     g.rematch = [false, false];
     emitState(g);
@@ -93,7 +94,8 @@ export function setupMinigamesSocket(io) {
       const cur = games.get(id);
       if (!cur || cur.over) return;
       const waiting = cur.engine.pending(cur.state);
-      if (waiting.length === 1) endGame(id, cur, { winner: 1 - waiting[0], reason: 'timeout' });
+      if (cur.solo) endGame(id, cur, { winner: null, reason: 'inactivity' });
+      else if (waiting.length === 1) endGame(id, cur, { winner: 1 - waiting[0], reason: 'timeout' });
       else endGame(id, cur, { winner: null, reason: 'inactivity' });
     }, g.engine.turnMs);
     g.turnTimer.unref?.();
@@ -218,6 +220,7 @@ export function setupMinigamesSocket(io) {
         state: engine.create(opts, 0),
         creatorSeat: cs,
         players,
+        solo: !!opts.solo,
         started: false,
         over: null,
         rematch: [false, false],
@@ -227,6 +230,12 @@ export function setupMinigamesSocket(io) {
       });
 
       attach(socket, id, cs);
+      const created = games.get(id);
+      if (created.solo) {
+        created.started = true;
+        armTurnTimer(id, created);
+        return socket.emit('gameStart', { id, game: type, options: opts, names: names(created), seat: cs, token, ...snapshot(created, cs) });
+      }
       socket.emit('gameCreated', { id, game: type, options: opts, seat: cs, token });
     }));
 
@@ -234,7 +243,7 @@ export function setupMinigamesSocket(io) {
       const { id, name, token, game: wanted } = payload || {};
       if (typeof id !== 'string' || !/^\d{4}$/.test(id)) return socket.emit('joinError', 'Game code not found.');
       const g = games.get(id);
-      if (!g) return socket.emit('joinError', 'Game code not found.');
+      if (!g || g.solo) return socket.emit('joinError', 'Game code not found.');
       if (isGame(wanted) && wanted !== g.type) {
         return socket.emit('joinError', `That code is for ${g.engine.label}, not ${ENGINES[wanted].label}.`);
       }
@@ -287,7 +296,7 @@ export function setupMinigamesSocket(io) {
       emitState(g);
       // Turn-based games reset the clock on every move. Simultaneous games (rps) only reset
       // when a round resolves, so one player locking in early doesn't extend the other's time.
-      if (g.engine.turnOf(g.state) !== null || g.engine.pending(g.state).length === 2) armTurnTimer(id, g);
+      if (g.solo || g.engine.turnOf(g.state) !== null || g.engine.pending(g.state).length === 2) armTurnTimer(id, g);
     }));
 
     socket.on('rematch', safe('rematch', () => {
@@ -296,9 +305,10 @@ export function setupMinigamesSocket(io) {
       if (!g || !g.over) return;
       const seat = seatOf(socket, g);
       if (seat === null) return;
-      if (!bothHere(g)) return socket.emit('rematchDenied', 'Your opponent has left.');
+      if (g.solo && connected(g.players[g.creatorSeat])) g.rematch = [true, true];
+      else if (!bothHere(g)) return socket.emit('rematchDenied', 'Your opponent has left.');
 
-      g.rematch[seat] = true;
+      if (!g.solo) g.rematch[seat] = true;
       if (!(g.rematch[0] && g.rematch[1])) return emitState(g);
 
       clearTimeout(g.cleanupTimer);

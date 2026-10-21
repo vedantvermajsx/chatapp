@@ -1073,3 +1073,46 @@ html.embed .card {
 .c4-col .c4-cell.land { background: var(--bg); }
 .c4-col:hover:not(:disabled) .c4-cell.land { background: color-mix(in srgb, var(--me) 40%, var(--bg)); }
 .ttt-cell.hint, .gmk-cell.hint { background-image: none; }
+
+/* ───────────── Wordle Duel ───────────── */
+.wd-info { text-align: center; font-size: 13px; opacity: .75; margin-bottom: 8px; }
+.wd-grid { display: grid; gap: 5px; justify-content: center; margin: 0 auto 8px; }
+.wd-row { display: grid; grid-template-columns: repeat(var(--len, 5), 1fr); gap: 5px; }
+.wd-row.shake { animation: wd-shake .35s; }
+@keyframes wd-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.wd-tile { width: clamp(34px, 9vw, 48px); aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: clamp(16px, 4.5vw, 22px); border: 2px solid rgba(255,255,255,.14); border-radius: 6px; text-transform: uppercase; }
+.wd-tile.fill { border-color: rgba(255,255,255,.4); }
+.wd-tile.g, .wd-key.g, .wd-mrow i.g { background: #4f9d3c; border-color: #4f9d3c; color: #fff; }
+.wd-tile.y, .wd-key.y, .wd-mrow i.y { background: #c9a227; border-color: #c9a227; color: #fff; }
+.wd-tile.b, .wd-key.b, .wd-mrow i.b { background: #3a3a3a; border-color: #3a3a3a; color: #aaa; }
+.wd-opp { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 6px 0; }
+.wd-opp-label { font-size: 12px; opacity: .6; }
+.wd-mini { display: grid; gap: 2px; }
+.wd-mrow { display: flex; gap: 2px; }
+.wd-mrow i { width: 9px; height: 9px; border-radius: 2px; background: rgba(255,255,255,.08); display: block; }
+.wd-kb { display: flex; flex-direction: column; gap: 6px; align-items: center; margin-top: 6px; }
+.wd-krow { display: flex; gap: 4px; }
+.wd-key { min-width: clamp(24px, 7.2vw, 34px); height: 44px; padding: 0 6px; border: 0; border-radius: 6px; background: #2c2c2c;
+  color: inherit; font-weight: 700; text-transform: uppercase; cursor: pointer; font-size: 13px; }
+.wd-key.wide { min-width: 52px; font-size: 11px; }
+
+/* ───────────── Size Duel / Guess the Country ───────────── */
+.sd-info, .gc-info { text-align: center; font-size: 13px; opacity: .75; margin-bottom: 6px; }
+.sd-title, .gc-title { text-align: center; font-weight: 700; font-size: 17px; margin-bottom: 12px; }
+.gc-clue { display: flex; justify-content: center; margin-bottom: 12px; }
+.gc-flag { max-width: 200px; width: 60%; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.sd-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gc-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sd-opt, .gc-opt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 64px;
+  padding: 12px 8px; border: 2px solid rgba(255,255,255,.12); border-radius: 12px; background: var(--panel, #1a1a1a);
+  color: inherit; font-weight: 700; font-size: 15px; cursor: pointer; text-align: center; }
+.sd-opt { min-height: 120px; }
+.sd-flag { width: 72px; border-radius: 4px; }
+.sd-opt:hover:not(:disabled), .gc-opt:hover:not(:disabled) { border-color: var(--accent, #7fbc4a); }
+.sd-opt.selected, .gc-opt.selected { border-color: var(--accent, #7fbc4a); background: var(--accent-glow, rgba(127,188,74,.15)); }
+.sd-opt:disabled, .gc-opt:disabled { cursor: default; opacity: .8; }
+.sd-result, .gc-result { text-align: center; min-height: 40px; margin: 12px 0 6px; font-size: 14px; }
+.sd-result.good, .gc-result.good { color: #7fbc4a; }
+.sd-result.bad, .gc-result.bad { color: #ef5b4b; }
+.sd-history, .gc-history { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }

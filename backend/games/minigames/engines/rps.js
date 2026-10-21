@@ -7,6 +7,7 @@ export default {
   label: 'Rock Paper Scissors',
   blurb: 'Lock in your pick and out-guess your friend.',
   turnMs: 30 * 1000,
+  optionDefs: [{ key: 'rounds', label: 'Match length', values: [3, 5], labels: ['Best of 3', 'Best of 5'], def: 3 }],
 
   sanitizeOptions(raw) {
     const rounds = Number(raw && raw.rounds);

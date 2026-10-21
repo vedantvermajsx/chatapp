@@ -15,6 +15,9 @@ const ICON = {
   reversi: ico('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>'),
   dots: ico('<circle cx="5" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="19" cy="5" r="1.4" fill="currentColor"/><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/><circle cx="5" cy="19" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/><circle cx="19" cy="19" r="1.4" fill="currentColor"/><path d="M5 5h7M12 5v7M5 12v7"/>'),
   rps: ico('<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L18 4M16 16L6 4"/>'),
+  wordle: ico('<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>'),
+  sizeduel: ico('<rect x="3" y="9" width="8" height="11" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/>'),
+  guesscountry: ico('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'),
   unknown: ico('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>'),
   lock: ico('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
 };
@@ -44,7 +47,7 @@ let opponentAway = false;
 let pendingMove = false;
 let deadlineAt = 0;
 let side = ['0', '1'].includes(params.get('side')) ? Number(params.get('side')) : params.get('side') === 'random' ? 'random' : 0;
-let rpsRounds = Number(params.get('rounds')) === 5 ? 5 : 3;
+let opts = {};
 let everConnected = false;
 let overTimer = null;
 let builtFor = null;
@@ -182,7 +185,7 @@ function selectGame(id) {
   $('homeIcon').innerHTML = ICON[id] || '';
   $('homeTitle').textContent = g.label;
   $('homeBlurb').textContent = g.blurb;
-  $('rpsOptions').hidden = id !== 'rps';
+  buildOptions(g);
   buildSidePicker(g);
   $('joinError').textContent = '';
   showScreen('screen-home');
@@ -206,19 +209,39 @@ function buildSidePicker(g) {
   });
 }
 
-const createPayload = () => ({ game: gameType, name: getName(), side, options: { rounds: rpsRounds } });
+const createPayload = () => ({ game: gameType, name: getName(), side, options: { ...opts } });
 
-function syncRoundsButtons() {
-  document.querySelectorAll('#roundsOptions .seg-btn').forEach((b) =>
-    b.classList.toggle('selected', Number(b.dataset.rounds) === rpsRounds));
+// Options come from the engine's optionDefs ({key,label,values,labels,def}); URL params (?len=4) preselect.
+function buildOptions(g) {
+  const box = $('gameOptions');
+  box.innerHTML = '';
+  opts = {};
+  (g.optionDefs || []).forEach((d) => {
+    const q = params.get(d.key);
+    const fromUrl = d.values.find((v) => String(v) === q);
+    opts[d.key] = fromUrl !== undefined ? fromUrl : d.def;
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    sec.innerHTML = '<label class="section-label"></label><div class="seg"></div>';
+    sec.firstChild.textContent = d.label;
+    const seg = sec.lastChild;
+    d.values.forEach((v, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'seg-btn' + (v === opts[d.key] ? ' selected' : '');
+      b.textContent = d.labels[i];
+      b.addEventListener('click', () => {
+        opts[d.key] = v;
+        seg.querySelectorAll('.seg-btn').forEach((x) => x.classList.toggle('selected', x === b));
+      });
+      seg.appendChild(b);
+    });
+    box.appendChild(sec);
+  });
 }
 
 buildPicker();
-syncRoundsButtons();
 $('nameInput').value = (params.get('name') || store.get('name') || '').slice(0, 20);
-
-document.querySelectorAll('#roundsOptions .seg-btn').forEach((b) =>
-  b.addEventListener('click', () => { rpsRounds = Number(b.dataset.rounds); syncRoundsButtons(); }));
 
 $('backToPick').addEventListener('click', () => { gameType = null; showScreen('screen-pick'); });
 
@@ -253,7 +276,10 @@ $('copyCodeBtn').addEventListener('click', () => {
   setTimeout(() => (btn.textContent = orig), 1200);
 });
 
-$('resignBtn').addEventListener('click', () => { if (!gameOver) modal('resignModal', true); });
+$('resignBtn').addEventListener('click', () => {
+  if (isSolo()) { notify('idle', {}); socket.emit('leaveGame'); if (gameId) store.del('session:' + gameId); location.href = cleanUrl(gameType ? { game: gameType } : {}); return; }
+  if (!gameOver) modal('resignModal', true);
+});
 $('resignNoBtn').addEventListener('click', () => modal('resignModal', false));
 $('resignYesBtn').addEventListener('click', () => { modal('resignModal', false); if (!gameOver) socket.emit('resign'); });
 $('rejoinBtn').addEventListener('click', rejoin);
@@ -305,7 +331,9 @@ socket.on('state', (d) => applySnapshot(d));
 
 socket.on('moveRejected', ({ reason }) => {
   pendingMove = false;
-  if (reason === 'opponent-away') flashBanner('Opponent is away — hold on…');
+  const MSG = { 'opponent-away': 'Opponent is away — hold on…', 'not-a-word': 'Not in word list', 'already-guessed': 'Already guessed', 'bad-move': 'Invalid guess' };
+  if (MSG[reason]) flashBanner(MSG[reason]);
+  if (gameType === 'wordle') wordleShake();
   renderAll();
 });
 
@@ -380,6 +408,9 @@ function enterGame(d) {
   $('resignBtn').hidden = false;
   ['overModal', 'resignModal', 'reconnectModal', 'awayBanner'].forEach((m) => modal(m, false));
 
+  const solo = !!(d.options && d.options.solo);
+  $('oppName').closest('.player-bar').hidden = solo;
+  $('resignBtn').textContent = solo ? 'Quit' : 'Resign';
   buildStage(true, d.state);
   showScreen('screen-game');
   applySnapshot(d);
@@ -402,6 +433,8 @@ function applySnapshot(d) {
   renderAll();
   if (d.over) showOver(d.over, d.rematch || [false, false]);
 }
+
+const isSolo = () => !!(snap && ((snap.options && snap.options.solo) || (snap.state && snap.state.solo)));
 
 const canAct = () => !!snap && snap.started && !gameOver && !opponentAway && !pendingMove &&
   (snap.turn === null || snap.turn === mySeat);
@@ -506,6 +539,66 @@ function reversiRenderer() {
         c.classList.toggle('last', !!(s.last && s.last.cell === i));
         if (target) c.dataset.move = JSON.stringify({ cell: i }); else delete c.dataset.move;
         c.disabled = !(pick || target);
+      });
+    },
+  };
+}
+
+let wordleShake = () => {};
+
+// Shared renderer for simultaneous multiple-choice rounds (sizeduel, guesscountry).
+// `describe(state)` -> { title, flag?, items:[{label,img?}], reveal?, right(last) }
+function duelRenderer(cls, describe) {
+  const flagUrl = (c) => `https://flagcdn.com/w160/${c}.png`;
+  const tile = (c) => `<img class="${cls}-flag" src="${flagUrl(c)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${c.toUpperCase()}'}))">`;
+  return {
+    build(stage) {
+      stage.innerHTML = `<div class="${cls}-info"></div><div class="${cls}-title"></div><div class="${cls}-clue"></div>` +
+        `<div class="${cls}-opts"></div><div class="${cls}-result"></div><div class="${cls}-history"></div>`;
+    },
+    update(s, over) {
+      const d = describe(s);
+      const st = $('stage');
+      st.querySelector(`.${cls}-info`).textContent = over ? 'Finished' : `Question ${s.round} of ${s.rounds}`;
+      st.querySelector(`.${cls}-title`).textContent = over ? 'Final score' : d.title;
+      st.querySelector(`.${cls}-clue`).innerHTML = !over && d.flag ? tile(d.flag) : '';
+      const box = st.querySelector(`.${cls}-opts`);
+      const n = d.items.length;
+      if (box.children.length !== n || !n) {
+        box.innerHTML = '';
+        d.items.forEach((it, i) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = `${cls}-opt`;
+          b.dataset.move = JSON.stringify({ pick: i });
+          box.appendChild(b);
+        });
+      }
+      [...box.children].forEach((b, i) => {
+        const it = d.items[i];
+        b.innerHTML = (it.img ? tile(it.img) : '') + '<span></span>';
+        b.lastChild.textContent = it.label;
+        b.classList.toggle('selected', s.mine === i);
+        b.disabled = s.mine !== null || !canAct();
+      });
+      const res = st.querySelector(`.${cls}-result`);
+      if (s.mine !== null) res.textContent = s.oppLocked ? '' : 'Locked in — waiting for opponent…';
+      else if (s.last && d.reveal) {
+        res.className = `${cls}-result`;
+        const l = s.last;
+        const ok = l.picks[mySeat] === d.right(l);
+        const theirs = l.picks[1 - mySeat] === d.right(l);
+        res.textContent = (ok ? '✓ Correct' : '✗ Wrong') + (s.solo ? '' : theirs ? ' · they got it' : ' · they missed') + ' — ' + d.reveal.join(' · ');
+        res.className = `${cls}-result ${ok ? 'good' : 'bad'}`;
+      } else res.textContent = s.oppLocked ? 'Your opponent has locked in!' : '';
+      const hist = st.querySelector(`.${cls}-history`);
+      hist.innerHTML = '';
+      s.history.forEach((h) => {
+        const chip = document.createElement('span');
+        const r = h[mySeat] ? 'W' : 'L';
+        chip.className = 'chip ' + r;
+        chip.textContent = r;
+        hist.appendChild(chip);
       });
     },
   };
@@ -630,6 +723,101 @@ const RENDER = {
     },
   },
 
+  wordle: (() => {
+    let cur = '';
+    let seen = 0;
+    let keys = {};
+    const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+    const rank = { b: 1, y: 2, g: 3 };
+    const submit = () => {
+      if (!snap || cur.length !== snap.state.len || !canAct() || snap.state.done) return;
+      sendMove({ guess: cur });
+    };
+    const press = (k) => {
+      if (!snap || gameType !== 'wordle' || gameOver || !canAct() || snap.state.done) return;
+      if (k === 'enter') return submit();
+      if (k === 'back') cur = cur.slice(0, -1);
+      else if (/^[a-z]$/.test(k) && cur.length < snap.state.len) cur += k;
+      RENDER.wordle.update(snap.state, snap.over);
+    };
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || gameType !== 'wordle' || $('screen-game').classList.contains('active') === false) return;
+      if (e.key === 'Enter') { e.preventDefault(); press('enter'); }
+      else if (e.key === 'Backspace') press('back');
+      else if (e.key.length === 1) press(e.key.toLowerCase());
+    });
+    wordleShake = () => {
+      const row = $('stage').querySelector('.wd-row.cur');
+      if (row) { row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake'); }
+    };
+    const grid = (id, n, len, cls) => {
+      let h = '';
+      for (let r = 0; r < n; r++) h += `<div class="wd-row${cls}">` + '<span class="wd-tile"></span>'.repeat(len) + '</div>';
+      $(id).innerHTML = h;
+      $(id).style.setProperty('--len', len);
+    };
+    return {
+      build(stage, s) {
+        cur = '';
+        seen = 0;
+        keys = {};
+        stage.innerHTML = '<div class="wd-info" id="wdInfo"></div><div class="wd-grid" id="wdGrid"></div>' +
+          '<div class="wd-opp"><span class="wd-opp-label">Opponent</span><div class="wd-mini" id="wdOpp"></div></div>' +
+          '<div class="wd-kb" id="wdKb"></div>';
+        grid('wdGrid', s.maxTries, s.len, '');
+        $('wdKb').innerHTML = ROWS.map((row, i) => '<div class="wd-krow">' +
+          (i === 2 ? '<button type="button" class="wd-key wide" data-k="enter">Enter</button>' : '') +
+          [...row].map((ch) => `<button type="button" class="wd-key" data-k="${ch}">${ch}</button>`).join('') +
+          (i === 2 ? '<button type="button" class="wd-key wide" data-k="back">⌫</button>' : '') + '</div>').join('');
+        $('wdKb').addEventListener('click', (e) => { const b = e.target.closest('.wd-key'); if (b) press(b.dataset.k); });
+      },
+      update(s, over) {
+        if (s.mine.length !== seen) { seen = s.mine.length; cur = ''; }
+        const rows = $('wdGrid').children;
+        keys = {};
+        for (let r = 0; r < s.maxTries; r++) {
+          const g = s.mine[r];
+          const isCur = r === s.mine.length && !s.done && !over;
+          rows[r].classList.toggle('cur', isCur);
+          [...rows[r].children].forEach((t, i) => {
+            const ch = g ? g.w[i] : isCur ? cur[i] || '' : '';
+            t.textContent = ch.toUpperCase();
+            t.className = 'wd-tile' + (g ? ' ' + g.r[i] : ch ? ' fill' : '');
+            if (g) keys[ch] = Math.max(keys[ch] || 0, rank[g.r[i]]);
+          });
+        }
+        $('wdKb').querySelectorAll('.wd-key[data-k]').forEach((b) => {
+          const v = keys[b.dataset.k];
+          b.className = 'wd-key' + (b.dataset.k.length > 1 ? ' wide' : '') + (v ? ' ' + 'xbyg'[v] : '');
+        });
+        let h = '';
+        for (let r = 0; r < s.maxTries; r++) {
+          const pat = s.opp[r];
+          h += '<div class="wd-mrow">' + Array.from({ length: s.len }, (_, i) => `<i class="${pat ? pat[i] : ''}"></i>`).join('') + '</div>';
+        }
+        $('wdOpp').innerHTML = h;
+        $('wdOpp').parentElement.hidden = !!s.solo;
+        $('wdInfo').textContent = `${s.len} letters · ${s.mine.length}/${s.maxTries} guesses` + (s.done && !over ? ' · out of guesses' : '') +
+          (over && s.answer ? ' · word: ' + s.answer.toUpperCase() : '');
+      },
+    };
+  })(),
+
+  sizeduel: duelRenderer('sd', (s) => ({
+    title: s.metric === 'area' ? 'Which country has the larger area?' : 'Which country has the larger population?',
+    items: s.pair ? s.pair.map((c) => ({ label: c.n, img: c.c })) : [],
+    reveal: s.last && !s.mine && !s.oppLocked ? s.last.names.map((n, i) => `${n}: ${s.last.values[i].toLocaleString()}${s.metric === 'area' ? ' km²' : ''}`) : null,
+    right: (l) => l.bigger,
+  })),
+
+  guesscountry: duelRenderer('gc', (s) => ({
+    title: s.mode === 'flag' ? 'Whose flag is this?' : s.q ? `${s.q.prompt} is the capital of…` : '',
+    flag: s.q && s.q.code,
+    items: s.q ? s.q.options.map((o) => ({ label: o.n })) : [],
+    reveal: s.last && !s.mine && !s.oppLocked ? ['It was ' + s.last.answer] : null,
+    right: (l) => l.correct,
+  })),
+
   rps: {
     build(stage) {
       stage.innerHTML =
@@ -739,10 +927,13 @@ function updateBanner() {
   let text;
   let cls = '';
   if (snap.over) {
-    text = snap.over.winner === null ? "It's a draw" : snap.over.winner === mySeat ? 'You won!' : `${opp} won`;
+    text = isSolo() ? soloTitle(snap.over) : snap.over.winner === null ? "It's a draw" : snap.over.winner === mySeat ? 'You won!' : `${opp} won`;
     cls = 'over';
   } else if (opponentAway) {
     text = 'Opponent disconnected…';
+  } else if (snap.state.status) {
+    text = snap.state.status.text;
+    cls = snap.state.status.mine ? 'mine' : '';
   } else if (snap.turn !== null) {
     const mine = snap.turn === mySeat;
     text = mine ? 'Your turn' : `${opp}'s turn`;
@@ -766,13 +957,19 @@ setInterval(() => {
 }, 250);
 
 /* ───────────── game over ───────────── */
+const soloTitle = (over) => over.reason === 'solved' ? 'Solved!' : over.reason === 'solo-done' ? 'Finished!' : over.reason === 'no-solution' ? 'Out of guesses' : 'Time is up';
+
 function describeOver(over) {
   const mine = over.winner === mySeat;
   switch (over.reason) {
+    case 'solo-done': return `You scored ${snap.state.scores[0]} / ${snap.state.rounds}.`;
     case 'three-in-a-row': return 'Three in a row.';
     case 'four-in-a-row': return 'Four in a row.';
     case 'best-of': return mine ? 'You took the match.' : 'They took the match.';
     case 'draw': return 'Nobody could win this one.';
+    case 'solved': return (mine ? 'You cracked it first.' : 'They cracked it first.') + (snap && snap.state.answer ? ' The word was ' + snap.state.answer.toUpperCase() + '.' : '');
+    case 'no-solution': return 'Nobody found it.' + (snap && snap.state.answer ? ' The word was ' + snap.state.answer.toUpperCase() + '.' : '');
+    case 'best-score': return mine ? 'You scored higher.' : 'They scored higher.';
     case 'resignation': return mine ? 'Your opponent resigned.' : 'You resigned.';
     case 'timeout': return mine ? 'Your opponent ran out of time.' : 'You ran out of time.';
     case 'inactivity': return 'Neither player moved in time.';
@@ -788,7 +985,7 @@ function showOver(over, rematch) {
     renderAll();
     clearTimeout(overTimer);
     // Let the player see the winning line / final reveal before the dialog covers the board.
-    const delay = gameType === 'rps' ? 1600 : over.reason === 'resignation' || over.reason === 'timeout' || over.reason === 'disconnect' ? 0 : 800;
+    const delay = ['rps', 'sizeduel', 'guesscountry'].includes(gameType) ? 1600 : over.reason === 'resignation' || over.reason === 'timeout' || over.reason === 'disconnect' ? 0 : 800;
     overTimer = setTimeout(() => modal('overModal', true), delay);
     modal('resignModal', false);
     $('resignBtn').hidden = true;
@@ -796,7 +993,7 @@ function showOver(over, rematch) {
     overNotified = true;
   }
 
-  $('overTitle').textContent = over.winner === null ? "It's a draw" : over.winner === mySeat ? 'You win!' : 'You lose';
+  $('overTitle').textContent = isSolo() ? soloTitle(over) : over.winner === null ? "It's a draw" : over.winner === mySeat ? 'You win!' : 'You lose';
   $('overDesc').textContent = describeOver(over);
 
   const iAsked = !!rematch[mySeat];

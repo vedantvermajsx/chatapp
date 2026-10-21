@@ -12,6 +12,9 @@ lobby/room system, one engine per game.
 | Reversi | `reversi` | 8x8, auto-pass, legal-move hints, 60s per move |
 | Dots and Boxes | `dots` | 4x4 boxes, extra turn on a claimed box, 60s per move |
 | Rock Paper Scissors | `rps` | best of 3 or 5, picks stay hidden until both lock in, 30s per round |
+| Wordle Duel | `wordle` | options `len` 4/5/6, `solo`, 6 tries each, same secret word, first to solve wins, opponent sees only your colours |
+| Size Duel | `sizeduel` | options `metric` area/population, `rounds` 10/25/50/100, `solo`; pick the bigger country, most correct wins |
+| Guess the Country | `guesscountry` | options `mode` flag/capital, `rounds` 10/25/50/100, `solo`; 4-choice, most correct wins |
 
 ## Routes
 
@@ -50,6 +53,8 @@ MINIGAMES_EMBED_ORIGINS=https://app.example.com   # falls back to CHESS_EMBED_OR
 ```
 
 ## Adding a game
+
+Engines may export `optionDefs: [{key,label,values,labels,def}]` — the lobby renders them automatically, and URL params (`?len=4`) preselect. Optional `view().status = {text, mine}` drives the banner; optional `finish(state)` runs when a game ends (used to reveal the Wordle answer).
 
 1. Create `engines/<id>.js` exporting `{ id, label, turnMs, sanitizeOptions, create, view, turnOf, pending, move }`
    (copy `tictactoe.js` — it's ~35 lines). `move` mutates state and returns `{}`, `{ error }`,

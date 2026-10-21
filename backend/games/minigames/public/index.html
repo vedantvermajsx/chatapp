@@ -38,13 +38,7 @@ if (new URLSearchParams(location.search).get('embed') === '1' || window.self !==
     <h1 class="logo"><span id="homeIcon"></span> <span id="homeTitle"></span></h1>
     <p id="homeBlurb" class="subtitle"></p>
 
-    <div id="rpsOptions" class="section" hidden>
-      <label class="section-label">Match length</label>
-      <div class="seg" id="roundsOptions">
-        <button type="button" class="seg-btn selected" data-rounds="3">Best of 3</button>
-        <button type="button" class="seg-btn" data-rounds="5">Best of 5</button>
-      </div>
-    </div>
+    <div id="gameOptions"></div>
 
     <div id="sideOptions" class="section" hidden>
       <label class="section-label">Your piece</label>
