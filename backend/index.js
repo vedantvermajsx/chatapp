@@ -10,6 +10,7 @@ import roomRoutes from './routes/room.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import userRoutes from './routes/user.routes.js';
 import mediaRoutes from './routes/media.routes.js';
+import callRoutes from './routes/call.routes.js';
 import { requestLogger } from './middleware/logger.js';
 import { globalLimiter, authLimiter, messagingLimiter, uploadLimiter } from './middleware/rateLimiter.js';
 import { createChessRouter, setupChessSocket } from './games/chess/index.js';
@@ -64,6 +65,7 @@ app.use('/api/auth', authLimiter, authRoutes); // login/signup: 20 req/5min
 app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/calls', callRoutes);
 app.get('/health', (_, res) => res.status(200).json({ ok: true }));
 
 

@@ -3,6 +3,7 @@ import { disconnectTimers } from './disconnect.event.js';
 import userCacheClient from '../database/userCacheClient.js';
 import roomCacheClient from '../database/roomCacheClient.js';
 import { publish } from '../utils/messageBroker.js';
+import { flushBufferedSignals } from '../utils/callSessions.js';
 
 export default function handleJoin(socket, io) {
   return async (data) => {
@@ -38,6 +39,11 @@ export default function handleJoin(socket, io) {
       username,
       gender
     });
+
+    // Callee just (re)connected: replay any offer/ICE buffered while they were away (e.g. app
+    // woken by the call push). Uses the authenticated socket user, not the client-sent id.
+    const authedId = String(socket.user?._id || socket.user?.id || userId);
+    flushBufferedSignals(socket, authedId);
 
     const lastSeen = new Date();
 
