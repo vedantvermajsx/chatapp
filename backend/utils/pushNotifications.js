@@ -77,10 +77,17 @@ export async function sendPushToUser(userId, { title, body, data = {} } = {}) {
       tokens: registrationTokens,
       notification: { title, body },
       data: stringData,
-      android: { priority: 'high', collapseKey: tag },
+      android: {
+        priority: 'high',
+        collapseKey: tag,
+        // Android plays the sound of the notification CHANNEL. Without channelId the push lands
+        // in FCM's default channel and uses the system sound. 'messages' is created by the app
+        // (firebaseMessaging.service.js -> ensureNotificationChannels) with notification.mp3.
+        notification: { channelId: 'messages', sound: 'notification' },
+      },
       apns: {
         headers: { 'apns-collapse-id': tag },
-        payload: { aps: { sound: 'default' } },
+        payload: { aps: { sound: 'notification.mp3' } },
       },
       webpush: {
         headers: { Urgency: 'high' },
@@ -187,9 +194,7 @@ export async function sendDataPushToUser(userId, data = {}, { ttlSeconds = 60, c
   }
 }
 
-/**
- * Sends the same push notification to multiple users in parallel.
- */
+
 export async function sendPushToUsers(userIds = [], payload) {
   const uniqueIds = [...new Set(userIds.map(String))];
   await Promise.all(uniqueIds.map((id) => sendPushToUser(id, payload)));
