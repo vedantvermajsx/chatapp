@@ -1,26 +1,29 @@
 import { useState, useRef, useCallback } from 'react';
+import apiClient from '../services/api';
 
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-  ],
-};
+const STUN_ONLY = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+const ICE_CACHE_MS = 10 * 60 * 1000;
+let iceCache = null; // { servers, at }
+
+async function loadIceServers() {
+  if (iceCache && Date.now() - iceCache.at < ICE_CACHE_MS) return iceCache.servers;
+  try {
+    const res = await Promise.race([
+      apiClient.get('/calls/ice-servers'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('ice-servers timeout')), 4000)),
+    ]);
+    const servers = res?.data?.iceServers;
+    if (Array.isArray(servers) && servers.length) {
+      iceCache = { servers, at: Date.now() };
+      return servers;
+    }
+  } catch (e) {
+    console.warn('[WebRTC] could not load TURN servers, using STUN only:', e?.message);
+  }
+  return iceCache?.servers || STUN_ONLY;
+}
+
+const buildRtcConfig = async () => ({ iceServers: await loadIceServers() });
 
 export const useWebRTC = (socket) => {
   const [localStream, setLocalStream] = useState(null);
@@ -149,7 +152,7 @@ export const useWebRTC = (socket) => {
     }
   }, [setLocalStreamSynced, detectDeviceCapabilities]);
 
-  const createPeerConnection = useCallback((targetId) => {
+  const createPeerConnection = useCallback((targetId, rtcConfig) => {
     if (peerConnection.current) {
       peerConnection.current.onicecandidate = null;
       peerConnection.current.onconnectionstatechange = null;
@@ -158,7 +161,7 @@ export const useWebRTC = (socket) => {
       peerConnection.current = null;
     }
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const pc = new RTCPeerConnection(rtcConfig);
     activeCallTargetId.current = targetId;
     mainRemoteStreamIdRef.current = null;
     setRemoteScreenStream(null);
@@ -173,7 +176,11 @@ export const useWebRTC = (socket) => {
       }
     };
 
+    pc.oniceconnectionstatechange = () => console.log('[WebRTC] iceConnectionState:', pc.iceConnectionState);
+    pc.onicecandidateerror = (e) => console.warn('[WebRTC] ICE candidate error:', e.url, e.errorCode, e.errorText);
+
     pc.onconnectionstatechange = () => {
+      console.log('[WebRTC] connectionState:', pc.connectionState);
       setConnectionState(pc.connectionState);
       if (pc.connectionState === 'failed') {
         console.warn('[WebRTC] Connection failed, attempting ICE restart...');
@@ -208,7 +215,7 @@ export const useWebRTC = (socket) => {
   }, []);
 
   const createOffer = useCallback(async (targetId, callerData, currentStream = null) => {
-    const pc = createPeerConnection(targetId);
+    const pc = createPeerConnection(targetId, await buildRtcConfig());
     isPoliteRef.current = false;
     const streamToUse = currentStream || localStreamRef.current;
     if (streamToUse) addTracksToConnection(streamToUse);
@@ -222,7 +229,7 @@ export const useWebRTC = (socket) => {
   }, [createPeerConnection, addTracksToConnection]);
 
   const handleOffer = useCallback(async (offer, senderId, currentStream = null) => {
-    const pc = createPeerConnection(senderId);
+    const pc = createPeerConnection(senderId, await buildRtcConfig());
     isPoliteRef.current = true;
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
