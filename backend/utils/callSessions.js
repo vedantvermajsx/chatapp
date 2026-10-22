@@ -1,26 +1,11 @@
 import { randomUUID } from 'crypto';
 import { sendDataPushToUser } from './pushNotifications.js';
 
-/**
- * Pending-call state.
- *
- * FCM payloads are far too small for an SDP, so the push only *wakes* the callee's
- * device. The offer and the caller's ICE candidates are held here for 45 seconds and
- * flushed to the callee as soon as their socket joins.
- *
- * Every backend instance keeps its own copy of this state. The origin instance (the one
- * the caller's socket is on) calls processSignal(payload) and owns the side effects
- * (pushes). Other instances receive the same signal through the broker and call
- * processSignal(payload, { mirror: true }), so the buffer exists wherever the callee
- * happens to connect, but only one instance ever sends a push.
- */
-
 export const CALL_BUFFER_TTL_MS = 45 * 1000;
 const MAX_BUFFERED_SIGNALS = 150;
 const CALL_PUSH_TTL_SECONDS = 45;
 const CANCEL_PUSH_TTL_SECONDS = 60;
 
-// Signal `type` values sent by the clients. Adjust here if the app uses different names.
 const OFFER_TYPE = 'offer';
 const ANSWER_TYPE = 'answer';
 const END_TYPES = new Set([
@@ -39,7 +24,6 @@ const END_TYPES = new Set([
 ]);
 const isIceType = (t) => t.includes('ice') || t.includes('candidate');
 
-// key = `${callerId}:${calleeId}` -> session
 const sessions = new Map();
 
 const keyOf = (callerId, calleeId) => `${callerId}:${calleeId}`;
@@ -61,6 +45,7 @@ function pushCancel(session, reason) {
       type: 'call-cancel',
       callId: session.callId,
       senderId: session.callerId,
+      callerName: session.callerName,
       reason,
     },
     { ttlSeconds: CANCEL_PUSH_TTL_SECONDS, collapseKey: `call_${session.callerId}` }
@@ -167,10 +152,6 @@ export function processSignal(payload, { mirror = false } = {}) {
   }
 }
 
-/**
- * Deliver everything buffered for `userId` (the callee) to this socket, in order.
- * Each pending call is replayed at most once per instance.
- */
 export function flushBufferedSignals(socket, userId) {
   const calleeId = String(userId || '');
   if (!calleeId) return 0;
@@ -188,7 +169,6 @@ export function flushBufferedSignals(socket, userId) {
   return delivered;
 }
 
-/** The ringing (unanswered) call from callerId to calleeId, if any. */
 export function getPendingCall(callerId, calleeId) {
   const session = sessions.get(keyOf(String(callerId), String(calleeId)));
   return session ? { callId: session.callId, callerId: session.callerId, calleeId: session.calleeId } : null;

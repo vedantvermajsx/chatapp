@@ -80,9 +80,6 @@ export async function sendPushToUser(userId, { title, body, data = {} } = {}) {
       android: {
         priority: 'high',
         collapseKey: tag,
-        // Android plays the sound of the notification CHANNEL. Without channelId the push lands
-        // in FCM's default channel and uses the system sound. 'messages' is created by the app
-        // (firebaseMessaging.service.js -> ensureNotificationChannels) with notification.mp3.
         notification: { channelId: 'messages', sound: 'notification' },
       },
       apns: {
@@ -149,7 +146,6 @@ export async function sendDataPushToUser(userId, data = {}, { ttlSeconds = 60, c
 
   const stringData = toStringMap(data);
   const tag = collapseKey || collapseTag(stringData);
-  // apns-collapse-id is limited to 64 bytes
   const apnsCollapseId = tag.slice(0, 64);
 
   try {
@@ -193,6 +189,7 @@ export async function sendDataPushToUser(userId, data = {}, { ttlSeconds = 60, c
     console.error('[push] data sendEachForMulticast error:', err.message);
   }
 }
+
 
 
 export async function sendPushToUsers(userIds = [], payload) {
