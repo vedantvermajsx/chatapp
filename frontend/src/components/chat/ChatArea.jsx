@@ -590,6 +590,7 @@ const ChatArea = memo(function ChatArea({
         onClose={() => setShowMembersModal(false)}
         members={roomMembers}
         admin={currentRoom?.groupAdmin}
+        roomId={currentRoom?._id}
         onStartPrivateChat={onStartPrivateChat}
         currentUserId={user._id || user.id}
         loading={loadingRoomMembers}

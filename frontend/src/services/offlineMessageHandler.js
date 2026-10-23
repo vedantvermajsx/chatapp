@@ -246,6 +246,13 @@ export const sendPendingMessages = async () => {
         if (pendingMsg.mediaId) await dbService.removeFile(pendingMsg.mediaId);
       } catch (error) {
         if (isUploadCancelled(tempId)) continue;
+        if (error?.response?.status === 403) {
+          await dbService.removeMessage(cacheKey, tempId);
+          await dbService.removePendingMessage(tempId);
+          if (pendingMsg.mediaId) await dbService.removeFile(pendingMsg.mediaId);
+          toast.error(error.response?.data?.message || 'Message could not be sent');
+          continue;
+        }
         console.error('Failed to send pending message:', error);
       }
     }

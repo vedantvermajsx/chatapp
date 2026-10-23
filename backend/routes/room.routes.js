@@ -9,6 +9,7 @@ import { getRoomMembers } from '../controllers/room/getRoomMembers.controller.js
 import { updateRoom } from '../controllers/room/updateRoom.controller.js';
 import { deleteRoom } from '../controllers/room/deleteRoom.controller.js';
 import { leaveRoom } from '../controllers/room/leaveRoom.controller.js';
+import { blockRoomUser, unblockRoomUser, getRoomBlockedUsers } from '../controllers/room/roomBlock.controller.js';
 
 const router = Router();
 
@@ -19,6 +20,9 @@ router.get('/', authenticate, getRooms);
 router.post('/create', authenticate, createRoom);
 router.post('/join', authenticate, joinRoom);
 router.post('/leave', authenticate, leaveRoom);
+router.get('/:roomId/blocked', authenticate, getRoomBlockedUsers);
+router.post('/:roomId/block/:userId', authenticate, blockRoomUser);
+router.delete('/:roomId/block/:userId', authenticate, unblockRoomUser);
 router.get('/:roomId/members', authenticate, getRoomMembers);
 router.put('/:roomId', authenticate, updateRoom);
 router.delete('/:roomId', authenticate, deleteRoom);

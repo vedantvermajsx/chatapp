@@ -6,6 +6,8 @@ import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { compact } from '../../utils/compact.js';
 import { resolveReplyTo } from '../../utils/resolveReplyTo.js';
+import { isBlockedBetween } from '../../utils/blockService.js';
+import { getClientIp } from '../../utils/clientIp.js';
 
 export async function sendPrivateMessage(req, res) {
   try {
@@ -19,6 +21,10 @@ export async function sendPrivateMessage(req, res) {
 
     if (String(sender._id) === String(receiverId)) {
       return res.status(400).json({ message: 'Cannot send message to yourself' });
+    }
+
+    if (await isBlockedBetween(sender._id, receiverId, getClientIp(req))) {
+      return res.status(403).json({ message: 'You cannot message this user' });
     }
 
     const _id = new mongoose.Types.ObjectId().toString();

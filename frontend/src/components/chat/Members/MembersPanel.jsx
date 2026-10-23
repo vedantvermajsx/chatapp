@@ -1,4 +1,6 @@
 import { X, Users, Search } from 'lucide-react';
+import { toast } from 'sonner';
+import roomService from '../../../services/room.service';
 import LoaderMini from '../../common/Loader';
 import Member from './Member';
 import MemberSkeleton from './MemberSkeleton';
@@ -7,12 +9,40 @@ import { memo, useState, useEffect, useRef, useCallback } from 'react';
 
 const MembersPanel = memo(function MembersPanel({
   show, onClose, members, admin, onStartPrivateChat, currentUserId, loading,
-  hasMoreMembers, loadMoreRoomMembers, loadRoomMembers
+  hasMoreMembers, loadMoreRoomMembers, loadRoomMembers, roomId
 }) {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const isLight = theme.background === '#e6e6e6' || theme.background === '#e0f7fa' || theme.background === '#fff3e0' || theme.background === '#e8f5e9' || theme.background === '#f3e5f5' || theme.background === '#fce4ec';
   const scrollRef = useRef(null);
+  const canBlock = !!admin && String(admin) === String(currentUserId);
+  const [blockedIds, setBlockedIds] = useState(() => new Set());
+
+  useEffect(() => {
+    if (!show || !canBlock || !roomId) return;
+    let cancelled = false;
+    roomService.getRoomBlockedUsers(roomId)
+      .then((list) => { if (!cancelled) setBlockedIds(new Set(list.map((b) => String(b.userId)))); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [show, canBlock, roomId]);
+
+  const handleToggleBlock = useCallback(async (userId) => {
+    const id = String(userId);
+    const wasBlocked = blockedIds.has(id);
+    try {
+      if (wasBlocked) await roomService.unblockRoomUser(roomId, id);
+      else await roomService.blockRoomUser(roomId, id);
+      setBlockedIds((prev) => {
+        const next = new Set(prev);
+        if (wasBlocked) next.delete(id); else next.add(id);
+        return next;
+      });
+      toast.success(wasBlocked ? 'User unblocked' : 'User blocked from messaging');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Action failed');
+    }
+  }, [blockedIds, roomId]);
 
   useEffect(() => {
     if (!show) return;
@@ -125,6 +155,9 @@ const MembersPanel = memo(function MembersPanel({
                         member={member}
                         currentUserId={currentUserId}
                         onStartPrivateChat={onStartPrivateChat}
+                        canBlock={canBlock}
+                        isBlocked={blockedIds.has(String(member._id))}
+                        onToggleBlock={handleToggleBlock}
                         isOnline={true}
                       />
                     ))}
@@ -144,6 +177,9 @@ const MembersPanel = memo(function MembersPanel({
                         member={member}
                         currentUserId={currentUserId}
                         onStartPrivateChat={onStartPrivateChat}
+                        canBlock={canBlock}
+                        isBlocked={blockedIds.has(String(member._id))}
+                        onToggleBlock={handleToggleBlock}
                         isOnline={false}
                       />
                     ))}

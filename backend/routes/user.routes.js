@@ -8,7 +8,7 @@ import { searchUsers } from '../controllers/user/searchUsers.controller.js';
 import { getUserProfile } from '../controllers/user/getUserProfile.controller.js';
 import { registerDeviceToken } from '../controllers/user/registerDeviceToken.controller.js';
 import { removeDeviceToken } from '../controllers/user/removeDeviceToken.controller.js';
-
+import { blockUser, unblockUser, getBlockedUsers } from '../controllers/user/block.controller.js';
 
 const router = Router();
 
@@ -19,6 +19,9 @@ router.get('/search', authenticate, searchUsers);
 router.get('/activity-status', authenticate, getActivityStatus);
 router.post('/device-token', authenticate, registerDeviceToken);
 router.delete('/device-token', authenticate, removeDeviceToken);
+router.get('/blocked', authenticate, getBlockedUsers);
+router.post('/:userId/block', authenticate, blockUser);
+router.delete('/:userId/block', authenticate, unblockUser);
 router.get('/:userId/profile', authenticate, getUserProfile);
 router.delete('/:userId', authenticate, deleteUser);
 

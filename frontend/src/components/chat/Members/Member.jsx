@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Ban } from 'lucide-react';
 import Admin from './Admin';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -16,6 +16,9 @@ const Member = memo(function Member({
     currentUserId,
     onStartPrivateChat,
     isOnline,
+    canBlock,
+    isBlocked,
+    onToggleBlock,
 }) {
     const { theme } = useTheme();
     const { getShadow, getNeumorphicProps } = useNeumorphism();
@@ -49,6 +52,20 @@ const Member = memo(function Member({
                     {member.age ? ` • ${member.age} years old` : ''}
                 </p>
             </div>
+
+            {canBlock && member._id !== currentUserId && (
+                <button
+                    onClick={() => onToggleBlock(member._id)}
+                    className="p-2 rounded-full transition-all"
+                    {...getNeumorphicProps(1, 1, 1, 2)}
+                    title={isBlocked ? 'Unblock from messaging' : 'Block from messaging'}
+                >
+                    <Ban
+                        className="w-5 h-5"
+                        style={{ color: isBlocked ? '#ef4444' : theme.otherUsernameColor }}
+                    />
+                </button>
+            )}
 
             {member._id !== currentUserId && (
                 <button

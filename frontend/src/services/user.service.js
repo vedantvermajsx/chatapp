@@ -32,6 +32,21 @@ class UserService {
     return response.data?.user;
   }
 
+  async blockUser(userId) {
+    const response = await api.post(`${this.basePath}/${userId}/block`);
+    return response.data;
+  }
+
+  async unblockUser(userId) {
+    const response = await api.delete(`${this.basePath}/${userId}/block`);
+    return response.data;
+  }
+
+  async getBlockedUsers() {
+    const response = await api.get(`${this.basePath}/blocked`);
+    return response.data?.blocked || [];
+  }
+
   async searchUsers(query, limit = 5) {
     const response = await api.get(`${this.basePath}/search`, {
       params: { q: query, limit }

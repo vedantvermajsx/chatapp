@@ -29,3 +29,23 @@ export function enqueueRoomMemberJoined(roomId, userId) {
 export function enqueueRoomMemberLeft(roomId, userId) {
   publish('room.member.left', { roomId, userId });
 }
+
+export function enqueueUserIp(data) {
+  publish('user.ip.recorded', data);
+}
+
+export function enqueueUserBlocked(data) {
+  publish('user.blocked', data);
+}
+
+export function enqueueUserUnblocked(data) {
+  publish('user.unblocked', data);
+}
+
+export function enqueueRoomUserBlocked(data) {
+  publish('room.user.blocked', data);
+}
+
+export function enqueueRoomUserUnblocked(data) {
+  publish('room.user.unblocked', data);
+}

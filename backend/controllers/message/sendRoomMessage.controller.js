@@ -7,6 +7,8 @@ import { onlineUsers } from '../../socket.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { compact } from '../../utils/compact.js';
 import { resolveReplyTo } from '../../utils/resolveReplyTo.js';
+import { isBlockedInRoom } from '../../utils/blockService.js';
+import { getClientIp } from '../../utils/clientIp.js';
 
 export async function sendRoomMessage(req, res) {
   try {
@@ -18,6 +20,11 @@ export async function sendRoomMessage(req, res) {
 
 
     const sender = req.user;
+
+    if (await isBlockedInRoom(roomId, sender._id, getClientIp(req))) {
+      return res.status(403).json({ message: 'You are blocked from messaging in this group' });
+    }
+
     const _id = new mongoose.Types.ObjectId().toString();
     const content = xss(message || '');
     const timestamp = new Date();

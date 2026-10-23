@@ -7,6 +7,7 @@ import roomService from '../../../services/room.service';
 import messageService from '../../../services/message.service';
 import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
+import BlockedUsersList from './BlockedUsersList';
 
 const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
   const { theme } = useTheme();
@@ -154,6 +155,12 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
                 required
               />
             </div>
+
+            <BlockedUsersList
+              label="Blocked from messaging"
+              load={() => roomService.getRoomBlockedUsers(room._id)}
+              onUnblock={(id) => roomService.unblockRoomUser(room._id, id)}
+            />
 
           </form>
         </div>

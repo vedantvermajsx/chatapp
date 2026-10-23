@@ -78,6 +78,21 @@ class RoomService {
     return response.data;
   }
 
+  async blockRoomUser(roomId, userId) {
+    const response = await api.post(`${this.basePath}/${roomId}/block/${userId}`);
+    return response.data;
+  }
+
+  async unblockRoomUser(roomId, userId) {
+    const response = await api.delete(`${this.basePath}/${roomId}/block/${userId}`);
+    return response.data;
+  }
+
+  async getRoomBlockedUsers(roomId) {
+    const response = await api.get(`${this.basePath}/${roomId}/blocked`);
+    return response.data?.blocked || [];
+  }
+
   async updateRoom(roomId, roomData) {
     const response = await api.put(`${this.basePath}/${roomId}`, roomData);
     return response.data;

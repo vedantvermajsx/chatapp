@@ -11,6 +11,13 @@ import { handleRoomDeleted } from './processors/room/handleRoomDeleted.js';
 import { handlePrivateUnread } from './processors/notification/handlePrivateUnread.js';
 import { handleRoomLastRead } from './processors/notification/handleRoomLastRead.js';
 import { handlePrivateLastRead } from './processors/notification/handlePrivateLastRead.js';
+import {
+  handleIpRecorded,
+  handleUserBlocked,
+  handleUserUnblocked,
+  handleRoomUserBlocked,
+  handleRoomUserUnblocked,
+} from './processors/block/blockProcessor.js';
 import { connectToBroker, subscribe, on } from './broker.js';
 import { connectDB } from './database/db.js';
 import { createAdminServer } from './adminServer.js';
@@ -81,6 +88,21 @@ const notificationQueue = new BatchQueue({
   },
 });
 
+const blockQueue = new BatchQueue({
+  name: 'blockQueue',
+  batchSize: 1,
+  flushInterval: 100,
+  maxSize: 10000,
+  processBatch: async ([item]) => {
+    const { _eventType, ...payload } = item;
+    if (_eventType === 'user.ip.recorded') return handleIpRecorded(payload);
+    if (_eventType === 'user.blocked') return handleUserBlocked(payload);
+    if (_eventType === 'user.unblocked') return handleUserUnblocked(payload);
+    if (_eventType === 'room.user.blocked') return handleRoomUserBlocked(payload);
+    if (_eventType === 'room.user.unblocked') return handleRoomUserUnblocked(payload);
+  },
+});
+
 async function start() {
   await connectDB();
   connectToBroker();
@@ -128,6 +150,11 @@ async function start() {
 
   //console.log('[NotificationProcessor] subscribed to notification.* channels');
 
+  for (const channel of ['user.ip.recorded', 'user.blocked', 'user.unblocked', 'room.user.blocked', 'room.user.unblocked']) {
+    subscribe(channel);
+    on(channel, (data) => blockQueue.add({ _eventType: channel, ...data }));
+  }
+
   startRoomMemberReconciler();
 
   createAdminServer({
@@ -139,6 +166,7 @@ async function start() {
       presenceQueue: presenceQueue.getStats(),
       roomQueue: roomQueue.getStats(),
       notificationQueue: notificationQueue.getStats(),
+      blockQueue: blockQueue.getStats(),
     }),
   });
 
@@ -151,7 +179,7 @@ start().catch((err) => {
 
 async function shutdown(signal) {
   console.log(`[QueueService] ${signal} received, draining queues`);
-  const queues = [messageQueue, userQueue, guestQueue, presenceQueue, roomQueue, notificationQueue];
+  const queues = [messageQueue, userQueue, guestQueue, presenceQueue, roomQueue, notificationQueue, blockQueue];
   await Promise.allSettled(queues.map((q) => q.drain(10000)));
   console.log('[QueueService] shutting down');
   process.exit(0);

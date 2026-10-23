@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Ban } from 'lucide-react';
+import { toast } from 'sonner';
 import Avatar from '../../common/Avatar';
 import Spinner from '../../common/Spinner';
 import userService from '../../../services/user.service';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const genderLabel = (g) => ['Male', 'Female', 'Other'][g] || 'Unknown';
 
@@ -15,6 +17,38 @@ const UserProfileModal = ({ userId, fallback, onClose }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { user: me } = useAuth();
+  const isSelf = String(me?._id || me?.id) === String(userId);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockBusy, setBlockBusy] = useState(false);
+
+  useEffect(() => {
+    if (!userId || isSelf) return;
+    let cancelled = false;
+    userService.getBlockedUsers()
+      .then((list) => { if (!cancelled) setIsBlocked(list.some((b) => String(b.userId) === String(userId))); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [userId, isSelf]);
+
+  const toggleBlock = async () => {
+    setBlockBusy(true);
+    try {
+      if (isBlocked) {
+        await userService.unblockUser(userId);
+        setIsBlocked(false);
+        toast.success('User unblocked');
+      } else {
+        await userService.blockUser(userId);
+        setIsBlocked(true);
+        toast.success('User blocked');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Action failed');
+    } finally {
+      setBlockBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -69,6 +103,20 @@ const UserProfileModal = ({ userId, fallback, onClose }) => {
             </div>
           )}
         </div>
+
+        {!isSelf && (
+          <div className="p-4 border-t" style={{ borderColor: border }}>
+            <button
+              onClick={toggleBlock}
+              disabled={blockBusy}
+              className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ color: isBlocked ? theme.otherMessageText : '#ef4444' }}
+            >
+              <Ban className="w-4 h-4" />
+              {isBlocked ? 'Unblock user' : 'Block user'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

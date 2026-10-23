@@ -1,5 +1,6 @@
 import { publish, INSTANCE_ID } from '../../utils/messageBroker.js';
 import { processSignal } from '../../utils/callSessions.js';
+import { isBlockedBetween } from '../../utils/blockService.js';
 
 const handleWebrtcSignal = (socket, io) => async (payload) => {
   try {
@@ -7,6 +8,10 @@ const handleWebrtcSignal = (socket, io) => async (payload) => {
     const senderId = String(socket.user._id || socket.user.id);
 
     if (!targetId || !type) {
+      return;
+    }
+
+    if (type === 'offer' && await isBlockedBetween(senderId, targetId)) {
       return;
     }
 

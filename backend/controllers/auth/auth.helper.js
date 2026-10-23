@@ -1,5 +1,6 @@
 import { signToken } from '../../utils/tokenGenerator.js';
 import userCacheClient from '../../database/userCacheClient.js';
+import { recordUserIp } from '../../utils/blockService.js';
 
 export async function handleAuthSuccess(res, userDocument, role, privateKey = null) {
   const isGuest = role === 'guest';
@@ -33,6 +34,7 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
   };
 
   await userCacheClient.seedUser(cacheProfile);
+  await recordUserIp(res.req, userData._id, userData.username);
 
   const token = signToken({
     _id: userDocument._id,

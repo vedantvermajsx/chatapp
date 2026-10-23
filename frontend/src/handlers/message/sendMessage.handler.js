@@ -305,6 +305,20 @@ export const sendMessageHandler = async (
       }
     } catch (error) {
       if (isUploadCancelled(tempId)) return;
+      if (error?.response?.status === 403) {
+        const blockedKey = currentRoom ? `room_${currentRoom._id}` : `private_${currentPrivateChat?.id}`;
+        setMessages((prev) => prev.filter((m) => (m.id || m._id) !== tempId));
+        if (messageCache.current[blockedKey]) {
+          messageCache.current[blockedKey] = {
+            ...messageCache.current[blockedKey],
+            messages: messageCache.current[blockedKey].messages.filter((m) => (m.id || m._id) !== tempId)
+          };
+        }
+        await dbService.removeMessage(blockedKey, tempId);
+        await dbService.removePendingMessage(tempId);
+        if (selectedFile) await dbService.removeFile(tempId);
+        return;
+      }
       console.error('Failed to send message immediately:', error);
     }
   })();

@@ -8,6 +8,7 @@ import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import authService from '../../../services/auth.service';
 import { useNotifications } from '../../../hooks/useNotifications';
+import BlockedUsersList from './BlockedUsersList';
 
 const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   const { theme } = useTheme();
@@ -251,6 +252,11 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 )}
               </button>
             </div>
+
+            <BlockedUsersList
+              load={() => userService.getBlockedUsers()}
+              onUnblock={(id) => userService.unblockUser(id)}
+            />
 
           </form>
         </div>
