@@ -79,12 +79,12 @@ chatnow/
 git clone &lt;repo-url&gt;
 cd chatnow
 npm install
-cd frontend &amp;&amp; npm install &amp;&amp; cd ..
-cd backend &amp;&amp; npm install &amp;&amp; cd ..
-cd cacheService &amp;&amp; npm install &amp;&amp; cd ..
-cd queueService &amp;&amp; npm install &amp;&amp; cd ..
-cd messagebroker &amp;&amp; npm install &amp;&amp; cd ..
-cd loadBalancer &amp;&amp; npm install &amp;&amp; cd ..
+cd frontend; npm install; cd ..
+cd backend;  npm install; cd ..
+cd cacheService; npm install; cd ..
+cd queueService; npm install; cd ..
+cd messagebroker; npm install; cd ..
+cd loadBalancer; npm install; cd ..
 ```
 
 2. Configure environment variables for each service. Create `.env` files in each service directory:
