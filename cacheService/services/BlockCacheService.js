@@ -1,6 +1,7 @@
 import UserIp from '../models/userIp.model.js';
 import Block from '../models/block.model.js';
 import RoomBlock from '../models/roomBlock.model.js';
+import Ban from '../models/ban.model.js';
 
 const TTL_MS = 30 * 1000;
 const SWEEP_INTERVAL_MS = 60 * 1000;
@@ -118,6 +119,49 @@ const toList = (blocks) => [...blocks].map(([userId, b]) => ({ userId, username:
 const listUserBlocks = async (blockerId) => toList(await loadUserBlocks(String(blockerId)));
 const listRoomBlocks = async (roomId) => toList(await loadRoomBlocks(String(roomId)));
 
+const loadBans = () =>
+  load('bans:all', async () => {
+    const docs = await Ban.find({}, 'userId username reason expiresAt').lean();
+    return docs.map(d => ({
+      userId: String(d.userId),
+      username: d.username,
+      reason: d.reason || '',
+      expiresAt: d.expiresAt ? new Date(d.expiresAt).getTime() : null,
+    }));
+  });
+
+const isActive = (ban) => !ban.expiresAt || ban.expiresAt > Date.now();
+
+async function getBan(userId) {
+  const id = userId ? String(userId) : null;
+  if (!id) return null;
+  const bans = await loadBans();
+  for (const ban of bans) {
+    if (!isActive(ban)) continue;
+    if (ban.userId === id) return ban;
+  }
+  return null;
+}
+
+async function addBan({ userId, username, reason = '', expiresAt = null }) {
+  const bans = await loadBans();
+  const next = bans.filter(b => b.userId !== String(userId));
+  next.push({
+    userId: String(userId),
+    username,
+    reason,
+    expiresAt: expiresAt ? new Date(expiresAt).getTime() : null,
+  });
+  putEntry('bans:all', next);
+}
+
+async function removeBan(userId) {
+  const bans = await loadBans();
+  putEntry('bans:all', bans.filter(b => b.userId !== String(userId)));
+}
+
+const listBans = async () => (await loadBans()).filter(isActive);
+
 const sweepTimer = setInterval(() => {
   const now = Date.now();
   for (const [k, e] of store) if (e.expiresAt <= now) store.delete(k);
@@ -135,4 +179,8 @@ export default {
   removeRoomBlock,
   listUserBlocks,
   listRoomBlocks,
+  getBan,
+  addBan,
+  removeBan,
+  listBans,
 };

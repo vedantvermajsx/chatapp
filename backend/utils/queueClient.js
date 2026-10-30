@@ -49,3 +49,11 @@ export function enqueueRoomUserBlocked(data) {
 export function enqueueRoomUserUnblocked(data) {
   publish('room.user.unblocked', data);
 }
+
+export function enqueueUserBanned(data) {
+  publish('user.banned', data);
+}
+
+export function enqueueUserUnbanned(data) {
+  publish('user.unbanned', data);
+}

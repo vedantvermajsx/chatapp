@@ -7,7 +7,8 @@ import { onlineUsers } from '../../socket.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { compact } from '../../utils/compact.js';
 import { resolveReplyTo } from '../../utils/resolveReplyTo.js';
-import { isBlockedInRoom } from '../../utils/blockService.js';
+import { isBlockedInRoom } from '../../utils/block/isBlockedInRoom.js';
+import { getActiveBan } from '../../utils/block/getActiveBan.js';
 import { getClientIp } from '../../utils/clientIp.js';
 
 export async function sendRoomMessage(req, res) {
@@ -21,7 +22,13 @@ export async function sendRoomMessage(req, res) {
 
     const sender = req.user;
 
-    if (await isBlockedInRoom(roomId, sender._id, getClientIp(req))) {
+    const senderIp = getClientIp(req);
+
+    if (getActiveBan(sender._id, senderIp)) {
+      return res.status(403).json({ message: 'You are blocked from sending messages' });
+    }
+
+    if (await isBlockedInRoom(roomId, sender._id, senderIp)) {
       return res.status(403).json({ message: 'You are blocked from messaging in this group' });
     }
 

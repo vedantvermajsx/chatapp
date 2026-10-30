@@ -1,7 +1,7 @@
 import roomCacheClient from '../../database/roomCacheClient.js';
 import userCacheClient from '../../database/userCacheClient.js';
 import blockCacheClient from '../../database/blockCacheClient.js';
-import { getIpsForUser } from '../../utils/blockService.js';
+import { getIpsForUser } from '../../utils/block/getIpsForUser.js';
 import { enqueueRoomUserBlocked, enqueueRoomUserUnblocked } from '../../utils/queueClient.js';
 
 async function getRoomIfAdmin(req, res) {

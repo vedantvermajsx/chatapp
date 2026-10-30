@@ -1,6 +1,7 @@
 import { signToken } from '../../utils/tokenGenerator.js';
 import userCacheClient from '../../database/userCacheClient.js';
-import { recordUserIp } from '../../utils/blockService.js';
+import { recordUserIp } from '../../utils/block/recordUserIp.js';
+import { getActiveBan } from '../../utils/block/getActiveBan.js';
 import { isAdminUser } from '../../middleware/admin.middleware.js';
 
 export async function handleAuthSuccess(res, userDocument, role, privateKey = null) {
@@ -65,6 +66,11 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
     token,
     user: cacheProfile,
   };
+
+  const ban = getActiveBan(userDocument._id);
+  if (ban) {
+    response.ban = { reason: ban.reason || '', expiresAt: ban.expiresAt };
+  }
 
   if (privateKey) {
     response.privateKey = privateKey;

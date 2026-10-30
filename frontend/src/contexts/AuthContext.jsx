@@ -9,6 +9,14 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [ban, setBan] = useState(() => {
+    try {
+      const raw = localStorage.getItem('ban');
+      return raw && raw !== 'undefined' ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +46,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
+      const banInfo = res.ban?.expiresAt ? res.ban : null;
+      setBan(banInfo);
+      if (banInfo) localStorage.setItem('ban', JSON.stringify(banInfo));
+      else localStorage.removeItem('ban');
       if (res.privateKey) await keyManager.setSelfPrivateKey(res.user._id, res.privateKey);
       return { success: true };
     } catch (error) {
@@ -77,8 +89,10 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('ban');
     resetOfflineHandler();
     setUser(null);
+    setBan(null);
     await keyManager.clear();
     try {
       await dbService.clearAllData();
@@ -99,8 +113,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, register, guestLogin, logout, updateUser }),
-    [user, loading, login, register, guestLogin, logout, updateUser]
+    () => ({ user, ban, loading, login, register, guestLogin, logout, updateUser }),
+    [user, ban, loading, login, register, guestLogin, logout, updateUser]
   );
 
   return (

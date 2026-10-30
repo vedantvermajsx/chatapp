@@ -26,6 +26,7 @@ const MessageList = ({
   isFetchingOlder,
   onReplyClick,
   onReplyQuoteClick,
+  onReportClick,
 }) => {
   const { theme } = useTheme();
   const observerRef = useRef(null);
@@ -212,6 +213,7 @@ const MessageList = ({
                     isTagged={msg.taggedUser && currentUser && (msg.taggedUser === currentUser._id || msg.taggedUser === currentUser.id)}
                     onReplyClick={onReplyClick}
                     onReplyQuoteClick={onReplyQuoteClick}
+                    onReportClick={onReportClick}
                   />
                 </SwipeToReply>
               }

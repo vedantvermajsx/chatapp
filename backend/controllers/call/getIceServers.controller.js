@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { getActiveBan } from '../../utils/block/getActiveBan.js';
+import { getClientIp } from '../../utils/clientIp.js';
 
 const EXPIRY_SECONDS = 6 * 60 * 60;
 const REFRESH_AFTER_MS = 2 * 60 * 60 * 1000;
@@ -51,6 +53,9 @@ ensureFresh();
 setInterval(ensureFresh, 60 * 1000).unref?.();
 
 export async function getIceServers(req, res) {
+  if (getActiveBan(String(req.user._id), getClientIp(req))) {
+    return res.status(403).json({ success: false, message: 'You are blocked from calls' });
+  }
   ensureFresh();
   res.set('Cache-Control', 'no-store');
   return res.status(200).json({ iceServers: current?.servers || [] });

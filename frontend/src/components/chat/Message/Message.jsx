@@ -1,5 +1,5 @@
 import { memo, useRef, useState, useCallback } from 'react';
-import { Reply, CornerUpRight, Copy, Check } from 'lucide-react';
+import { Reply, CornerUpRight, Copy, Check, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import LoaderMini from '../../common/Loader';
 import Avatar from '../../common/Avatar';
@@ -27,7 +27,7 @@ const copyText = async (text) => {
   }
 };
 
-const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false, progress = 0, isTagged = false, grouped = false, onReplyClick, onReplyQuoteClick }) {
+const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender = null, isOnline, lastSeen, isPrivateChat = false, progress = 0, isTagged = false, grouped = false, onReplyClick, onReplyQuoteClick, onReportClick }) {
   const { theme } = useTheme();
   const [copied, setCopied] = useState(false);
   const pressTimer = useRef(null);
@@ -184,6 +184,17 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
           >
             <Reply className="w-4 h-4" style={{ color: outerMuted }} aria-hidden="true" />
           </button>
+          {!isOwn && (
+            <button
+              type="button"
+              onClick={() => onReportClick?.(msg)}
+              className="p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+              aria-label="Report message"
+              title="Report"
+            >
+              <Flag className="w-4 h-4" style={{ color: outerMuted }} aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
     </article>

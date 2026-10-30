@@ -4,6 +4,7 @@ import ChatHeader from './ChatHeader';
 import MessageList from './Message/MessageList';
 import ChatInput from './ChatInput/ChatInput';
 import { ImageZoomModal } from './Modals/ImageZoomModal';
+import ReportMessageModal from './Modals/ReportMessageModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import { dbService } from '../../services/indexedDB.service.js';
 import messageService from '../../services/message.service.js';
@@ -78,6 +79,7 @@ const ChatArea = memo(function ChatArea({
   const [zoomImageUrl, setZoomImageUrl] = useState(null);
   const [zoomMedia, setZoomMedia] = useState(null);
   const [zoomMediaType, setZoomMediaType] = useState(null);
+  const [reportMessage, setReportMessage] = useState(null);
   const [containerHeight, setContainerHeight] = useState(null);
   const [offsetTop, setOffsetTop] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(64);
@@ -446,6 +448,10 @@ const ChatArea = memo(function ChatArea({
     chatInputRef.current?.focus?.();
   }, [setReplyingTo]);
 
+  const handleReportClick = useCallback((msg) => {
+    setReportMessage(msg);
+  }, []);
+
   const handleJumpToReply = useCallback((replyTo) => {
     if (!replyTo?.messageId) return;
     const el = messagesContainerRef.current?.querySelector(`[data-msg-id="${replyTo.messageId}"]`);
@@ -538,6 +544,7 @@ const ChatArea = memo(function ChatArea({
           isFetchingOlder={isFetchingOlder}
           onReplyClick={handleReplyClick}
           onReplyQuoteClick={handleJumpToReply}
+          onReportClick={handleReportClick}
         />
 
         {showNewMsgBanner && (
@@ -606,6 +613,14 @@ const ChatArea = memo(function ChatArea({
         mediaType={zoomMediaType}
         onClose={() => { setZoomImageUrl(null); setZoomMedia(null); setZoomMediaType(null); }}
       />
+
+      {reportMessage && (
+        <ReportMessageModal
+          message={reportMessage}
+          roomId={currentRoom?._id || currentRoom?.id || null}
+          onClose={() => setReportMessage(null)}
+        />
+      )}
     </div >
   );
 });

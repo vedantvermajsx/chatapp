@@ -1,21 +1,18 @@
 import { getIO } from '../../socket.js';
 import { publish, INSTANCE_ID } from '../../utils/messageBroker.js';
 import { getPendingCall, processSignal } from '../../utils/callSessions.js';
+import { getActiveBan } from '../../utils/block/getActiveBan.js';
+import { getClientIp } from '../../utils/clientIp.js';
 
-/**
- * POST /api/calls/reject   (auth required: the authenticated user is the callee)
- * body: { callerId: string, callId?: string }
- *
- * Lets the app decline a call over HTTP when it was woken by the push and has no socket
- * yet (e.g. "Decline" tapped on the notification). Tells the caller's client the call was
- * rejected and sends a `call-cancel` push so the callee's other devices stop ringing.
- * Idempotent: a repeat or late reject is a no-op for the push.
- */
 export async function rejectCall(req, res) {
   try {
     const calleeId = String(req.user._id);
     const callerId = String(req.body?.callerId || req.body?.senderId || '');
     const callId = typeof req.body?.callId === 'string' ? req.body.callId : undefined;
+
+    if (getActiveBan(calleeId, getClientIp(req))) {
+      return res.status(403).json({ success: false, message: 'You are blocked from calls' });
+    }
 
     if (!callerId || callerId.length > 64) {
       return res.status(400).json({ success: false, message: 'callerId is required' });
@@ -43,7 +40,6 @@ export async function rejectCall(req, res) {
       origin: INSTANCE_ID,
     };
 
-    // Clears the buffer and sends the call-cancel push to the callee's devices.
     processSignal(payload);
 
     const io = getIO();

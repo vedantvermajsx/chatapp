@@ -9,6 +9,7 @@ import PageLoader from './components/common/PageLoader';
 import NotFound from './components/common/NotFound';
 import CookieConsent from './components/common/CookieConsent';
 import PushBridge from './components/common/PushBridge';
+import BanBanner from './components/common/BanBanner';
 
 const Login = lazy(() => import('./components/auth/Login'));
 const Chat = lazy(() => import('./components/Chat'));
@@ -92,6 +93,7 @@ function App() {
             />
             <IdlePrefetch />
             <PushBridge />
+            <BanBanner />
             <ChunkErrorBoundary>
               <Suspense fallback={<PageLoader />}>
                 <AnimatedRoutes />

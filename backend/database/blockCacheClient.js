@@ -73,6 +73,29 @@ class BlockCacheClient {
   async removeRoomBlock(roomId, userId) {
     await this.client.delete(`/blocks/room/${roomId}/${userId}`);
   }
+
+  async checkBan(userId) {
+    try {
+      const res = await this.client.post('/blocks/check/ban', { userId });
+      return res.data || { banned: false };
+    } catch (err) {
+      console.error('[BlockCacheClient] checkBan error:', err.message);
+      return { banned: false };
+    }
+  }
+
+  async addBan(userId, data) {
+    await this.client.put(`/blocks/ban/${userId}`, data);
+  }
+
+  async removeBan(userId) {
+    await this.client.delete(`/blocks/ban/${userId}`);
+  }
+
+  async listBans() {
+    const res = await this.client.get('/blocks/bans');
+    return res.data?.bans || [];
+  }
 }
 
 export default new BlockCacheClient();

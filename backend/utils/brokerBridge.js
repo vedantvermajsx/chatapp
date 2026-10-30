@@ -1,5 +1,7 @@
 import { on, INSTANCE_ID } from '../utils/messageBroker.js';
 import { processSignal } from '../utils/callSessions.js';
+import { applyBan } from './ban/applyBan.js';
+import { clearBan } from './ban/clearBan.js';
 
 let registered = false;
 
@@ -53,11 +55,12 @@ export function registerBrokerBridge(io, onlineUsers) {
   on('webrtcSignal', (payload) => {
     const { targetId, origin } = payload;
     if (origin === INSTANCE_ID) return;
-    // Mirror call state so the offer/ICE buffer exists on whichever instance the callee joins.
-    // (No pushes from mirrors; the origin instance owns those.)
     processSignal(payload, { mirror: true });
     if (targetId) {
       io.to(String(targetId)).emit('webrtcSignal', payload);
     }
   });
+
+  on('user.banned', (ban) => applyBan(ban));
+  on('user.unbanned', ({ userId }) => clearBan(userId));
 }

@@ -6,7 +6,8 @@ import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { _addQualities } from '../../utils/addQualities.js';
 import { compact } from '../../utils/compact.js';
 import { resolveReplyTo } from '../../utils/resolveReplyTo.js';
-import { isBlockedBetween } from '../../utils/blockService.js';
+import { isBlockedBetween } from '../../utils/block/isBlockedBetween.js';
+import { getActiveBan } from '../../utils/block/getActiveBan.js';
 import { getClientIp } from '../../utils/clientIp.js';
 
 export async function sendPrivateMessage(req, res) {
@@ -23,7 +24,13 @@ export async function sendPrivateMessage(req, res) {
       return res.status(400).json({ message: 'Cannot send message to yourself' });
     }
 
-    if (await isBlockedBetween(sender._id, receiverId, getClientIp(req))) {
+    const senderIp = getClientIp(req);
+
+    if (getActiveBan(sender._id, senderIp)) {
+      return res.status(403).json({ message: 'You are blocked from sending messages' });
+    }
+
+    if (await isBlockedBetween(sender._id, receiverId, senderIp)) {
       return res.status(403).json({ message: 'You cannot message this user' });
     }
 

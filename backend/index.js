@@ -12,12 +12,14 @@ import userRoutes from './routes/user.routes.js';
 import mediaRoutes from './routes/media.routes.js';
 import callRoutes from './routes/call.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import reportRoutes from './routes/report.routes.js';
 import { requestLogger } from './middleware/logger.js';
 import { globalLimiter, authLimiter, messagingLimiter, uploadLimiter, adminLimiter } from './middleware/rateLimiter.js';
 import { createChessRouter, setupChessSocket } from './games/chess/index.js';
 import { createMinigamesRouter, setupMinigamesSocket } from './games/minigames/index.js';
 import {bloomFilter} from './utils/bloomFilterService.js';
 import { setupGuestChangeStream } from './models/guest.model.js';
+import { startBanSync } from './utils/ban/startBanSync.js';
 
 dotenv.config();
 
@@ -69,6 +71,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/calls', callRoutes);
+app.use('/api/reports', reportRoutes);
 app.get('/health', (_, res) => res.status(200).json({ ok: true }));
 
 
@@ -76,6 +79,7 @@ app.get('/health', (_, res) => res.status(200).json({ ok: true }));
 let currentPort = process.env.PORT || 3001;
 
 connectDB().then(async () => {
+  startBanSync();
   try {
     const { default: User } = await import('./models/user.model.js');
     const { default: Guest } = await import('./models/guest.model.js');

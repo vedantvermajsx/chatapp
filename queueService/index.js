@@ -11,13 +11,13 @@ import { handleRoomDeleted } from './processors/room/handleRoomDeleted.js';
 import { handlePrivateUnread } from './processors/notification/handlePrivateUnread.js';
 import { handleRoomLastRead } from './processors/notification/handleRoomLastRead.js';
 import { handlePrivateLastRead } from './processors/notification/handlePrivateLastRead.js';
-import {
-  handleIpRecorded,
-  handleUserBlocked,
-  handleUserUnblocked,
-  handleRoomUserBlocked,
-  handleRoomUserUnblocked,
-} from './processors/block/blockProcessor.js';
+import { handleIpRecorded } from './processors/block/handleIpRecorded.js';
+import { handleUserBlocked } from './processors/block/handleUserBlocked.js';
+import { handleUserUnblocked } from './processors/block/handleUserUnblocked.js';
+import { handleRoomUserBlocked } from './processors/block/handleRoomUserBlocked.js';
+import { handleRoomUserUnblocked } from './processors/block/handleRoomUserUnblocked.js';
+import { handleUserBanned } from './processors/block/handleUserBanned.js';
+import { handleUserUnbanned } from './processors/block/handleUserUnbanned.js';
 import { connectToBroker, subscribe, on } from './broker.js';
 import { connectDB } from './database/db.js';
 import { createAdminServer } from './adminServer.js';
@@ -100,6 +100,8 @@ const blockQueue = new BatchQueue({
     if (_eventType === 'user.unblocked') return handleUserUnblocked(payload);
     if (_eventType === 'room.user.blocked') return handleRoomUserBlocked(payload);
     if (_eventType === 'room.user.unblocked') return handleRoomUserUnblocked(payload);
+    if (_eventType === 'user.banned') return handleUserBanned(payload);
+    if (_eventType === 'user.unbanned') return handleUserUnbanned(payload);
   },
 });
 
@@ -150,7 +152,7 @@ async function start() {
 
   //console.log('[NotificationProcessor] subscribed to notification.* channels');
 
-  for (const channel of ['user.ip.recorded', 'user.blocked', 'user.unblocked', 'room.user.blocked', 'room.user.unblocked']) {
+  for (const channel of ['user.ip.recorded', 'user.blocked', 'user.unblocked', 'room.user.blocked', 'room.user.unblocked', 'user.banned', 'user.unbanned']) {
     subscribe(channel);
     on(channel, (data) => blockQueue.add({ _eventType: channel, ...data }));
   }

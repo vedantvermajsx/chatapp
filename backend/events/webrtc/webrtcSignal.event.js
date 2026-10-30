@@ -1,6 +1,7 @@
 import { publish, INSTANCE_ID } from '../../utils/messageBroker.js';
 import { processSignal } from '../../utils/callSessions.js';
-import { isBlockedBetween } from '../../utils/blockService.js';
+import { isBlockedBetween } from '../../utils/block/isBlockedBetween.js';
+import { getActiveBan } from '../../utils/block/getActiveBan.js';
 
 const handleWebrtcSignal = (socket, io) => async (payload) => {
   try {
@@ -11,7 +12,7 @@ const handleWebrtcSignal = (socket, io) => async (payload) => {
       return;
     }
 
-    if (type === 'offer' && await isBlockedBetween(senderId, targetId)) {
+    if (getActiveBan(senderId) || (type === 'offer' && await isBlockedBetween(senderId, targetId))) {
       return;
     }
 

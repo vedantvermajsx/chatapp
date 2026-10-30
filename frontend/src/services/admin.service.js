@@ -35,6 +35,35 @@ class AdminService {
     });
     return response.data;
   }
+
+  async getReports({ status = 'open', page = 0, limit = 25 } = {}) {
+    const response = await api.get(`${this.basePath}/reports`, {
+      params: { status, page, limit },
+    });
+    return response.data;
+  }
+
+  async dismissReport(reportId) {
+    const response = await api.post(`${this.basePath}/reports/${reportId}/dismiss`);
+    return response.data;
+  }
+
+  async banUser(userId, { durationMs, reason = '', reportId = null } = {}) {
+    const response = await api.post(`${this.basePath}/users/${userId}/ban`, {
+      durationMs, reason, reportId,
+    });
+    return response.data;
+  }
+
+  async unbanUser(userId) {
+    const response = await api.post(`${this.basePath}/users/${userId}/unban`);
+    return response.data;
+  }
+
+  async getBans() {
+    const response = await api.get(`${this.basePath}/bans`);
+    return response.data;
+  }
 }
 
 const adminService = new AdminService();
