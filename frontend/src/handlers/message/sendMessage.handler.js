@@ -3,6 +3,8 @@ import messageService from '../../services/message.service.js';
 import { updatePrivateChatOptimistically } from '../private/updatePrivateChatOptimistically.handler.js';
 import { dbService } from '../../services/indexedDB.service.js';
 import { capNewest, withCap } from '../../utils/messageList.js';
+import { toast } from 'sonner';
+import { maskProfanity, addProfanityCount, isProfanityBlocked, getProfanityCount, PROFANITY_LIMIT, PROFANITY_BLOCK_MESSAGE } from '../../utils/profanity.js';
 
 function replaceAndDedupe(prev, tempId, finalMessage) {
   const finalId = finalMessage.id ?? finalMessage._id;
@@ -40,8 +42,23 @@ export const sendMessageHandler = async (
   setReplyingTo
 ) => {
   e.preventDefault();
-  const trimmedMessage = (inputMessage || '').trim();
-  if (!trimmedMessage && !selectedFile) return;
+  const rawMessage = (inputMessage || '').trim();
+  if (!rawMessage && !selectedFile) return;
+
+  const profanityUserId = user?._id || user?.id;
+  if (isProfanityBlocked(profanityUserId)) {
+    toast.error(PROFANITY_BLOCK_MESSAGE);
+    return;
+  }
+  const { text: trimmedMessage, count: badWordCount } = maskProfanity(rawMessage);
+  if (badWordCount > 0) {
+    const total = addProfanityCount(profanityUserId, badWordCount);
+    if (total > PROFANITY_LIMIT) {
+      toast.error(PROFANITY_BLOCK_MESSAGE);
+      return;
+    }
+    toast.warning(`Please keep it clean. Warning ${total}/${PROFANITY_LIMIT} - you will be blocked from messaging and calls after that.`);
+  }
 
   const replySnapshot = replyingTo
     ? { messageId: replyingTo.id || replyingTo._id, text: replyingTo.text, username: replyingTo.username, media: replyingTo.media, senderId: replyingTo.senderId }

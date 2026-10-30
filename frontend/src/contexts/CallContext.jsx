@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { useAuth } from './AuthContext';
+import { toast } from 'sonner';
+import { isProfanityBlocked, PROFANITY_BLOCK_MESSAGE } from '../utils/profanity.js';
 
 const RINGTONE_SRC = '/ringtone.mp3'; // receiver side
 const DIAL_SRC = '/calling.mp3';      // caller side
@@ -221,6 +223,10 @@ export const CallProvider = ({ children, socket }) => {
   }, [socket, user, playRingtone, stopRingtone]);
 
   const startCall = useCallback(async (targetId, isVideo = false, targetData = null) => {
+    if (isProfanityBlocked(user?._id || user?.id)) {
+      toast.error(PROFANITY_BLOCK_MESSAGE);
+      return;
+    }
     try {
       setCallError(null);
       const stream = await rtc.initLocalStream(isVideo);
