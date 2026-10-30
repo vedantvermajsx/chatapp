@@ -334,7 +334,6 @@ export const sendMessageHandler = async (
         await dbService.removeMessage(blockedKey, tempId);
         await dbService.removePendingMessage(tempId);
         if (selectedFile) await dbService.removeFile(tempId);
-        toast.error(error.response?.data?.message || 'Message could not be sent');
         return;
       }
       console.error('Failed to send message immediately:', error);

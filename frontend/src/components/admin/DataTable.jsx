@@ -5,7 +5,7 @@ import { formatNumber } from '../../utils/formatNumber';
 import { genderLabel } from '../../utils/genderLabel';
 import { timeAgo } from '../../utils/timeAgo';
 
-export default function DataTable({ kind, rows, onRowClick }) {
+export default function DataTable({ kind, rows, onRowClick, onBlockClick }) {
   const { theme } = useTheme();
   const cell = { padding: '8px 10px', fontSize: 13, color: theme.otherMessageText, whiteSpace: 'nowrap' };
   const head = { padding: '8px 10px', fontSize: 11, fontWeight: 600, color: theme.muted, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 0.4 };
@@ -66,7 +66,15 @@ export default function DataTable({ kind, rows, onRowClick }) {
                   <>
                     <td style={cell}>
                       <div className="flex items-center gap-2">
-                        <Avatar url={r.avatar} name={r.username} gender={r.gender} size={7} />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onBlockClick?.(r); }}
+                          disabled={!onBlockClick}
+                          title="Block user"
+                          className="rounded-full transition-shadow hover:ring-2 hover:ring-red-500/60 disabled:cursor-default disabled:hover:ring-0"
+                        >
+                          <Avatar url={r.avatar} name={r.username} gender={r.gender} size={7} />
+                        </button>
                         <span className="font-medium">{r.username}</span>
                       </div>
                     </td>

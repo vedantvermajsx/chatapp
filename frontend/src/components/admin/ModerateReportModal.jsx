@@ -4,16 +4,7 @@ import { toast } from 'sonner';
 import { useTheme } from '../../contexts/ThemeContext';
 import adminService from '../../services/admin.service';
 import { timeAgo } from '../../utils/timeAgo';
-
-const DAY = 24 * 60 * 60 * 1000;
-const PRESETS = [
-  { label: '1 day', ms: DAY },
-  { label: '3 days', ms: 3 * DAY },
-  { label: '7 days', ms: 7 * DAY },
-  { label: '1 month', ms: 30 * DAY },
-  { label: '3 months', ms: 90 * DAY },
-  { label: '1 year', ms: 365 * DAY },
-];
+import BAN_PRESETS from '../../utils/banPresets';
 
 export default function ModerateReportModal({ report, onClose, onDone }) {
   const { theme } = useTheme();
@@ -102,7 +93,7 @@ export default function ModerateReportModal({ report, onClose, onDone }) {
             <div className="flex flex-col gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: theme.muted }}>Block duration (disables messaging + calls)</p>
               <div className="flex flex-wrap gap-2">
-                {PRESETS.map((p) => (
+                {BAN_PRESETS.map((p) => (
                   <button
                     key={p.ms}
                     disabled={!!busy}

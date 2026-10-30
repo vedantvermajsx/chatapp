@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, ShieldBan } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import Avatar from '../common/Avatar';
 import adminService from '../../services/admin.service';
@@ -7,7 +7,7 @@ import { formatNumber } from '../../utils/formatNumber';
 import { genderLabel } from '../../utils/genderLabel';
 import { timeAgo } from '../../utils/timeAgo';
 
-export default function UserDetailModal({ userId, onClose }) {
+export default function UserDetailModal({ userId, onClose, onBlock }) {
   const { theme } = useTheme();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +78,16 @@ export default function UserDetailModal({ userId, onClose }) {
                 <p className="text-[11px] mb-1" style={{ color: theme.muted }}>Bio</p>
                 <p className="text-sm" style={{ color: theme.otherMessageText }}>{u.bio}</p>
               </div>
+            )}
+
+            {s.type !== 'guest' && onBlock && (
+              <button
+                onClick={() => onBlock({ userId: u._id || userId, username: u.username })}
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+                style={{ backgroundColor: 'rgba(239,68,68,0.12)', color: '#ef4444' }}
+              >
+                <ShieldBan className="w-4 h-4" /> Block user
+              </button>
             )}
           </>
         )}

@@ -115,72 +115,56 @@ class MessageService {
     }));
   }
 
-  async sendRoomMessage({ roomId, text, media, uuid, roomPublicKey, replyTo, taggedUser, skipToast = false }) {
-    try {
-      const strippedMedia = media ? { url: media.url, type: media.type } : null;
-      const body = { roomId, media: strippedMedia, uuid, replyTo: replyTo || null, taggedUser: taggedUser || null };
+  async sendRoomMessage({ roomId, text, media, uuid, roomPublicKey, replyTo, taggedUser }) {
+    const strippedMedia = media ? { url: media.url, type: media.type } : null;
+    const body = { roomId, media: strippedMedia, uuid, replyTo: replyTo || null, taggedUser: taggedUser || null };
 
-      if (text && roomPublicKey) {
-        const { content, iv, wrappedKey } = await encryptForRoom(text, roomPublicKey);
-        body.message = content;
-        body.iv = iv;
-        body.wrappedKey = wrappedKey;
-      } else {
-        body.message = text;
-      }
-
-      const response = await api.post(`${this.basePath}/send`, body);
-      return response.data;
-    } catch (error) {
-      if (axios.isCancel(error)) throw error;
-      if (navigator.onLine && !skipToast) {
-        toast.error(error.response?.data?.message || 'Failed to send message');
-      }
-      throw error;
+    if (text && roomPublicKey) {
+      const { content, iv, wrappedKey } = await encryptForRoom(text, roomPublicKey);
+      body.message = content;
+      body.iv = iv;
+      body.wrappedKey = wrappedKey;
+    } else {
+      body.message = text;
     }
+
+    const response = await api.post(`${this.basePath}/send`, body);
+    return response.data;
   }
 
-  async sendPrivateMessage({ receiverId, content, receiverModel = 'User', media, uuid, isSystemMessage, systemType, replyTo, taggedUser, skipToast = false }) {
-    try {
-      const strippedMedia = media ? { url: media.url, type: media.type } : null;
-      const body = {
-        receiverId,
-        receiverModel,
-        media: strippedMedia,
-        uuid,
-        replyTo: replyTo || null,
-        taggedUser: taggedUser || null,
-        ...(isSystemMessage && { isSystemMessage: true, systemType }),
-      };
+  async sendPrivateMessage({ receiverId, content, receiverModel = 'User', media, uuid, isSystemMessage, systemType, replyTo, taggedUser }) {
+    const strippedMedia = media ? { url: media.url, type: media.type } : null;
+    const body = {
+      receiverId,
+      receiverModel,
+      media: strippedMedia,
+      uuid,
+      replyTo: replyTo || null,
+      taggedUser: taggedUser || null,
+      ...(isSystemMessage && { isSystemMessage: true, systemType }),
+    };
 
-      if (content) {
-        const selfPublicKey = await this._getSelfPublicKey();
-        const receiverPublicKey = await this._getPublicKey(receiverId);
+    if (content) {
+      const selfPublicKey = await this._getSelfPublicKey();
+      const receiverPublicKey = await this._getPublicKey(receiverId);
 
-        if (selfPublicKey && receiverPublicKey) {
-          const { content: enc, iv, senderKeyWrapped, receiverKeyWrapped } =
-            await encryptPrivateMessage(content, selfPublicKey, receiverPublicKey);
-          body.content = enc;
-          body.iv = iv;
-          body.senderKeyWrapped = senderKeyWrapped;
-          body.receiverKeyWrapped = receiverKeyWrapped;
-        } else {
-          console.warn('[messageService] Missing public key for encryption.', { selfPublicKey: !!selfPublicKey, receiverPublicKey: !!receiverPublicKey });
-          body.content = content;
-        }
+      if (selfPublicKey && receiverPublicKey) {
+        const { content: enc, iv, senderKeyWrapped, receiverKeyWrapped } =
+          await encryptPrivateMessage(content, selfPublicKey, receiverPublicKey);
+        body.content = enc;
+        body.iv = iv;
+        body.senderKeyWrapped = senderKeyWrapped;
+        body.receiverKeyWrapped = receiverKeyWrapped;
       } else {
+        console.warn('[messageService] Missing public key for encryption.', { selfPublicKey: !!selfPublicKey, receiverPublicKey: !!receiverPublicKey });
         body.content = content;
       }
-
-      const response = await api.post(`${this.basePath}/private/send`, body);
-      return response.data;
-    } catch (error) {
-      if (axios.isCancel(error)) throw error;
-      if (navigator.onLine && !skipToast) {
-        toast.error(error.response?.data?.message || 'Failed to send message');
-      }
-      throw error;
+    } else {
+      body.content = content;
     }
+
+    const response = await api.post(`${this.basePath}/private/send`, body);
+    return response.data;
   }
 
   async getPrivateMessages(otherUserId, limit = 20, before = null, after = null) {

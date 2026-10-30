@@ -9,7 +9,7 @@ import adminService from '../../services/admin.service';
 import { ADMIN_TABS } from './tabs';
 import StatCard from './StatCard';
 import Panel from './Panel';
-import BarChart from './BarChart';
+import LineChart from './LineChart';
 import Leaderboard from './Leaderboard';
 import GenderBars from './GenderBars';
 import RetentionBars from './RetentionBars';
@@ -17,6 +17,7 @@ import DataTable from './DataTable';
 import UserDetailModal from './UserDetailModal';
 import ReportsPanel from './ReportsPanel';
 import BansPanel from './BansPanel';
+import BlockUserModal from './BlockUserModal';
 import { formatNumber } from '../../utils/formatNumber';
 import { timeAgo } from '../../utils/timeAgo';
 
@@ -34,6 +35,7 @@ function AdminDashboard() {
   const [page, setPage] = useState(0);
   const [table, setTable] = useState({ rows: [], total: 0, hasMore: false, loading: false });
   const [detailId, setDetailId] = useState(null);
+  const [blockTarget, setBlockTarget] = useState(null);
 
   const accent = theme.myMessageBubble;
   const accent2 = theme.otherUsernameColor;
@@ -152,12 +154,12 @@ function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Panel title="New registrations (30 days)"><BarChart data={overview.series.registrations} color={accent} /></Panel>
-              <Panel title="Messages sent (30 days)"><BarChart data={overview.series.messages} color={accent2} secondaryColor={accent2} /></Panel>
+              <Panel title="New registrations (30 days)"><LineChart data={overview.series.registrations} color={accent} /></Panel>
+              <Panel title="Messages sent (30 days)"><LineChart data={overview.series.messages} color={accent2} secondaryColor={accent2} /></Panel>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Panel title="Guest sessions (30 days)"><BarChart data={overview.series.guests} color={accent2} /></Panel>
+              <Panel title="Guest sessions (30 days)"><LineChart data={overview.series.guests} color={accent2} /></Panel>
               <Panel title="Retention"><RetentionBars activity={overview.activity} /></Panel>
               <Panel title="Gender split"><GenderBars breakdown={overview.genderBreakdown} /></Panel>
             </div>
@@ -208,7 +210,12 @@ function AdminDashboard() {
                   {table.loading ? (
                     <div className="py-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin" style={{ color: theme.muted }} /></div>
                   ) : (
-                    <DataTable kind={tab} rows={table.rows} onRowClick={tab === 'rooms' ? undefined : (r) => setDetailId(r._id)} />
+                    <DataTable
+                      kind={tab}
+                      rows={table.rows}
+                      onRowClick={tab === 'rooms' ? undefined : (r) => setDetailId(r._id)}
+                      onBlockClick={tab === 'rooms' ? undefined : (r) => setBlockTarget({ userId: r._id, username: r.username })}
+                    />
                   )}
 
                   <div className="flex items-center justify-between">
@@ -241,7 +248,21 @@ function AdminDashboard() {
         )}
       </div>
 
-      {detailId && <UserDetailModal userId={detailId} onClose={() => setDetailId(null)} />}
+      {detailId && (
+        <UserDetailModal
+          userId={detailId}
+          onClose={() => setDetailId(null)}
+          onBlock={({ userId, username }) => { setDetailId(null); setBlockTarget({ userId, username }); }}
+        />
+      )}
+
+      {blockTarget && (
+        <BlockUserModal
+          userId={blockTarget.userId}
+          username={blockTarget.username}
+          onClose={() => setBlockTarget(null)}
+        />
+      )}
     </div>
   );
 }
