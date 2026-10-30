@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import Avatar from '../../common/Avatar';
@@ -65,8 +66,8 @@ const UserProfileModal = ({ userId, fallback, onClose }) => {
   const displayName = profile?.username || fallback?.username || '';
   const displayAvatar = profile?.pfp || fallback?.avatar || '';
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div role="dialog" aria-modal="true" className="glass-strong pop-in relative rounded-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[85vh]">
         <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: border }}>
@@ -118,7 +119,8 @@ const UserProfileModal = ({ userId, fallback, onClose }) => {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
