@@ -40,6 +40,20 @@ export const messagingLimiter = rateLimit({
   },
 });
 
+export const adminLimiter = rateLimit({
+  windowMs: parseInt(process.env.ADMIN_RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000,
+  max: parseInt(process.env.ADMIN_RATE_LIMIT_MAX, 10) || 60,
+  keyGenerator: rateLimitKey,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      message: 'Too many admin requests, please slow down.',
+      retryAfter: res.getHeader('Retry-After'),
+    });
+  },
+});
+
 export const uploadLimiter = rateLimit({
   windowMs: parseInt(process.env.UPLOAD_RATE_LIMIT_WINDOW_MS, 10) || 30 * 1000, 
   max: parseInt(process.env.UPLOAD_RATE_LIMIT_MAX, 10) || 10,

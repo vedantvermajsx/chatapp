@@ -11,8 +11,9 @@ import messageRoutes from './routes/message.routes.js';
 import userRoutes from './routes/user.routes.js';
 import mediaRoutes from './routes/media.routes.js';
 import callRoutes from './routes/call.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import { requestLogger } from './middleware/logger.js';
-import { globalLimiter, authLimiter, messagingLimiter, uploadLimiter } from './middleware/rateLimiter.js';
+import { globalLimiter, authLimiter, messagingLimiter, uploadLimiter, adminLimiter } from './middleware/rateLimiter.js';
 import { createChessRouter, setupChessSocket } from './games/chess/index.js';
 import { createMinigamesRouter, setupMinigamesSocket } from './games/minigames/index.js';
 import {bloomFilter} from './utils/bloomFilterService.js';
@@ -56,6 +57,8 @@ app.use(createMinigamesRouter()); // tic-tac-toe / connect four / rock-paper-sci
 
 app.use('/api/messages/upload-signature', uploadLimiter);
 app.use('/api/messages', messagingLimiter, messageRoutes); // messaging: 100 req/min
+
+app.use('/api/admin', adminLimiter, adminRoutes); // admin analytics: 60 req/min
 
 app.use(globalLimiter); // everything else: 200 req/15min
 

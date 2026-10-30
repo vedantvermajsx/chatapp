@@ -12,6 +12,7 @@ import PushBridge from './components/common/PushBridge';
 
 const Login = lazy(() => import('./components/auth/Login'));
 const Chat = lazy(() => import('./components/Chat'));
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 const TermsAndConditions = lazy(() => import('./components/auth/TermsAndConditions'));
 const CookiePolicy = lazy(() => import('./components/auth/CookiePolicy'));
 
@@ -69,6 +70,7 @@ function AnimatedRoutes() {
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/" element={<RootRedirect />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

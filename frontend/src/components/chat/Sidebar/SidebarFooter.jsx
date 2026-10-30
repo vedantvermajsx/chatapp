@@ -1,5 +1,6 @@
-import { Settings, Palette, LogOut, ShieldCheck, Download } from 'lucide-react';
+import { Settings, Palette, LogOut, ShieldCheck, Download, Activity } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useDownloads } from '../../../contexts/DownloadsContext';
 import Avatar from '../../common/Avatar';
@@ -11,6 +12,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
   const [showDownloads, setShowDownloads] = useState(false);
   const { theme } = useTheme();
   const { activeCount } = useDownloads();
+  const navigate = useNavigate();
   const panelBg = theme.isLight ? '#f2f3f5' : '#232428';
   const borderColor = theme.isLight ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.4)';
   const iconColor = theme.isLight ? '#4e5058' : '#b5bac1';
@@ -41,6 +43,18 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
         </div>
 
         <div className="flex items-center gap-0.5 flex-shrink-0">
+          {(user.isAdmin || user.role === 'admin') && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="p-1.5 rounded transition-colors flex items-center justify-center"
+              title="Admin Analytics"
+              style={{ color: theme.isLight ? '#b45309' : '#fbbf24' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = iconHoverBg; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              <Activity className="w-4.5 h-4.5" style={{ width: '18px', height: '18px' }} />
+            </button>
+          )}
           <button
             onClick={onShowSettings}
             className="p-1.5 rounded transition-colors flex items-center justify-center"

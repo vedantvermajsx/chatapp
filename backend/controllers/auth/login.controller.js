@@ -44,7 +44,7 @@ export async function login(req, res) {
       }
     }
 
-    await handleAuthSuccess(res, user, 'user', privateKey);
+    await handleAuthSuccess(res, user, user.role || 'user', privateKey);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

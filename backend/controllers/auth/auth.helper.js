@@ -1,9 +1,11 @@
 import { signToken } from '../../utils/tokenGenerator.js';
 import userCacheClient from '../../database/userCacheClient.js';
 import { recordUserIp } from '../../utils/blockService.js';
+import { isAdminUser } from '../../middleware/admin.middleware.js';
 
 export async function handleAuthSuccess(res, userDocument, role, privateKey = null) {
   const isGuest = role === 'guest';
+  const isAdmin = isAdminUser({ username: userDocument.username, role });
   const userData = {
     _id: userDocument._id.toString(),
     username: userDocument.username,
@@ -15,6 +17,7 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
     password: userDocument.password,
     publicKey: userDocument.publicKey ?? null,
     role,
+    isAdmin,
     isOnline: true,
     lastSeen: userDocument.lastSeen ?? new Date(),
   };
@@ -29,6 +32,7 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
     gender: userData.gender,
     publicKey: userData.publicKey,
     role,
+    isAdmin,
     isOnline: true,
     lastSeen: userData.lastSeen ?? new Date(),
   };
