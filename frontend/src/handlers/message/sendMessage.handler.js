@@ -5,6 +5,13 @@ import { dbService } from '../../services/indexedDB.service.js';
 import { capNewest, withCap } from '../../utils/messageList.js';
 import { toast } from 'sonner';
 import { maskProfanity, addProfanityCount, isProfanityBlocked, getProfanityCount, PROFANITY_LIMIT, PROFANITY_BLOCK_MESSAGE } from '../../utils/profanity.js';
+import {
+  recordBlockFrom403,
+  getActiveBanCache,
+  isPrivateChatBlocked,
+  isRoomChatBlocked,
+  buildBanMessage,
+} from '../../utils/blockCache.js';
 
 function replaceAndDedupe(prev, tempId, finalMessage) {
   const finalId = finalMessage.id ?? finalMessage._id;
@@ -50,6 +57,23 @@ export const sendMessageHandler = async (
     toast.error(PROFANITY_BLOCK_MESSAGE);
     return;
   }
+
+  // ── Frontend block / ban pre-flight (no network round-trip) ───────────────
+  const banEntry = getActiveBanCache();
+  if (banEntry) {
+    const msg = buildBanMessage(banEntry);
+    if (msg) { toast.error(msg); return; }
+    // expiresAt has passed in the cache — fall through and let backend decide
+  }
+  if (currentPrivateChat) {
+    const blockEntry = isPrivateChatBlocked(currentPrivateChat.id);
+    if (blockEntry) { toast.error(blockEntry.message || 'You cannot message this user'); return; }
+  } else if (currentRoom) {
+    const blockEntry = isRoomChatBlocked(currentRoom._id);
+    if (blockEntry) { toast.error(blockEntry.message || 'You are blocked from messaging in this group'); return; }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   const { text: trimmedMessage, count: badWordCount } = maskProfanity(rawMessage);
   if (badWordCount > 0) {
     const total = addProfanityCount(profanityUserId, badWordCount);
@@ -323,6 +347,16 @@ export const sendMessageHandler = async (
     } catch (error) {
       if (isUploadCancelled(tempId)) return;
       if (error?.response?.status === 403) {
+        const { reason, expiresAt, message } = error.response?.data || {};
+        // Populate the frontend cache so next send is blocked without a round-trip
+        recordBlockFrom403(reason, {
+          userId:  currentPrivateChat?.id  || null,
+          roomId:  currentRoom?._id        || null,
+          expiresAt: expiresAt             || null,
+          message,
+        });
+        const displayMsg = reason === 'banned' ? buildBanMessage({ expiresAt, message }) : message;
+        if (displayMsg) toast.error(displayMsg);
         const blockedKey = currentRoom ? `room_${currentRoom._id}` : `private_${currentPrivateChat?.id}`;
         setMessages((prev) => prev.filter((m) => (m.id || m._id) !== tempId));
         if (messageCache.current[blockedKey]) {

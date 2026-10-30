@@ -26,12 +26,20 @@ export async function sendPrivateMessage(req, res) {
 
     const senderIp = getClientIp(req);
 
-    if (getActiveBan(sender._id, senderIp)) {
-      return res.status(403).json({ message: 'You are blocked from sending messages' });
+    const activeBan = getActiveBan(sender._id, senderIp);
+    if (activeBan) {
+      return res.status(403).json({
+        message: 'You are blocked from sending messages',
+        reason: 'banned',
+        expiresAt: activeBan.expiresAt || null,
+      });
     }
 
     if (await isBlockedBetween(sender._id, receiverId, senderIp)) {
-      return res.status(403).json({ message: 'You cannot message this user' });
+      return res.status(403).json({
+        message: 'You cannot message this user',
+        reason: 'blocked',
+      });
     }
 
     const _id = new mongoose.Types.ObjectId().toString();

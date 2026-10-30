@@ -24,12 +24,20 @@ export async function sendRoomMessage(req, res) {
 
     const senderIp = getClientIp(req);
 
-    if (getActiveBan(sender._id, senderIp)) {
-      return res.status(403).json({ message: 'You are blocked from sending messages' });
+    const activeBan = getActiveBan(sender._id, senderIp);
+    if (activeBan) {
+      return res.status(403).json({
+        message: 'You are blocked from sending messages',
+        reason: 'banned',
+        expiresAt: activeBan.expiresAt || null,
+      });
     }
 
     if (await isBlockedInRoom(roomId, sender._id, senderIp)) {
-      return res.status(403).json({ message: 'You are blocked from messaging in this group' });
+      return res.status(403).json({
+        message: 'You are blocked from messaging in this group',
+        reason: 'blocked',
+      });
     }
 
     const _id = new mongoose.Types.ObjectId().toString();

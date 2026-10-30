@@ -5,6 +5,7 @@ import { dbService } from '../services/indexedDB.service.js';
 import keyManager from '../services/keyManager.js';
 import { decryptForRoom, decryptPrivateMessage } from '../utils/crypto.js';
 import { capNewest, withCap } from '../utils/messageList.js';
+import { clearBanCache, clearPrivateChatBlock, clearRoomBlock } from '../utils/blockCache.js';
 
 async function decryptReplyPreviewForRoom(replyTo, roomPrivateKeyPem) {
   if (!replyTo?.iv || !replyTo?.wrappedKey || !roomPrivateKeyPem) return replyTo;
@@ -578,6 +579,16 @@ export const useChatSocket = (user, {
       });
     };
 
+    // ── Block-cache invalidation via socket ──────────────────────────────────
+    const handleUserUnbanned = () => clearBanCache();
+    const handleUserUnblocked = ({ unblockedId } = {}) => {
+      if (unblockedId) clearPrivateChatBlock(String(unblockedId));
+    };
+    const handleRoomUserUnblocked = ({ roomId } = {}) => {
+      if (roomId) clearRoomBlock(String(roomId));
+    };
+    // ────────────────────────────────────────────────────────────────────────
+
     socket.on('connect', handleConnect);
     socket.on('connect_error', (error) => console.error('Socket connection error:', error));
     socket.on('disconnect', (reason) => console.log('Socket disconnected:', reason));
@@ -597,6 +608,9 @@ export const useChatSocket = (user, {
     socket.on('stopTypingPrivate', handleStopTypingPrivate);
     socket.on('typingRoom', handleTypingRoom);
     socket.on('stopTypingRoom', handleStopTypingRoom);
+    socket.on('userUnbanned', handleUserUnbanned);
+    socket.on('userUnblocked', handleUserUnblocked);
+    socket.on('roomUserUnblocked', handleRoomUserUnblocked);
 
     if (socket.connected) { handleConnect(); }
 
@@ -620,6 +634,9 @@ export const useChatSocket = (user, {
       socket.off('stopTypingPrivate', handleStopTypingPrivate);
       socket.off('typingRoom', handleTypingRoom);
       socket.off('stopTypingRoom', handleStopTypingRoom);
+      socket.off('userUnbanned', handleUserUnbanned);
+      socket.off('userUnblocked', handleUserUnblocked);
+      socket.off('roomUserUnblocked', handleRoomUserUnblocked);
     };
   }, [setMessages, setPrivateChats, setRoomMembers, setUnreadCounts, setJoinedRooms, setCurrentRoom]);
 
