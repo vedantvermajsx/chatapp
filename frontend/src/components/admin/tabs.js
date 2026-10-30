@@ -1,11 +1,12 @@
-import { Users, UserPlus, MessageSquare, Flag, ShieldBan } from 'lucide-react';
+import { LayoutDashboard, Users, UserPlus, MessageSquare, Flag, ShieldBan } from 'lucide-react';
 
-export const ADMIN_TABS = [
-  { id: 'users', label: 'Users', Icon: Users },
-  { id: 'guests', label: 'Guests', Icon: UserPlus },
-  { id: 'rooms', label: 'Rooms', Icon: MessageSquare },
-  { id: 'reports', label: 'Reports', Icon: Flag },
-  { id: 'bans', label: 'Bans', Icon: ShieldBan },
+export const ADMIN_NAV = [
+  { id: 'overview', label: 'Overview', path: '/admin', Icon: LayoutDashboard, end: true },
+  { id: 'users', label: 'Users', path: '/admin/users', Icon: Users },
+  { id: 'guests', label: 'Guests', path: '/admin/guests', Icon: UserPlus },
+  { id: 'rooms', label: 'Rooms', path: '/admin/rooms', Icon: MessageSquare },
+  { id: 'reports', label: 'Reports', path: '/admin/reports', Icon: Flag },
+  { id: 'bans', label: 'Bans', path: '/admin/bans', Icon: ShieldBan },
 ];
 
 export const REPORT_TABS = [

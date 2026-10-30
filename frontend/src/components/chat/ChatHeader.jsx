@@ -1,6 +1,7 @@
 import { Users, ArrowLeft, Settings, Phone, Video, Trash2, LogOut } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import GroupSettingsModal from './Modals/GroupSettingsModal';
+import UserProfileModal from './Modals/UserProfileModal';
 import { useState, memo } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatLastSeen } from '../../utils/dateUtils';
@@ -21,6 +22,7 @@ const ChatHeader = memo(function ChatHeader({
   unreadCounts = {},
 }) {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const { theme } = useTheme();
   const leaveRoomMutation = useLeaveRoom();
   const deleteRoomMutation = useDeleteRoom();
@@ -169,7 +171,12 @@ const ChatHeader = memo(function ChatHeader({
         ) : currentPrivateChat ? (
           <>
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="flex-shrink-0 relative">
+              <button
+                type="button"
+                onClick={() => setShowProfile(true)}
+                className="flex-shrink-0 relative rounded-full transition-shadow hover:ring-2 hover:ring-white/25"
+                title="View profile"
+              >
                 <Avatar url={currentPrivateChat.avatar} name={currentPrivateChat.username} gender={currentPrivateChat.gender} size={9} />
                 {currentPrivateChat.isOnline && (
                   <span
@@ -180,7 +187,7 @@ const ChatHeader = memo(function ChatHeader({
                     }}
                   />
                 )}
-              </div>
+              </button>
               <div className="min-w-0">
                 <h2 className="text-[16px] font-semibold truncate leading-tight" style={{ color: headerText }}>
                   {currentPrivateChat.username}
@@ -221,6 +228,14 @@ const ChatHeader = memo(function ChatHeader({
           room={currentRoom}
           onClose={() => setShowGroupSettings(false)}
           onUpdateSuccess={(updatedRoom) => setCurrentRoom(updatedRoom)}
+        />
+      )}
+
+      {showProfile && currentPrivateChat && (
+        <UserProfileModal
+          userId={currentPrivateChat.id}
+          fallback={{ username: currentPrivateChat.username, avatar: currentPrivateChat.avatar }}
+          onClose={() => setShowProfile(false)}
         />
       )}
     </div>

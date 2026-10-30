@@ -63,15 +63,17 @@ class ChunkErrorBoundary extends Component {
 function AnimatedRoutes() {
   const location = useLocation();
   const isChatRoute = location.pathname === '/chat';
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const routeKey = isChatRoute ? 'chat' : isAdminRoute ? 'admin' : location.pathname;
 
   return (
-    <div key={isChatRoute ? 'chat' : location.pathname} className="route-fade-in h-full w-full">
+    <div key={routeKey} className="route-fade-in h-full w-full">
       <Routes location={location}>
         <Route path="/login" element={<Login />} />
         <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/" element={<RootRedirect />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
