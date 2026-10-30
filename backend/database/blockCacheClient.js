@@ -38,6 +38,16 @@ class BlockCacheClient {
     }
   }
 
+  async isBlockedBy(userId, peerId) {
+    try {
+      const res = await this.client.post('/blocks/check/blocked-by', { userId, peerId });
+      return !!res.data?.blockedBy;
+    } catch (err) {
+      console.error('[BlockCacheClient] isBlockedBy error:', err.message);
+      return false;
+    }
+  }
+
   async isBlockedInRoom(roomId, senderId, senderIp = null) {
     try {
       const res = await this.client.post('/blocks/check/room', { roomId, senderId, senderIp });

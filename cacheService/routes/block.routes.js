@@ -1,6 +1,7 @@
 import express from 'express';
 import { getUserIps } from '../controllers/block/getUserIps.controller.js';
 import { checkPrivate } from '../controllers/block/checkPrivate.controller.js';
+import { checkBlockedBy } from '../controllers/block/checkBlockedBy.controller.js';
 import { checkRoom } from '../controllers/block/checkRoom.controller.js';
 import { listUserBlocks } from '../controllers/block/listUserBlocks.controller.js';
 import { putUserBlock } from '../controllers/block/putUserBlock.controller.js';
@@ -18,6 +19,7 @@ const router = express.Router();
 router.get('/ips/:userId', getUserIps);
 router.post('/check/private', checkPrivate);
 router.post('/check/room', checkRoom);
+router.post('/check/blocked-by', checkBlockedBy);
 
 router.get('/user/:blockerId', listUserBlocks);
 router.put('/user/:blockerId/:blockedId', putUserBlock);

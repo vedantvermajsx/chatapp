@@ -4,6 +4,8 @@ import { dbService } from '../services/indexedDB.service';
 import keyManager from '../services/keyManager';
 import { generateRsaKeyPairPem } from '../utils/crypto';
 import { resetOfflineHandler } from '../services/offlineMessageHandler';
+import userService from '../services/user.service';
+import { recordBlockFrom403, clearBanCache } from '../utils/blockCache.js';
 
 const AuthContext = createContext();
 
@@ -38,6 +40,38 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     })();
   }, []);
+
+  // Ban state comes with the logged-in user's own profile (not the chat list).
+  useEffect(() => {
+    if (!user?._id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await userService.getProfile();
+        const profile = res?.user || res;
+        if (cancelled || !profile) return;
+        if (profile.isBanned) {
+          const expiresAt = profile.banExpiresAt ?? null;
+          recordBlockFrom403('banned', {
+            expiresAt: expiresAt ? new Date(expiresAt).getTime() : null,
+            message: 'You are banned from sending messages',
+          });
+          if (expiresAt) {
+            const info = { expiresAt };
+            setBan(info);
+            localStorage.setItem('ban', JSON.stringify(info));
+          }
+        } else {
+          clearBanCache();
+          setBan(null);
+          localStorage.removeItem('ban');
+        }
+      } catch (err) {
+        console.warn('Failed to refresh ban state from profile:', err.message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?._id]);
 
   const login = useCallback(async (username, password) => {
     try {

@@ -83,6 +83,11 @@ async function isBlockedPrivate(senderId, receiverId, senderIp) {
   return matchesIp(receiverBlocks, await senderIpSet(s, senderIp));
 }
 
+async function isBlockedBy(userId, peerId) {
+  const blocks = await loadUserBlocks(String(peerId));
+  return blocks.has(String(userId));
+}
+
 async function isBlockedInRoom(roomId, senderId, senderIp) {
   const s = String(senderId);
   const blocks = await loadRoomBlocks(String(roomId));
@@ -172,6 +177,7 @@ export default {
   TTL_MS,
   getUserIps,
   isBlockedPrivate,
+  isBlockedBy,
   isBlockedInRoom,
   addUserBlock,
   removeUserBlock,

@@ -3,6 +3,7 @@ import Avatar from '../common/Avatar';
 import GroupSettingsModal from './Modals/GroupSettingsModal';
 import UserProfileModal from './Modals/UserProfileModal';
 import { useState, memo } from 'react';
+import { getActiveBanCache } from '../../utils/blockCache.js';
 import { useTheme } from '../../contexts/ThemeContext';
 import { formatLastSeen } from '../../utils/dateUtils';
 import { useLeaveRoom, useDeleteRoom } from '../../hooks/useChat';
@@ -198,20 +199,35 @@ const ChatHeader = memo(function ChatHeader({
               </div>
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">
-              <button
-                onClick={() => startCall && startCall(currentPrivateChat.id, false, currentPrivateChat)}
-                {...iconBtn()}
-                title="Voice Call"
-              >
-                <Phone className="w-5 h-5" style={{ color: '#23a559' }} />
-              </button>
-              <button
-                onClick={() => startCall && startCall(currentPrivateChat.id, true, currentPrivateChat)}
-                {...iconBtn()}
-                title="Video Call"
-              >
-                <Video className="w-5 h-5" style={{ color: '#5865f2' }} />
-              </button>
+              {(() => {
+                const isSelfBanned = !!getActiveBanCache();
+                const callsDisabled = currentPrivateChat?.isBlockedBy || isSelfBanned;
+                const callTitle = isSelfBanned
+                  ? 'You are banned — calls disabled'
+                  : currentPrivateChat?.isBlockedBy
+                    ? 'You cannot call this user'
+                    : null;
+                return (
+                  <>
+                    <button
+                      onClick={() => !callsDisabled && startCall && startCall(currentPrivateChat.id, false, currentPrivateChat)}
+                      {...iconBtn()}
+                      title={callTitle || 'Voice Call'}
+                      style={{ opacity: callsDisabled ? 0.35 : 1, cursor: callsDisabled ? 'not-allowed' : 'pointer' }}
+                    >
+                      <Phone className="w-5 h-5" style={{ color: '#23a559' }} />
+                    </button>
+                    <button
+                      onClick={() => !callsDisabled && startCall && startCall(currentPrivateChat.id, true, currentPrivateChat)}
+                      {...iconBtn()}
+                      title={callTitle || 'Video Call'}
+                      style={{ opacity: callsDisabled ? 0.35 : 1, cursor: callsDisabled ? 'not-allowed' : 'pointer' }}
+                    >
+                      <Video className="w-5 h-5" style={{ color: '#5865f2' }} />
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           </>
         ) : (

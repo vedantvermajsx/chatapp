@@ -3,6 +3,7 @@ import { dbService } from '../../services/indexedDB.service.js';
 import keyManager from '../../services/keyManager.js';
 import { decryptPrivateMessage } from '../../utils/crypto.js';
 import { mergeByKey } from '../../utils/mergeCollections.js';
+import { recordBlockFrom403, clearPrivateChatBlock } from '../../utils/blockCache.js';
 
 const chatKey = (chat) => chat?.otherUser?.id ?? chat?.otherUser?._id;
 
@@ -55,6 +56,19 @@ export const loadPrivateChatsHandler = async (setPrivateChats, setLoadingPrivate
         },
       };
     }));
+
+    // ── Seed the frontend block cache from the authoritative list ──
+    for (const chat of res) {
+      const userId = chat.otherUser?.id || chat.otherUser?._id;
+      if (!userId) continue;
+      if (chat.isBlockedBy) {
+        // Populate block cache without an expiresAt (user-level block, not a timed ban)
+        recordBlockFrom403('blocked', { userId, message: 'You cannot message this user' });
+      } else {
+        clearPrivateChatBlock(userId);
+      }
+    }
+    // ──────────────────────────────────────────────────────────────
 
     // Y merged into X — never a wholesale replacement.
     setPrivateChats(prev => mergeByKey(prev, res, chatKey));

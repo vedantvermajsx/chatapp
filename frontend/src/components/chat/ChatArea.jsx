@@ -9,7 +9,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { dbService } from '../../services/indexedDB.service.js';
 import messageService from '../../services/message.service.js';
 import { mergeNewer, persistable } from '../../utils/messageList.js';
-import { MessageSquare } from 'lucide-react';
+import { getActiveBanCache } from '../../utils/blockCache.js';
+import { MessageSquare, Ban, ShieldOff } from 'lucide-react';
 
 const TOP_SCROLL_THRESHOLD = 1;
 
@@ -571,6 +572,40 @@ const ChatArea = memo(function ChatArea({
       </div>
 
       <div className="flex-shrink-0 z-10 pb-[env(safe-area-inset-bottom)]">
+        {(() => {
+          if (!currentPrivateChat) return null;
+          if (getActiveBanCache()) {
+            return (
+              <div
+                className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium"
+                style={{
+                  backgroundColor: theme.isLight ? 'rgba(242,63,67,0.08)' : 'rgba(242,63,67,0.14)',
+                  color: '#f23f43',
+                  borderTop: `1px solid ${theme.isLight ? 'rgba(242,63,67,0.18)' : 'rgba(242,63,67,0.28)'}`,
+                }}
+              >
+                <Ban className="w-4 h-4 flex-shrink-0" />
+                <span>You are banned — messaging and calls are disabled.</span>
+              </div>
+            );
+          }
+          if (currentPrivateChat.isBlockedBy) {
+            return (
+              <div
+                className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium"
+                style={{
+                  backgroundColor: theme.isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
+                  color: theme.isLight ? '#4e5058' : '#949ba4',
+                  borderTop: `1px solid ${theme.isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'}`,
+                }}
+              >
+                <ShieldOff className="w-4 h-4 flex-shrink-0" />
+                <span>You can&apos;t send messages to this user.</span>
+              </div>
+            );
+          }
+          return null;
+        })()}
         <ChatInput
           ref={chatInputRef}
           user={user}
@@ -582,7 +617,7 @@ const ChatArea = memo(function ChatArea({
           onFileSelect={onFileSelect}
           onRemoveFile={onRemoveFile}
           sendMessage={handleSendMessage}
-          disabled={(!currentRoom && !currentPrivateChat) || !!currentRoom?.isDeleted}
+          disabled={(!currentRoom && !currentPrivateChat) || !!currentRoom?.isDeleted || !!currentPrivateChat?.isBlockedBy || !!getActiveBanCache()}
           onStickerSend={sendSticker}
           socket={socket}
           currentRoom={currentRoom}

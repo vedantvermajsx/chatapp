@@ -10,4 +10,3 @@ export const getPrivateChats = async (req, res) => {
     res.status(500).json({ message: 'Failed to get private chats', error: error.message });
   }
 };
-

@@ -1,5 +1,6 @@
 import userCacheClient from "../../database/userCacheClient.js";
 import User from "../../models/user.model.js";
+import { getActiveBan } from "../../utils/block/getActiveBan.js";
 
 export async function getProfile(req, res) {
   try {
@@ -42,6 +43,8 @@ export async function getProfile(req, res) {
       console.warn("getProfile cache/DB error:", err.message);
     }
 
+    const activeBan = getActiveBan(userId);
+
     const profile = {
       _id: String(user._id),
       username: user.username,
@@ -52,6 +55,8 @@ export async function getProfile(req, res) {
       isOnline: user.isOnline,
       lastSeen: user.lastSeen,
       publicKey: user.publicKey ?? null,
+      isBanned: !!activeBan,
+      banExpiresAt: activeBan?.expiresAt ?? null,
     };
 
     res.status(200).json({ message: "User fetched successfully", user: profile });

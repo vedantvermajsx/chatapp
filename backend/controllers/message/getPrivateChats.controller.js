@@ -2,6 +2,7 @@ import userCacheClient from '../../database/userCacheClient.js';
 import { messageCacheClient } from '../../database/messageCacheClient.js';
 import { getDefaultAvatar } from '../../utils/getDefaultAvtar.js';
 import { _addQualities } from '../../utils/addQualities.js';
+import { isBlockedBy } from '../../utils/block/isBlockedBetween.js';
 
 function deletedUserFallback(otherUserId) {
   return {
@@ -25,6 +26,22 @@ export const getPrivateChats = async (req, res) => {
 
     const userDetailsMap = await userCacheClient.getUsersByIds(otherUserIds);
 
+    const blockChecks = await Promise.all(
+      chats.filter((chat) => chat._id).map(async (chat) => {
+        const lastMessage = chat.lastMessage;
+        const otherUserId = lastMessage.senderId === userId
+          ? lastMessage.receiverId
+          : lastMessage.senderId;
+        try {
+          const blocked = await isBlockedBy(userId, otherUserId);
+          return { otherUserId, blocked };
+        } catch {
+          return { otherUserId, blocked: false };
+        }
+      })
+    );
+    const blockMap = new Map(blockChecks.map(({ otherUserId, blocked }) => [otherUserId, blocked]));
+
     const chatsWithUserInfo = chats
       .filter((chat) => chat._id)
       .map((chat) => {
@@ -36,9 +53,6 @@ export const getPrivateChats = async (req, res) => {
         const cachedOtherUser = userDetailsMap.get(otherUserId);
         const rawOtherUser = cachedOtherUser && cachedOtherUser.username ? cachedOtherUser : deletedUserFallback(otherUserId);
 
-        
-        
-        
         const otherUser = {
           _id: String(rawOtherUser._id || rawOtherUser.id || otherUserId),
           username: rawOtherUser.username,
@@ -50,6 +64,8 @@ export const getPrivateChats = async (req, res) => {
 
         return {
           otherUser,
+          // true when the other user has blocked me
+          isBlockedBy: blockMap.get(otherUserId) || false,
           lastMessage: {
             _id: String(lastMessage._id || lastMessage.id),
             senderId: lastMessage.senderId,
