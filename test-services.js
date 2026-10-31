@@ -1,4 +1,5 @@
 import { performance } from 'node:perf_hooks';
+import dns from 'node:dns/promises';
 
 // Defaults point at the deployed services on Render; override any via env for local runs.
 const SERVICES = [
@@ -6,7 +7,7 @@ const SERVICES = [
   { name: 'backend-svc01', url: process.env.BACKEND1_URL || 'https://gatherup-now-backend-service.onrender.com', path: '/health' },
   { name: 'cacheService', url: process.env.CACHE_URL || 'https://gatherup-now-cache-service.onrender.com', path: '/health' },
   { name: 'messagebroker', url: process.env.BROKER_URL || 'https://gatherup-now-messagebroker-service.onrender.com', path: '/health' },
-  { name: 'queueService', url: process.env.QUEUE_URL || 'https://gatherup-now-queue-service.onrender.com', path: '/health' },
+  { name: 'queueService', url: process.env.QUEUE_URL || 'https://gatherup-now-queue-service-new.onrender.com', path: '/health' },
 ];
 
 const ITERATIONS = Number(process.env.ITERATIONS || 20);
@@ -69,6 +70,43 @@ async function benchmark(service) {
 const pad = (v, n) => String(v).padEnd(n);
 const num = (v) => v.toFixed(1);
 
+async function resolveIp(url) {
+  try {
+    const host = new URL(url).hostname;
+    const { address } = await dns.lookup(host);
+    return address;
+  } catch {
+    return null;
+  }
+}
+
+// Best-effort origin lookup; falls back to null if the geo API is unreachable.
+async function geoLookup(ip) {
+  if (!ip) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  try {
+    const res = await fetch(
+      `http://ip-api.com/json/${ip}?fields=status,country,countryCode,regionName,city,isp,as`,
+      { signal: controller.signal }
+    );
+    const data = await res.json();
+    if (data.status !== 'success') return null;
+    return { city: data.city, region: data.regionName, country: data.countryCode, isp: data.isp };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const median = (arr) => {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+};
+
 function statusLabel(s) {
   if (s.ok === 0) return 'DOWN';
   if (s.failed) return `${s.ok}/${s.sent} ok`;
@@ -112,6 +150,35 @@ async function main() {
   if (down.length) {
     console.log('Down: ' + down.map((r) => `${r.service.name} (${r.s.error || 'unreachable'})`).join(', '));
   }
+
+  const reachable = results.filter((r) => r.s.ok > 0);
+  const baseline = median(reachable.map((r) => r.s.min));
+
+  console.log('\nREGIONS  (baseline RTT from your location = ' + num(baseline) + 'ms)');
+  console.log(pad('SERVICE', 15) + pad('MIN(ms)', 9) + pad('IP', 17) + pad('GEO', 26) + pad('CLASS', 10));
+  console.log('-'.repeat(77));
+
+  for (const r of results) {
+    if (r.s.ok === 0) {
+      console.log(pad(r.service.name, 15) + pad('-', 9) + pad('-', 17) + pad('-', 26) + pad('DOWN', 10));
+      continue;
+    }
+    const ip = await resolveIp(r.service.url);
+    const geo = await geoLookup(ip);
+    const geoLabel = geo ? [geo.city, geo.region, geo.country].filter(Boolean).join(', ') : 'unknown';
+    const closer = r.s.min < baseline * 0.75;
+    const cls = closer ? 'CLOSER' : 'far';
+    console.log(
+      pad(r.service.name, 15) + pad(num(r.s.min), 9) + pad(ip || '-', 17) + pad(geoLabel.slice(0, 24), 26) + pad(cls, 10)
+    );
+  }
+
+  const closerServices = results.filter((r) => r.s.ok > 0 && r.s.min < baseline * 0.75);
+  if (closerServices.length) {
+    console.log('\nHosted closer to you: ' + closerServices.map((r) => `${r.service.name} (${num(r.s.min)}ms)`).join(', '));
+  } else {
+    console.log('\nNo service is significantly closer than the rest.');
+  }
 }
 
 main().catch((err) => {
@@ -138,6 +205,24 @@ Down: queueService (unreachable)
  vedant@DELUSION K:\chatnow  master 
 
 
+
+
+test after preflight updated
+
+
+queueService   ok         320.0     396.8     359.3     476.9     941.2     
+
+Slowest by avg: queueService 396.8ms > loadBalancer 396.2ms > backend-svc01 393.6ms > messagebroker 381.2ms > cacheService 186.9ms
+ vedant@DELUSION K:\chatnow  master node test-services.js
+Benchmarking 5 services — 20 requests each, warmup 3, timeout 8000ms
+
+SERVICE        STATUS     MIN(ms)   AVG(ms)   P50(ms)   P95(ms)   MAX(ms)   
+----------------------------------------------------------------------------
+loadBalancer   ok         314.4     350.2     335.6     449.8     519.7     
+backend-svc01  ok         317.9     348.1     338.1     373.9     455.5     
+cacheService   ok         153.1     170.2     164.0     195.9     198.3     
+messagebroker  ok         312.3     366.2     327.4     414.6     889.6     
+queueService   ok         308.8     362.7     331.0     542.6     553.2     
 
 
 */
