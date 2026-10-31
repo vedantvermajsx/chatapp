@@ -19,7 +19,6 @@ import { createChessRouter, setupChessSocket } from './games/chess/index.js';
 import { createMinigamesRouter, setupMinigamesSocket } from './games/minigames/index.js';
 import {bloomFilter} from './utils/bloomFilterService.js';
 import { setupGuestChangeStream } from './models/guest.model.js';
-import { startBanSync } from './utils/ban/startBanSync.js';
 
 dotenv.config();
 
@@ -47,6 +46,7 @@ app.use(cors({
   },
   methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
   allowedHeaders: "Content-Type,Authorization",
+  maxAge: 86400,
   credentials: true
 }));
 
@@ -79,7 +79,6 @@ app.get('/health', (_, res) => res.status(200).json({ ok: true }));
 let currentPort = process.env.PORT || 3001;
 
 connectDB().then(async () => {
-  startBanSync();
   try {
     const { default: User } = await import('./models/user.model.js');
     const { default: Guest } = await import('./models/guest.model.js');

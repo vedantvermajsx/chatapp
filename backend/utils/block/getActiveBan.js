@@ -1,3 +1,3 @@
-import { getBan } from '../ban/getBan.js';
+import blockCacheClient from '../../database/blockCacheClient.js';
 
-export const getActiveBan = (userId) => getBan(userId);
+export const getActiveBan = (userId) => blockCacheClient.checkBan(userId);

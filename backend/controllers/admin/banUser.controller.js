@@ -1,7 +1,6 @@
 import userCacheClient from '../../database/userCacheClient.js';
 import blockCacheClient from '../../database/blockCacheClient.js';
 import { enqueueUserBanned } from '../../utils/queueClient.js';
-import { applyBan } from '../../utils/ban/applyBan.js';
 import Report from '../../models/report.model.js';
 
 const MIN_DURATION_MS = 60 * 1000;
@@ -24,7 +23,6 @@ export async function banUser(req, res) {
     const ban = { userId, username: target.username, reason, expiresAt };
 
     enqueueUserBanned(ban);
-    applyBan(ban);
     await blockCacheClient.addBan(userId, { username: target.username, reason, expiresAt })
       .catch(err => console.warn('[banUser] cache update failed:', err.message));
 

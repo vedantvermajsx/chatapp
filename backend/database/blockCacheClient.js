@@ -87,10 +87,10 @@ class BlockCacheClient {
   async checkBan(userId) {
     try {
       const res = await this.client.post('/blocks/check/ban', { userId });
-      return res.data || { banned: false };
+      return res.data?.ban || null;
     } catch (err) {
       console.error('[BlockCacheClient] checkBan error:', err.message);
-      return { banned: false };
+      return null;
     }
   }
 

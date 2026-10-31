@@ -10,7 +10,7 @@ export async function rejectCall(req, res) {
     const callerId = String(req.body?.callerId || req.body?.senderId || '');
     const callId = typeof req.body?.callId === 'string' ? req.body.callId : undefined;
 
-    if (getActiveBan(calleeId, getClientIp(req))) {
+    if (await getActiveBan(calleeId, getClientIp(req))) {
       return res.status(403).json({ success: false, message: 'You are blocked from calls' });
     }
 

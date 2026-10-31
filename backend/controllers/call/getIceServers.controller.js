@@ -53,7 +53,7 @@ ensureFresh();
 setInterval(ensureFresh, 60 * 1000).unref?.();
 
 export async function getIceServers(req, res) {
-  if (getActiveBan(String(req.user._id), getClientIp(req))) {
+  if (await getActiveBan(String(req.user._id), getClientIp(req))) {
     return res.status(403).json({ success: false, message: 'You are blocked from calls' });
   }
   ensureFresh();

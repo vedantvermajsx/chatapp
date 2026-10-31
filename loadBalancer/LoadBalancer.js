@@ -109,6 +109,7 @@ class LoadBalancer {
         origin: process.env.CLIENT_URL,
         methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
         allowedHeaders: 'Content-Type,Authorization',
+        maxAge: 86400,
         credentials: true
       })
     );

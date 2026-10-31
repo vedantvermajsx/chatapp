@@ -67,7 +67,7 @@ export async function handleAuthSuccess(res, userDocument, role, privateKey = nu
     user: cacheProfile,
   };
 
-  const ban = getActiveBan(userDocument._id);
+  const ban = await getActiveBan(userDocument._id);
   if (ban) {
     response.ban = { reason: ban.reason || '', expiresAt: ban.expiresAt };
   }

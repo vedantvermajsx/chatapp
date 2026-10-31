@@ -26,7 +26,7 @@ export async function sendPrivateMessage(req, res) {
 
     const senderIp = getClientIp(req);
 
-    const activeBan = getActiveBan(sender._id, senderIp);
+    const activeBan = await getActiveBan(sender._id, senderIp);
     if (activeBan) {
       return res.status(403).json({
         message: 'You are blocked from sending messages',

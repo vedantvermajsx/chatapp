@@ -43,7 +43,7 @@ export async function getProfile(req, res) {
       console.warn("getProfile cache/DB error:", err.message);
     }
 
-    const activeBan = getActiveBan(userId);
+    const activeBan = await getActiveBan(userId);
 
     const profile = {
       _id: String(user._id),

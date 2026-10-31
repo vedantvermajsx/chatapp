@@ -1,7 +1,5 @@
 import { on, INSTANCE_ID } from '../utils/messageBroker.js';
 import { processSignal } from '../utils/callSessions.js';
-import { applyBan } from './ban/applyBan.js';
-import { clearBan } from './ban/clearBan.js';
 
 let registered = false;
 
@@ -60,7 +58,4 @@ export function registerBrokerBridge(io, onlineUsers) {
       io.to(String(targetId)).emit('webrtcSignal', payload);
     }
   });
-
-  on('user.banned', (ban) => applyBan(ban));
-  on('user.unbanned', ({ userId }) => clearBan(userId));
 }

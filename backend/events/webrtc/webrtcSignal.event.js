@@ -12,7 +12,7 @@ const handleWebrtcSignal = (socket, io) => async (payload) => {
       return;
     }
 
-    if (getActiveBan(senderId) || (type === 'offer' && await isBlockedBetween(senderId, targetId))) {
+    if ((await getActiveBan(senderId)) || (type === 'offer' && await isBlockedBetween(senderId, targetId))) {
       return;
     }
 
