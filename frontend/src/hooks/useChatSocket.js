@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { notifyIncoming } from '../services/desktopNotifications';
 import io from 'socket.io-client';
 import { updatePrivateChatOptimistically, catchUpNewerMessagesHandler } from '../handlers/chat.handlers.js';
 import { dbService } from '../services/indexedDB.service.js';
 import keyManager from '../services/keyManager.js';
 import { decryptForRoom, decryptPrivateMessage } from '../utils/crypto.js';
 import { capNewest, withCap } from '../utils/messageList.js';
-import { clearBanCache, clearPrivateChatBlock, clearRoomBlock } from '../utils/blockCache.js';
 
 async function decryptReplyPreviewForRoom(replyTo, roomPrivateKeyPem) {
   if (!replyTo?.iv || !replyTo?.wrappedKey || !roomPrivateKeyPem) return replyTo;
@@ -209,6 +209,16 @@ export const useChatSocket = (user, {
       const isOwnMessage = msg.userId === (currentUser?._id || currentUser?.id);
       const isActiveRoom = String(currentRoomRef.current?._id) === String(msg.roomId);
 
+      if (!isOwnMessage && !msg?.isSystemMessage) {
+        notifyIncoming({
+          chatKey: `room_${msg.roomId}`,
+          title: room?.groupName || room?.name || 'New message',
+          body: `${msg?.username || 'Someone'} sent a new message`,
+          target: { type: 'room', roomId: String(msg.roomId) },
+          isActiveChat: isActiveRoom,
+        });
+      }
+
       const newMessage = {
         id: msg?._id || msg?.id,
         senderId: msg?.userId,
@@ -335,6 +345,16 @@ export const useChatSocket = (user, {
       };
 
       const isActiveChat = currentPrivateChatRef.current?.id === otherUserId;
+
+      if (!isOwnMessage && !msg?.isSystemMessage) {
+        notifyIncoming({
+          chatKey: `private_${otherUserId}`,
+          title: otherUser?.username || 'New message',
+          body: 'Sent you a new message',
+          target: { type: 'private', userId: String(otherUserId), otherUser },
+          isActiveChat,
+        });
+      }
 
       if (isActiveChat) {
         if (messageCache.current[cacheKey]) {
@@ -579,16 +599,6 @@ export const useChatSocket = (user, {
       });
     };
 
-    // ── Block-cache invalidation via socket ──────────────────────────────────
-    const handleUserUnbanned = () => clearBanCache();
-    const handleUserUnblocked = ({ unblockedId } = {}) => {
-      if (unblockedId) clearPrivateChatBlock(String(unblockedId));
-    };
-    const handleRoomUserUnblocked = ({ roomId } = {}) => {
-      if (roomId) clearRoomBlock(String(roomId));
-    };
-    // ────────────────────────────────────────────────────────────────────────
-
     socket.on('connect', handleConnect);
     socket.on('connect_error', (error) => console.error('Socket connection error:', error));
     socket.on('disconnect', (reason) => console.log('Socket disconnected:', reason));
@@ -608,9 +618,6 @@ export const useChatSocket = (user, {
     socket.on('stopTypingPrivate', handleStopTypingPrivate);
     socket.on('typingRoom', handleTypingRoom);
     socket.on('stopTypingRoom', handleStopTypingRoom);
-    socket.on('userUnbanned', handleUserUnbanned);
-    socket.on('userUnblocked', handleUserUnblocked);
-    socket.on('roomUserUnblocked', handleRoomUserUnblocked);
 
     if (socket.connected) { handleConnect(); }
 
@@ -634,9 +641,6 @@ export const useChatSocket = (user, {
       socket.off('stopTypingPrivate', handleStopTypingPrivate);
       socket.off('typingRoom', handleTypingRoom);
       socket.off('stopTypingRoom', handleStopTypingRoom);
-      socket.off('userUnbanned', handleUserUnbanned);
-      socket.off('userUnblocked', handleUserUnblocked);
-      socket.off('roomUserUnblocked', handleRoomUserUnblocked);
     };
   }, [setMessages, setPrivateChats, setRoomMembers, setUnreadCounts, setJoinedRooms, setCurrentRoom]);
 

@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { THEMES } from './THEMES';
+import { getChatBackground, setChatBackground, clearChatBackground } from '../utils/chatBackground';
 
 const ThemeContext = createContext();
 
@@ -17,6 +18,18 @@ export const ThemeProvider = ({ children }) => {
     }
     return THEMES.find(t => t.id === 'discord-midnight') || THEMES[0];
   });
+
+  const [chatBackground, setChatBackgroundState] = useState(() => getChatBackground());
+
+  const setChatBackgroundImage = useCallback(async (file) => {
+    const saved = await setChatBackground(file);
+    setChatBackgroundState(saved);
+  }, []);
+
+  const clearChatBackgroundImage = useCallback(() => {
+    clearChatBackground();
+    setChatBackgroundState(null);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('chatTheme', JSON.stringify(theme));
@@ -36,7 +49,10 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme]);
 
-  const value = useMemo(() => ({ theme, setTheme, THEMES }), [theme]);
+  const value = useMemo(
+    () => ({ theme, setTheme, THEMES, chatBackground, setChatBackgroundImage, clearChatBackgroundImage }),
+    [theme, chatBackground, setChatBackgroundImage, clearChatBackgroundImage]
+  );
 
   return (
     <ThemeContext.Provider value={value}>

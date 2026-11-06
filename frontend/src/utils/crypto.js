@@ -36,7 +36,10 @@ function bufToPem(buf, label) {
   return `-----BEGIN ${label}-----\n${lines}\n-----END ${label}-----`;
 }
 
-export async function generateRsaKeyPairPem() {
+const RSA_KEYGEN_MAX_ATTEMPTS = 3;
+const RSA_KEYGEN_SELF_TEST_PLAINTEXT = '__rsa_keygen_self_test__';
+
+async function generateRsaKeyPairPemOnce() {
   const { publicKey, privateKey } = await crypto.subtle.generateKey(RSA_KEYGEN_ALGO, true, ['encrypt', 'decrypt']);
   const [pubBuf, privBuf] = await Promise.all([
     crypto.subtle.exportKey('spki', publicKey),
@@ -46,6 +49,31 @@ export async function generateRsaKeyPairPem() {
     publicKeyPem: bufToPem(pubBuf, 'PUBLIC KEY'),
     privateKeyPem: bufToPem(privBuf, 'PRIVATE KEY'),
   };
+}
+
+// Generates a keypair and proves it round-trips before returning it; a broken keypair would
+// silently make every message for this user undecryptable, so retry a few times.
+export async function generateRsaKeyPairPem() {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= RSA_KEYGEN_MAX_ATTEMPTS; attempt++) {
+    const { publicKeyPem, privateKeyPem } = await generateRsaKeyPairPemOnce();
+    try {
+      const pubKey = await importRsaPublicKey(publicKeyPem);
+      const privKey = await importRsaPrivateKey(privateKeyPem);
+      const ciphertext = await crypto.subtle.encrypt(
+        RSA_ALGO, pubKey, new TextEncoder().encode(RSA_KEYGEN_SELF_TEST_PLAINTEXT)
+      );
+      const plaintext = await crypto.subtle.decrypt(RSA_ALGO, privKey, ciphertext);
+      if (new TextDecoder().decode(plaintext) === RSA_KEYGEN_SELF_TEST_PLAINTEXT) {
+        return { publicKeyPem, privateKeyPem };
+      }
+      lastErr = new Error('RSA keypair self-test mismatch');
+    } catch (err) {
+      lastErr = err;
+    }
+    console.warn(`[crypto] generateRsaKeyPairPem attempt ${attempt} failed self-test, retrying:`, lastErr?.message);
+  }
+  throw new Error(`Failed to generate a working RSA keypair after ${RSA_KEYGEN_MAX_ATTEMPTS} attempts: ${lastErr?.message}`);
 }
 
 async function importRsaPublicKey(pem) {

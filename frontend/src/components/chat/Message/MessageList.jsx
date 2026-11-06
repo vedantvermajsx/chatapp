@@ -28,7 +28,7 @@ const MessageList = ({
   onReplyQuoteClick,
   onReportClick,
 }) => {
-  const { theme } = useTheme();
+  const { theme, chatBackground } = useTheme();
   const observerRef = useRef(null);
   const lastMsgElRef = useRef(null);
   const firstMsgObserverRef = useRef(null);
@@ -150,6 +150,11 @@ const MessageList = ({
       className="h-full overflow-y-auto hide-scrollbar"
       style={{
         backgroundColor: theme.background,
+        ...(chatBackground && {
+          backgroundImage: `url(${chatBackground})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }),
         padding: `${topPadding + 8}px 0 8px`,
         overflowAnchor: 'none',
         '--scrollbar-thumb': theme.isLight ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.22)',

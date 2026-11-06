@@ -106,11 +106,11 @@ class MessageService {
       const wrappedKeyForMe = isOwn ? senderKeyWrapped : receiverKeyWrapped;
       if (!wrappedKeyForMe) return { ...clean, text: '🔒 Unable to decrypt message', replyTo };
       try {
-        const text = await decryptPrivateMessage(msg.text, iv, wrappedKeyForMe, privateKeyPem);
+        const text = await decryptPrivateMessage(msg.text ?? msg.content, iv, wrappedKeyForMe, privateKeyPem);
         return { ...clean, text, replyTo };
       } catch (err) {
         console.error('[messageService] private decrypt failed:', err.message);
-        return { ...clean, text: '🔒 Unable to decrypt message' };
+        return { ...clean, text: '🔒 Unable to decrypt message', replyTo };
       }
     }));
   }
@@ -144,7 +144,8 @@ class MessageService {
       ...(isSystemMessage && { isSystemMessage: true, systemType }),
     };
 
-    if (content) {
+    // System messages (call logs, game invites) are plain text by design.
+    if (content && !isSystemMessage) {
       const selfPublicKey = await this._getSelfPublicKey();
       const receiverPublicKey = await this._getPublicKey(receiverId);
 

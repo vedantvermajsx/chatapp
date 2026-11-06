@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '../services/auth.service';
-import { dbService } from '../services/indexedDB.service';
+import { useQueryClient } from '@tanstack/react-query';
+import { allowDB } from '../services/indexedDB/core.js';
+import { wipeLocalChatData } from '../services/logoutCleanup';
+import { resetOfflineHandler } from '../services/offlineMessageHandler';
 import keyManager from '../services/keyManager';
 import { generateRsaKeyPairPem } from '../utils/crypto';
-import { resetOfflineHandler } from '../services/offlineMessageHandler';
-import userService from '../services/user.service';
-import { recordBlockFrom403, clearBanCache } from '../utils/blockCache.js';
 
 const AuthContext = createContext();
 
@@ -20,63 +20,29 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    (async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const userStr = localStorage.getItem('user');
-        if (userStr && userStr !== 'undefined') {
-          try {
-            const storedUser = JSON.parse(userStr);
-            if (storedUser?._id) await dbService.ensureOwner(storedUser._id);
-            setUser(storedUser);
-            if (storedUser?._id) keyManager.loadSelfPrivateKey(storedUser._id);
-          } catch (e) {
-            console.error('Failed to restore user from localStorage:', e);
-          }
+    const token = localStorage.getItem('token');
+    if (token) {
+      const userStr = localStorage.getItem('user');
+      if (userStr && userStr !== 'undefined') {
+        try {
+          const storedUser = JSON.parse(userStr);
+          setUser(storedUser);
+          if (storedUser?._id) keyManager.loadSelfPrivateKey(storedUser._id);
+        } catch (e) {
+          console.error('Failed to parse user from localStorage:', e);
         }
       }
-      setLoading(false);
-    })();
+    }
+    setLoading(false);
   }, []);
-
-  // Ban state comes with the logged-in user's own profile (not the chat list).
-  useEffect(() => {
-    if (!user?._id) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await userService.getProfile();
-        const profile = res?.user || res;
-        if (cancelled || !profile) return;
-        if (profile.isBanned) {
-          const expiresAt = profile.banExpiresAt ?? null;
-          recordBlockFrom403('banned', {
-            expiresAt: expiresAt ? new Date(expiresAt).getTime() : null,
-            message: 'You are banned from sending messages',
-          });
-          if (expiresAt) {
-            const info = { expiresAt };
-            setBan(info);
-            localStorage.setItem('ban', JSON.stringify(info));
-          }
-        } else {
-          clearBanCache();
-          setBan(null);
-          localStorage.removeItem('ban');
-        }
-      } catch (err) {
-        console.warn('Failed to refresh ban state from profile:', err.message);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user?._id]);
 
   const login = useCallback(async (username, password) => {
     try {
       const res = await authService.login({ username, password });
-      await dbService.ensureOwner(res.user._id, { wipeIfUnknown: true });
+      allowDB();
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
@@ -94,7 +60,7 @@ export const AuthProvider = ({ children }) => {
   const register = useCallback(async (username, email, gender, password) => {
     try {
       const res = await authService.register({ username, email, gender, password });
-      await dbService.ensureOwner(res.user._id, { wipeIfUnknown: true });
+      allowDB();
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
@@ -109,7 +75,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { publicKeyPem, privateKeyPem } = await generateRsaKeyPairPem();
       const res = await authService.guestLogin({ username, gender, publicKey: publicKeyPem });
-      await dbService.ensureOwner(res.user._id, { wipeIfUnknown: true });
+      allowDB();
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
@@ -120,20 +86,31 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Signing out removes every trace of the chats from this device: messages, rooms, private
+  // chats, unread counts, pending uploads, encryption keys, downloaded attachments, cached
+  // queries and any notifications still showing.
   const logout = useCallback(async () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('ban');
+    // Tell the server first (needs the token); never let a slow/offline server block the wipe.
+    try {
+      await Promise.race([authService.logout(), new Promise((r) => setTimeout(r, 3000))]);
+    } catch { /* ignore */ }
     resetOfflineHandler();
     setUser(null);
     setBan(null);
-    await keyManager.clear();
-    try {
-      await dbService.clearAllData();
-    } catch (err) {
-      console.error('Error clearing IndexedDB on logout:', err);
-    }
-  }, []);
+    await wipeLocalChatData({ queryClient });
+  }, [queryClient]);
+
+  // Server says the session is dead (HTTP 498): same result as a logout.
+  useEffect(() => {
+    const onExpired = () => {
+      resetOfflineHandler();
+      setUser(null);
+      setBan(null);
+      try { queryClient.clear(); } catch { /* ignore */ }
+    };
+    window.addEventListener('auth:expired', onExpired);
+    return () => window.removeEventListener('auth:expired', onExpired);
+  }, [queryClient]);
 
   const updateUser = useCallback((userData) => {
     setUser((prev) => {

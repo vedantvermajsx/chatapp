@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { toast } from 'sonner';
-import { dbService } from './indexedDB.service';
+import { wipeLocalChatData } from './logoutCleanup';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_LOAD_BALENCER_URL_,
@@ -37,9 +37,14 @@ apiClient.interceptors.response.use(
     const isOffline = !navigator.onLine;
 
     if (error.response?.status === 498) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      dbService.clearAllData().catch(console.error);
+      // A late 498 from a request made with an old token must not log out a fresh session.
+      const sent = error.config?.headers?.Authorization;
+      const current = localStorage.getItem('token');
+      if (!current || (sent && sent !== `Bearer ${current}`)) {
+        return Promise.reject(error);
+      }
+      window.dispatchEvent(new Event('auth:expired'));
+      wipeLocalChatData().catch(console.error);
       toast.error('Session expired or invalid. Please log in again.');
       
       if (window.location.hash !== '#/login') {

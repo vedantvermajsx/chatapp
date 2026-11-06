@@ -18,7 +18,12 @@ export const MINIGAME_COMMANDS = {
   '/start-rps': 'rps',
 };
 
+export const isMinigameCommand = (text) =>
+  Object.prototype.hasOwnProperty.call(MINIGAME_COMMANDS, (text || '').trim().toLowerCase());
+
 export const isMinigame = (id) => Object.prototype.hasOwnProperty.call(MINIGAMES, id);
+
+export const minigameLabel = (game) => (MINIGAMES[game] ? MINIGAMES[game].label : 'Minigames');
 
 export const inviteText = (game, code) => `Join the ${MINIGAMES[game].label} game with code: ${code}`;
 

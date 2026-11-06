@@ -58,6 +58,7 @@ class UserService {
       username: u.username,
       avatar: u.pfp ?? u.avatar ?? '',
       bio: u.bio ?? '',
+      gender: u.gender,
     }));
 
     return mapped;

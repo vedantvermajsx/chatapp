@@ -1,8 +1,8 @@
 export const DB_NAME = 'GatherUpDB';
-export const DB_VERSION = 7; 
-export const MAX_MESSAGES_PER_CHAT = 100;
 // Recently used stickers + GIFs (combined) kept locally so they work offline.
 export const MAX_RECENT_STICKERS = 100;
+export const DB_VERSION = 7; 
+export const MAX_MESSAGES_PER_CHAT = 100;
 
 export const STORES = {
   rooms: 'rooms',
@@ -18,12 +18,19 @@ export const STORES = {
 
 let dbInstance = null;
 
+// After logout the local database must stay closed (nothing may write chats back into it)
+// until the next login re-allows it.
+let sessionClosed = false;
+export const blockDB = () => { sessionClosed = true; };
+export const allowDB = () => { sessionClosed = false; };
+
 const clearedHooks = [];
 export const onStoresCleared = (fn) => { clearedHooks.push(fn); };
 export const notifyStoresCleared = () => clearedHooks.forEach((fn) => { try { fn(); } catch {} });
 
 export const openDB = () => {
   return new Promise((resolve, reject) => {
+    if (sessionClosed) { reject(new Error('Local database is closed (signed out)')); return; }
     if (dbInstance) { resolve(dbInstance); return; }
 
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -121,6 +128,8 @@ export const promisifyRequest = (request) =>
     request.onerror = () => reject(request.error);
   });
 
+// Rows are written with a synthetic `__order` field so the last known list
+// order survives IndexedDB's key-sorted reads. The field is stripped on read.
 export const sortByStoredOrder = (rows) => {
   if (!Array.isArray(rows)) return [];
   return rows
@@ -167,24 +176,4 @@ export const hardResetDB = () => {
     request.onerror = () => reject(request.error);
     request.onblocked = () => resolve();
   });
-};
-
-const OWNER_KEY = 'gatherup.dbOwner';
-
-// The local DB belongs to one user. If a different user signs in, wipe it so no chat data leaks across accounts.
-// wipeIfUnknown: on a fresh login with no owner stamp (legacy data) we can't prove ownership, so wipe.
-export const ensureDBOwner = async (userId, { wipeIfUnknown = false } = {}) => {
-  if (!userId) return;
-  const id = String(userId);
-  let owner = null;
-  try { owner = localStorage.getItem(OWNER_KEY); } catch { /* ignore */ }
-  if (owner !== id && (owner || wipeIfUnknown)) {
-    try {
-      await clearAllStores();
-    } catch (error) {
-      console.error('clearAllStores failed, deleting database instead:', error);
-      await hardResetDB();
-    }
-  }
-  try { localStorage.setItem(OWNER_KEY, id); } catch { /* ignore */ }
 };
