@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import httpProxy from 'http-proxy';
 import http from 'http';
 import https from 'https';
@@ -140,7 +140,7 @@ class LoadBalancer {
     const limiter = rateLimit({
       windowMs: this.rateLimitWindowMs,
       max: this.rateLimitMaxRequests,
-      keyGenerator: (req) => ipKeyGenerator(this.getClientIp(req)),
+      keyGenerator: (req) => this.getClientIp(req),
       standardHeaders: true,
       legacyHeaders: false
     });
