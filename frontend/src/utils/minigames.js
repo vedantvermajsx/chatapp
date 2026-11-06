@@ -1,10 +1,12 @@
+import { Grid3x3, Grid2x2, CircleDot, Circle, Contrast, Scissors } from 'lucide-react';
+
 export const MINIGAMES = {
-  tictactoe: { label: 'Tic-Tac-Toe' },
-  connect4: { label: 'Connect Four' },
-  gomoku: { label: 'Gomoku' },
-  reversi: { label: 'Reversi' },
-  dots: { label: 'Dots and Boxes' },
-  rps: { label: 'Rock Paper Scissors' },
+  tictactoe: { label: 'Tic-Tac-Toe', Icon: Grid3x3 },
+  connect4: { label: 'Connect Four', Icon: CircleDot },
+  gomoku: { label: 'Gomoku', Icon: Circle },
+  reversi: { label: 'Reversi', Icon: Contrast },
+  dots: { label: 'Dots and Boxes', Icon: Grid2x2 },
+  rps: { label: 'Rock Paper Scissors', Icon: Scissors },
 };
 
 // Chat slash commands. `null` opens the game picker.

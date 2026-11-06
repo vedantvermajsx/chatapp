@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { THEMES } from './THEMES';
-import { getChatBackground, setChatBackground, clearChatBackground } from '../utils/chatBackground';
+import { getChatBackground, setChatBackground, clearChatBackground, getChatBackgroundSettings, setChatBackgroundSettings } from '../utils/chatBackground';
 
 const ThemeContext = createContext();
 
@@ -20,6 +20,7 @@ export const ThemeProvider = ({ children }) => {
   });
 
   const [chatBackground, setChatBackgroundState] = useState(() => getChatBackground());
+  const [chatBackgroundSettings, setChatBackgroundSettingsState] = useState(() => getChatBackgroundSettings());
 
   const setChatBackgroundImage = useCallback(async (file) => {
     const saved = await setChatBackground(file);
@@ -31,13 +32,28 @@ export const ThemeProvider = ({ children }) => {
     setChatBackgroundState(null);
   }, []);
 
+  const updateChatBackgroundSettings = useCallback((patch) => {
+    setChatBackgroundSettingsState(prev => {
+      const next = { ...prev, ...patch };
+      setChatBackgroundSettings(next);
+      return next;
+    });
+  }, []);
+
+  // Logout / expired session wipes the stored background; drop it from memory too.
+  useEffect(() => {
+    const onWiped = () => setChatBackgroundState(null);
+    window.addEventListener('chat:wiped', onWiped);
+    return () => window.removeEventListener('chat:wiped', onWiped);
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('chatTheme', JSON.stringify(theme));
     document.body.style.backgroundColor = theme.background;
     const r = document.documentElement.style;
     r.setProperty('--g-bg', theme.background);
     r.setProperty('--g-fg', theme.otherMessageText);
-    r.setProperty('--g-accent', theme.myMessageBubble);
+    r.setProperty('--g-accent', theme.primary || theme.myMessageBubble);
     r.setProperty('--g-line', theme.isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.09)');
     r.setProperty('--g-hi', theme.isLight ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.08)');
     r.setProperty('--g-shadow', theme.isLight ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.45)');
@@ -50,8 +66,8 @@ export const ThemeProvider = ({ children }) => {
   }, [theme]);
 
   const value = useMemo(
-    () => ({ theme, setTheme, THEMES, chatBackground, setChatBackgroundImage, clearChatBackgroundImage }),
-    [theme, chatBackground, setChatBackgroundImage, clearChatBackgroundImage]
+    () => ({ theme, setTheme, THEMES, chatBackground, setChatBackgroundImage, clearChatBackgroundImage, chatBackgroundSettings, updateChatBackgroundSettings }),
+    [theme, chatBackground, setChatBackgroundImage, clearChatBackgroundImage, chatBackgroundSettings, updateChatBackgroundSettings]
   );
 
   return (

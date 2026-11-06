@@ -21,6 +21,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
   return (
     <>
       <div
+        data-tour="sidebar-footer"
         className="mx-2 my-1 flex-shrink-0 flex items-center gap-2 px-2 py-1.5 rounded"
         style={{ backgroundColor: panelBg }}
       >
@@ -77,7 +78,7 @@ const SidebarFooter = ({ user, onShowSettings, onToggleThemePicker, onLogout }) 
             {activeCount > 0 && (
               <span
                 className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center"
-                style={{ backgroundColor: theme.primary || '#6366f1', color: '#fff' }}
+                style={{ backgroundColor: theme.primary || '#6366f1', color: theme.onPrimary }}
               >
                 {activeCount > 9 ? '9+' : activeCount}
               </span>

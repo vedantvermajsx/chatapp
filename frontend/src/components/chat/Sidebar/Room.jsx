@@ -5,7 +5,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 const Room = memo(function Room({ room, currentRoom, handleJoinRoom, unread = 0 }) {
     const { theme } = useTheme();
     const isActive = currentRoom?._id === room._id;
-    const accent = theme.myMessageBubble || '#5865f2';
+    const accent = theme.primary || theme.myMessageBubble || '#5865f2';
 
     return (
         <div

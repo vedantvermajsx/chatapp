@@ -7,6 +7,7 @@ import { generateRsaKeyPairPem } from '../../../utils/crypto';
 import RoomList from './RoomList';
 import GlobalRoomList from './GlobalRoomList';
 import PrivateChatList from './PrivateChatList';
+import MinigameList from './MinigameList';
 import UserSearchRow from './UserSearchRow';
 import Spinner from '../../common/Spinner';
 import CreateRoomForm from '../Modals/CreateRoomForm';
@@ -250,6 +251,7 @@ function RoomSidebar({
         handleDeletePrivateChat={handleDeletePrivateChat}
         unreadCounts={unreadCounts}
       />
+      <MinigameList onCloseSidebar={onCloseSidebar} />
     </div>
   );
 
@@ -333,9 +335,9 @@ function RoomSidebar({
           >
             <div
               className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: theme.myMessageBubble || '#5865f2' }}
+              style={{ backgroundColor: theme.primary || theme.myMessageBubble || '#5865f2' }}
             >
-              <Plus className="w-3 h-3 text-white" strokeWidth={2.5} />
+              <Plus className="w-3 h-3" style={{ color: theme.onPrimary || '#ffffff' }} strokeWidth={2.5} />
             </div>
             <span className="text-[15px] font-semibold leading-tight">
               Create Room
@@ -376,6 +378,7 @@ function RoomSidebar({
     <>
       { }
       <div
+        data-tour="sidebar"
         className={`${hasActiveChat ? 'hidden' : 'flex'} md:hidden flex-col w-full h-full flex-shrink-0`}
         style={{ backgroundColor: theme.background }}
       >
@@ -383,6 +386,7 @@ function RoomSidebar({
       </div>
 
       <div
+        data-tour="sidebar"
         className="hidden md:block w-72 lg:w-80 flex-shrink-0 border-r"
         style={{ backgroundColor: theme.background, borderColor: border }}
       >

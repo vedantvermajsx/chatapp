@@ -42,10 +42,11 @@ function TextContent({ text, textColor, bubbleBg, accent, isOwn = false }) {
   const minigame = parseInvite(text);
   if (minigame) {
     const { game, code } = minigame;
+    const GameIcon = MINIGAMES[game].Icon;
     return (
       <div>
         <p className="text-[15px] leading-[1.4]" style={{ color: textColor }}>
-          {MINIGAMES[game].icon} Join the {MINIGAMES[game].label} game with code: <span className="font-bold tracking-widest">{code}</span>
+          <GameIcon className="inline-block w-4 h-4 mr-1 align-text-bottom" style={{ color: accent || textColor }} /> Join the {MINIGAMES[game].label} game with code: <span className="font-bold tracking-widest">{code}</span>
         </p>
         {!isOwn && (
           <button

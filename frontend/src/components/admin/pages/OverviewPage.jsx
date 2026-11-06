@@ -19,7 +19,7 @@ export default function OverviewPage() {
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [refreshing, setRefreshing] = useState(false);
 
-  const accent = theme.myMessageBubble;
+  const accent = theme.primary || theme.myMessageBubble;
   const accent2 = theme.otherUsernameColor;
 
   const load = useCallback(async (isRefresh) => {

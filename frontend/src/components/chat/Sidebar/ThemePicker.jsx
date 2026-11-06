@@ -1,11 +1,19 @@
 import React, { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { X } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { THEMES } from '../../../contexts/THEMES';
+import { DEFAULT_CHAT_BG_SETTINGS } from '../../../utils/chatBackground';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 
+const BG_CONTROLS = [
+  { key: 'blur', label: 'Blur', min: 0, max: 20, step: 1, suffix: 'px' },
+  { key: 'opacity', label: 'Opacity', min: 10, max: 100, step: 1, suffix: '%' },
+  { key: 'contrast', label: 'Contrast', min: 50, max: 200, step: 1, suffix: '%' },
+];
+
 const ThemePicker = ({ show, onClose }) => {
-  const { theme, setTheme, chatBackground, setChatBackgroundImage, clearChatBackgroundImage } = useTheme();
+  const { theme, setTheme, chatBackground, setChatBackgroundImage, clearChatBackgroundImage, chatBackgroundSettings, updateChatBackgroundSettings } = useTheme();
   const fileRef = useRef(null);
   const [busy, setBusy] = useState(false);
 
@@ -33,6 +41,15 @@ const ThemePicker = ({ show, onClose }) => {
     }}>
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-sm font-bold" style={{ color: theme.otherMessageText }}>Select Theme</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close theme selector"
+          className="p-1 rounded-full transition-opacity hover:opacity-70"
+          style={{ color: theme.otherMessageText }}
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
       <div className="mb-4 p-3 rounded-xl flex items-center gap-3" style={{ backgroundColor: theme.otherMessageBubble }}>
         <div
@@ -50,7 +67,7 @@ const ThemePicker = ({ show, onClose }) => {
               disabled={busy}
               onClick={() => fileRef.current?.click()}
               className="text-xs font-semibold disabled:opacity-50"
-              style={{ color: theme.myMessageBubble }}
+              style={{ color: theme.primary || theme.myMessageBubble }}
             >
               {busy ? 'Saving...' : chatBackground ? 'Change' : 'Add image'}
             </button>
@@ -63,6 +80,36 @@ const ThemePicker = ({ show, onClose }) => {
         </div>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePick} />
       </div>
+      {chatBackground && (
+        <div className="mb-4 flex flex-col gap-2.5">
+          {BG_CONTROLS.map(({ key, label, min, max, step, suffix }) => (
+            <label key={key} className="flex flex-col gap-1">
+              <span className="flex justify-between text-[11px] font-semibold" style={{ color: theme.otherMessageText }}>
+                <span>{label}</span>
+                <span style={{ color: theme.muted }}>{chatBackgroundSettings[key]}{suffix}</span>
+              </span>
+              <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={chatBackgroundSettings[key]}
+                onChange={(e) => updateChatBackgroundSettings({ [key]: Number(e.target.value) })}
+                className="w-full cursor-pointer"
+                style={{ accentColor: theme.primary || theme.myMessageBubble }}
+              />
+            </label>
+          ))}
+          <button
+            type="button"
+            onClick={() => updateChatBackgroundSettings(DEFAULT_CHAT_BG_SETTINGS)}
+            className="self-start text-xs font-semibold transition-opacity hover:opacity-70"
+            style={{ color: theme.primary || theme.myMessageBubble }}
+          >
+            Reset
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2">
         {THEMES.map(t => (
           <button

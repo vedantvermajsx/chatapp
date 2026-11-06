@@ -9,6 +9,9 @@ import { generateRsaKeyPairPem } from '../utils/crypto';
 
 const AuthContext = createContext();
 
+// New accounts (and guests) get the onboarding tour the first time they land in the chat.
+const tourKey = (id) => `tour_pending_${id}`;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [ban, setBan] = useState(() => {
@@ -64,6 +67,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
+      localStorage.setItem(tourKey(res.user._id), '1');
       if (res.privateKey) await keyManager.setSelfPrivateKey(res.user._id, res.privateKey);
       return { success: true };
     } catch (error) {
@@ -79,6 +83,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       setUser(res.user);
+      localStorage.setItem(tourKey(res.user._id), '1');
       await keyManager.setSelfPrivateKey(res.user._id, privateKeyPem);
       return { success: true };
     } catch (error) {

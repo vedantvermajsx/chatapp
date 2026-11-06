@@ -11,6 +11,7 @@ import { CallProvider } from '../contexts/CallContext';
 import CallOverlay from './chat/Call/CallOverlay';
 import ChessWindow from './chat/Chess/ChessWindow';
 import MinigameWindow from './chat/Minigames/MinigameWindow';
+import Tour from './chat/Tour/Tour';
 import { MINIGAME_COMMANDS, inviteText } from '../utils/minigames';
 import { sendMessageHandler } from '../handlers/message/sendMessage.handler.js';
 import { dbService } from '../services/indexedDB.service';
@@ -87,6 +88,7 @@ function Chat() {
   });
 
   const [showChess, setShowChess] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [chessJoinCode, setChessJoinCode] = useState(null);
   const [chessKey, setChessKey] = useState(0);
   const chessBusyRef = useRef(false);
@@ -148,7 +150,6 @@ function Chat() {
     if (sendInviteText(`Join the chess game with code: ${code}`)) lastInvitedCodeRef.current = code;
   }, [sendInviteText]);
 
-  // ── Minigames (tic-tac-toe / connect four / rock-paper-scissors) ──
   const [minigame, setMinigame] = useState(null); // { game, joinCode, key } | null
   minigameRef.current = minigame;
   const minigameBusyRef = useRef(false);
@@ -170,7 +171,7 @@ function Chat() {
   useEffect(() => {
     const onOpenMinigame = (e) => {
       const { game, code } = e.detail || {};
-      if (game && code) openMinigame(game, code);
+      if (game || code) openMinigame(game || null, code || null);
     };
     window.addEventListener('open-minigame', onOpenMinigame);
     return () => window.removeEventListener('open-minigame', onOpenMinigame);
@@ -221,6 +222,18 @@ function Chat() {
 
     Promise.all([loadJoinedRooms(), loadPrivateChats()]);
   }, [user, navigate]);
+
+  // Show the onboarding tour once, right after a fresh registration or guest sign-in.
+  const userId = user?._id || user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    if (localStorage.getItem(`tour_pending_${userId}`) === '1') setShowTour(true);
+  }, [userId]);
+
+  const finishTour = useCallback(() => {
+    if (userId) localStorage.removeItem(`tour_pending_${userId}`);
+    setShowTour(false);
+  }, [userId]);
 
   const handleLeaveRoom = useCallback((roomId) => {
     setJoinedRooms(prev => (Array.isArray(prev) ? prev : []).filter(r => r._id !== roomId));
@@ -434,6 +447,7 @@ function Chat() {
           onClose={() => { minigameBusyRef.current = false; setMinigame(null); }}
         />
       )}
+      {showTour && <Tour onDone={finishTour} />}
     </div>
   );
 }

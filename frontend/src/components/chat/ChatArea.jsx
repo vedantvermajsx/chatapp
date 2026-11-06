@@ -88,7 +88,7 @@ const ChatArea = memo(function ChatArea({
   const [showNewMsgBanner, setShowNewMsgBanner] = useState(false);
   const [isFetchingOlder, setIsFetchingOlder] = useState(false);
 
-  const { theme } = useTheme();
+  const { theme, chatBackground, chatBackgroundSettings } = useTheme();
 
   useEffect(() => {
     if (!chatHeaderRef.current) return;
@@ -480,6 +480,7 @@ const ChatArea = memo(function ChatArea({
 
   return (
     <div
+      data-tour="chat-area"
       className="ambient flex-1 flex flex-col min-w-0 relative overflow-hidden"
       style={{
         backgroundColor: theme.background,
@@ -487,6 +488,22 @@ const ChatArea = memo(function ChatArea({
         transform: offsetTop ? `translateY(${offsetTop}px)` : undefined,
       }}
     >
+      {chatBackground && (
+        <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="absolute"
+            style={{
+              inset: `${-chatBackgroundSettings.blur}px`,
+              backgroundImage: `url(${chatBackground})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: chatBackgroundSettings.opacity / 100,
+              filter: `blur(${chatBackgroundSettings.blur}px) contrast(${chatBackgroundSettings.contrast}%)`,
+            }}
+          />
+        </div>
+      )}
+
       <div ref={chatHeaderRef} className="absolute top-0 left-0 right-0 z-30">
         <ChatHeader
           user={user}
@@ -561,7 +578,7 @@ const ChatArea = memo(function ChatArea({
             className="pop-in absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-transform active:scale-95"
             style={{
               backgroundColor: theme.primary || '#6366f1',
-              color: '#fff',
+              color: theme.onPrimary,
               boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
             }}
           >

@@ -35,8 +35,8 @@ const UserSearchRow = ({ user, onStartPrivateChat }) => {
         </div>
         <button
           onClick={handleStartChat}
-          className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-bold text-white"
-          style={{ backgroundColor: accent }}
+          className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-bold"
+          style={{ backgroundColor: accent, color: theme.onPrimary || '#ffffff' }}
         >
           Chat
         </button>

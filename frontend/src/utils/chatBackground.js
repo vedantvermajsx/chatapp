@@ -1,8 +1,9 @@
-// Custom chat background image. Stored per-browser as a downscaled JPEG data URL so it
-// survives reloads and fits localStorage limits.
 const KEY = 'chatBackgroundImage';
+const SETTINGS_KEY = 'chatBackgroundSettings';
 const MAX_SIDE = 1600;
 const QUALITY = 0.8;
+
+export const DEFAULT_CHAT_BG_SETTINGS = { blur: 5, opacity: 20, contrast: 100 };
 
 export function getChatBackground() {
   try {
@@ -10,6 +11,21 @@ export function getChatBackground() {
   } catch {
     return null;
   }
+}
+
+export function getChatBackgroundSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? { ...DEFAULT_CHAT_BG_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_CHAT_BG_SETTINGS };
+  } catch {
+    return { ...DEFAULT_CHAT_BG_SETTINGS };
+  }
+}
+
+export function setChatBackgroundSettings(settings) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch { /* storage unavailable */ }
 }
 
 export function clearChatBackground() {
@@ -26,7 +42,6 @@ function loadImage(file) {
   });
 }
 
-// Resolves to the saved data URL; rejects with a user-readable Error.
 export async function setChatBackground(file) {
   if (!file || !file.type?.startsWith('image/')) throw new Error('Please choose an image file');
   const img = await loadImage(file);

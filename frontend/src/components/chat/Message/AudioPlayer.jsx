@@ -11,6 +11,13 @@ function formatTime(seconds) {
     return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+function rgbParts(hex) {
+    const h = (hex || '#000000').replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const n = parseInt(full, 16);
+    return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+}
+
 const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
     const audioRef = useRef(null);
     const rafRef = useRef(null);
@@ -25,10 +32,14 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
     const [isLoading, setIsLoading] = useState(false);
     const [initProgress, setInitProgress] = useState(0);
 
-    const accentColor = isOwn
-        ? (theme.isLight ? '#6366f1' : '#818cf8')
-        : (theme.isLight ? '#0ea5e9' : '#38bdf8');
-    const dimColor = theme.isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
+    const bubbleText = isOwn ? theme.myMessageText : theme.otherMessageText;
+    const bubbleBg = isOwn ? theme.myMessageBubble : theme.otherMessageBubble;
+    const ink = rgbParts(bubbleText);
+    const accentColor = bubbleText;
+    const dimColor = `rgba(${ink},0.4)`;
+    const panelBg = `rgba(${ink},0.08)`;
+    const timeColor = `rgba(${ink},0.7)`;
+    const iconColor = bubbleBg;
 
     const applyProgress = useCallback((progress, ct) => {
         if (progressBarRef.current) {
@@ -144,7 +155,7 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
             className="mt-3 flex items-center gap-2 rounded-xl px-2 py-2"
             style={{
                 minWidth: 200,
-                background: theme.isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
+                background: panelBg,
             }}
         >
             <audio ref={audioRef} src={src} preload="metadata" />
@@ -159,10 +170,10 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
                 aria-label={isPlaying ? 'Pause' : 'Play'}
             >
                 {isLoading
-                    ? <LoaderMini size={14} className="animate-spin" color="#fff" />
+                    ? <LoaderMini size={14} className="animate-spin" color={iconColor} />
                     : isPlaying
-                        ? <Pause size={14} fill="#fff" color="#fff" />
-                        : <Play size={14} fill="#fff" color="#fff" style={{ marginLeft: 1 }} />
+                        ? <Pause size={14} fill={iconColor} color={iconColor} />
+                        : <Play size={14} fill={iconColor} color={iconColor} style={{ marginLeft: 1 }} />
                 }
             </button>
 
@@ -208,7 +219,7 @@ const AudioPlayer = memo(function AudioPlayer({ src, isOwn, theme }) {
 
             <div
                 className="flex-shrink-0 text-[10px] font-mono font-semibold tabular-nums -ml-1"
-                style={{ color: theme.isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)', minWidth: 36, textAlign: 'right' }}
+                style={{ color: timeColor, minWidth: 36, textAlign: 'right' }}
             >
                 <span ref={timeDisplayRef}>{formatTime(duration)}</span>
             </div>

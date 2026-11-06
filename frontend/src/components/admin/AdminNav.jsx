@@ -4,7 +4,7 @@ import { ADMIN_NAV } from './tabs';
 
 export default function AdminNav() {
   const { theme } = useTheme();
-  const accent = theme.myMessageBubble;
+  const accent = theme.primary || theme.myMessageBubble;
 
   return (
     <nav

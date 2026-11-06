@@ -49,7 +49,7 @@ export default function ChatVoiceRecorder({ onAudioReady, theme, isRecording, se
       onClick={toggleRecording}
       onMouseDown={(e) => e.preventDefault()}
       onTouchStart={(e) => e.preventDefault()}
-      className={`py-3 sm:py-4 flex items-center justify-center rounded-full transition-all flex-shrink-0`}
+      className={`w-9 h-9 flex items-center justify-center rounded-full transition-all flex-shrink-0`}
       title={isRecording ? "Stop recording" : "Voice message"}
     >
       {isRecording ? (

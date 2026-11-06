@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
     if (msg) toast.success(msg, { id: msg });
     return response;
   },
-  (error) => {
+  async (error) => {
     const isOffline = !navigator.onLine;
 
     if (error.response?.status === 498) {
@@ -44,7 +44,8 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
       window.dispatchEvent(new Event('auth:expired'));
-      wipeLocalChatData().catch(console.error);
+      // Finish the wipe before redirecting so a quick re-login can't race the DB deletion.
+      await wipeLocalChatData().catch(console.error);
       toast.error('Session expired or invalid. Please log in again.');
       
       if (window.location.hash !== '#/login') {

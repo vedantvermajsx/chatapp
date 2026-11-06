@@ -61,7 +61,7 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
   const muted = isOwn
     ? (theme.isLight ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)')
     : (theme.isLight ? '#4b5563' : '#a1a1aa');
-  const outerMuted = theme.isLight ? '#4b5563' : '#a1a1aa';
+  const outerMuted = theme.muted || (theme.isLight ? '#4b5563' : '#a1a1aa');
 
   const replyTo = msg.replyTo;
   const replyMediaLabel = replyTo?.media ? REPLY_MEDIA_LABELS[replyTo.media.type] || 'Attachment' : null;
@@ -138,7 +138,7 @@ const Message = memo(function Message({ msg, isOwn, senderAvatar = null, gender 
 
           {msg?.media && <div className="mb-1"><MediaContent msg={msg} isOwn={isOwn} theme={theme} /></div>}
 
-          <TextContent text={msg?.text} textColor={bubbleText} bubbleBg={bubbleBg} accent={isOwn ? bubbleText : theme.myMessageBubble} isOwn={isOwn} />
+          <TextContent text={msg?.text} textColor={bubbleText} bubbleBg={bubbleBg} accent={isOwn ? bubbleText : (theme.primary || theme.myMessageBubble)} isOwn={isOwn} />
 
           {hasBubble && (
             <div className="flex items-center justify-end gap-1 mt-0.5 -mb-0.5">

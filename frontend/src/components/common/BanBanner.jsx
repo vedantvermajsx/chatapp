@@ -5,8 +5,14 @@ import { useAuth } from '../../contexts/AuthContext';
 export default function BanBanner() {
   const { ban } = useAuth();
   const [hidden, setHidden] = useState(false);
+  const [tick, setTick] = useState(0);
 
   const expiresAt = ban?.expiresAt ? new Date(ban.expiresAt).getTime() : null;
+
+  // A new ban must show again even if the previous one was dismissed.
+  useEffect(() => {
+    setHidden(false);
+  }, [expiresAt]);
 
   useEffect(() => {
     if (!expiresAt) return undefined;
@@ -15,9 +21,13 @@ export default function BanBanner() {
       setHidden(true);
       return undefined;
     }
-    const timer = setTimeout(() => setHidden(true), remaining);
+    // setTimeout overflows past ~24.8 days; wake up at the cap and re-check.
+    const timer = setTimeout(() => {
+      if (Date.now() >= expiresAt) setHidden(true);
+      else setTick((t) => t + 1);
+    }, Math.min(remaining, 2147483647));
     return () => clearTimeout(timer);
-  }, [expiresAt]);
+  }, [expiresAt, tick]);
 
   if (!ban || !expiresAt || expiresAt <= Date.now() || hidden) return null;
 

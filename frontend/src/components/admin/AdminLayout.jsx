@@ -22,7 +22,7 @@ export default function AdminLayout() {
         <button
           onClick={() => navigate('/chat')}
           className="px-4 py-2 rounded-full text-sm font-medium"
-          style={{ backgroundColor: theme.myMessageBubble, color: theme.onPrimary }}
+          style={{ backgroundColor: theme.primary || theme.myMessageBubble, color: theme.onPrimary }}
         >
           Back to chat
         </button>

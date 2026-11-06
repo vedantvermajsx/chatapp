@@ -88,8 +88,8 @@ function MediaContent({ msg, isOwn, theme }) {
           onClick={() => setShowMedia(true)}
           className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg hover:opacity-80 transition text-sm"
           style={{
-            backgroundColor: theme.myMessageBubble,
-            color: theme.myMessageText
+            backgroundColor: theme.primary || theme.myMessageBubble,
+            color: theme.onPrimary || theme.myMessageText
           }}
         >
           Load Media

@@ -1,7 +1,6 @@
 import { Send, Paperclip, Sticker, X } from 'lucide-react';
 import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle, memo } from 'react';
 import { toast } from 'sonner';
-import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNeumorphism } from '../../../hooks/useNeumorphism';
 import ChatMediaPreview from './ChatMediaPreview';
@@ -387,7 +386,7 @@ const ChatInput = memo(forwardRef(({
   }, [inputMessage]);
 
   return (
-    <div className="p-2 sm:p-6  border-t mb-1 relative" style={{ backgroundColor: theme.background, borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
+    <div data-tour="chat-input" className="px-2 py-1.5 sm:px-3 sm:py-2 border-t relative" style={{ borderColor: theme.isLight ? '#cbd5e0' : '#4a5568' }}>
       {disabled && (
         <div className="absolute inset-0 z-20 cursor-not-allowed" style={{ backgroundColor: theme.background, opacity: 0.6 }} />
       )}
@@ -403,11 +402,11 @@ const ChatInput = memo(forwardRef(({
           className="flex items-center gap-2 mb-2 px-3 py-2 rounded-lg border-l-2"
           style={{
             backgroundColor: theme.isLight ? '#f3f4f6' : '#1f2937',
-            borderLeftColor: theme.myMessageBubble || theme.primary || '#16a34a',
+            borderLeftColor: theme.primary || theme.myMessageBubble || '#16a34a',
           }}
         >
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold truncate" style={{ color: theme.myMessageBubble || theme.primary || '#16a34a' }}>
+            <p className="text-xs font-bold truncate" style={{ color: theme.primary || theme.myMessageBubble || '#16a34a' }}>
               Replying to {replyingTo.username || 'message'}
             </p>
             <p className="text-xs truncate" style={{ color: theme.otherMessageText }}>
@@ -443,12 +442,13 @@ const ChatInput = memo(forwardRef(({
       />
 
       <form onSubmit={(e) => { stopTyping(); sendMessage(e); }} className="flex items-center justify-center">
-        {user && (
-          <div className="mr-3 flex-shrink-0 hidden sm:block">
-            <Avatar url={user.avatar} name={user.username} gender={user.gender} size={12} />
-          </div>
-        )}
-        <div className="glass-lite w-full sm:w-4/5 lg:w-3/4 flex items-center gap-2 sm:gap-3 rounded-2xl px-4 sm:px-6 py-2 sm:py-1 relative">
+        <div
+          className="w-full flex items-center gap-2 rounded-[22px] border px-3 py-1 relative transition-colors"
+          style={{
+            backgroundColor: theme.background,
+            borderColor: theme.isLight ? '#dbdbdb' : '#363636',
+          }}
+        >
           <input
             ref={fileInputRef}
             id="file-upload"
@@ -460,21 +460,21 @@ const ChatInput = memo(forwardRef(({
             disabled={disabled}
           />
 
-
-          <label
-            htmlFor="file-upload"
-            className="py-3 sm:py-4 flex items-center justify-center rounded-full transition-all flex-shrink-0 cursor-pointer"
-            style={{ boxShadow: 'none' }}
+          <button
+            type="button"
+            onClick={handleToggleStickerPicker}
             onMouseDown={(e) => e.preventDefault()}
             onTouchStart={(e) => e.preventDefault()}
-            title="Attach image/video"
+            className="flex items-center justify-center rounded-full transition-all flex-shrink-0"
+            style={{ boxShadow: 'none' }}
+            title="Open sticker picker"
           >
-            <Paperclip className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
-          </label>
+            <Sticker className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+          </button>
 
           <div className="flex-1 relative min-w-0">
             {isRecording && (
-              <div className="absolute inset-0 flex items-center gap-3 px-4 rounded-2xl z-10" style={{ backgroundColor: theme.background }}>
+              <div className="absolute inset-0 flex items-center gap-3 px-2 rounded-[22px] z-10" style={{ backgroundColor: theme.background }}>
                 <div className="flex-shrink-0 flex items-center justify-center">
                   <span className="relative flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -558,14 +558,14 @@ const ChatInput = memo(forwardRef(({
                   }
                 }
               }}
-              className="py-3 sm:py-4 rounded-2xl border-none focus:outline-none min-w-0 text-base sm:text-lg px-4 overflow-y-auto whitespace-pre-wrap outline-none break-words overflow-x-hidden"
+              className="chat-editor py-1.5 sm:py-2 rounded-2xl border-none focus:outline-none min-w-0 text-[15px] px-1 overflow-y-auto whitespace-pre-wrap outline-none break-words overflow-x-hidden"
               style={{
                 opacity: isRecording ? 0 : 1,
                 pointerEvents: isRecording ? 'none' : 'auto',
-                backgroundColor: theme.background,
+                backgroundColor: 'transparent',
                 color: theme.otherMessageText,
-                minHeight: '3rem',
-                maxHeight: 'calc(1.5rem * 3 + 1.5rem)',
+                minHeight: '2.25rem',
+                maxHeight: 'calc(1.5rem * 3 + 0.75rem)',
                 lineHeight: '1.5rem'
               }}
               role="textbox"
@@ -577,7 +577,7 @@ const ChatInput = memo(forwardRef(({
                 opacity: 0.6,
                 position: 'absolute',
                 top: '50%',
-                left: '1rem',
+                left: '0.6rem',
                 transform: 'translateY(-50%)',
                 pointerEvents: 'none'
               }}>
@@ -601,44 +601,39 @@ const ChatInput = memo(forwardRef(({
           </div>
 
 
-          {!isTyping && (
-            <button
-              type="button"
-              onClick={handleToggleStickerPicker}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-              className="flex py-3 sm:py-4 items-center justify-center rounded-full transition-all flex-shrink-0"
-              style={{ boxShadow: 'none' }}
-              title="Open sticker picker"
-            >
-              <Sticker className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
-            </button>
-          )}
-
-
-          {!isTyping && (
-            <ChatVoiceRecorder
-              theme={theme}
-              isRecording={isRecording}
-              setIsRecording={setIsRecording}
-              onAudioReady={(audioFile) => handleFileSelect({ target: { files: [audioFile] } })}
-            />
-          )}
-
-
-          {hasContent && (
+          {hasContent ? (
             <button
               type="submit"
               onMouseDown={(e) => e.preventDefault()}
               onTouchStart={(e) => e.preventDefault()}
-              className="pop-in flex items-center justify-center rounded-full transition-[transform,filter] duration-150 active:scale-90 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-11 h-11"
-              style={{ backgroundColor: theme.myMessageBubble }}
+              className="pop-in flex items-center justify-center rounded-full transition-[transform,filter] duration-150 active:scale-90 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-9 h-9"
+              style={{ backgroundColor: theme.primary || theme.myMessageBubble || '#0095f6' }}
               disabled={disabled}
               aria-label="Send message"
               title="Send"
             >
-              <Send className="w-5 h-5" style={{ color: theme.myMessageText }} />
+              <Send className="w-5 h-5" style={{ color: theme.onPrimary || '#ffffff' }} />
             </button>
+          ) : (
+            <>
+              <label
+                htmlFor="file-upload"
+                className="flex items-center justify-center rounded-full transition-all flex-shrink-0 cursor-pointer"
+                style={{ boxShadow: 'none' }}
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
+                title="Attach image/video"
+              >
+                <Paperclip className="w-6 h-6" style={{ color: theme.otherUsernameColor }} />
+              </label>
+
+              <ChatVoiceRecorder
+                theme={theme}
+                isRecording={isRecording}
+                setIsRecording={setIsRecording}
+                onAudioReady={(audioFile) => handleFileSelect({ target: { files: [audioFile] } })}
+              />
+            </>
           )}
         </div>
       </form>

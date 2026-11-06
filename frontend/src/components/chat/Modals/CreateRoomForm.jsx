@@ -13,7 +13,7 @@ const CreateRoomForm = ({
   const [nameFocused, setNameFocused] = useState(false);
   const [descFocused, setDescFocused] = useState(false);
 
-  const accent = theme.myMessageBubble || '#5865f2';
+  const accent = theme.primary || '#5865f2';
   const isLight = theme.isLight;
 
   const inputBase = {
@@ -86,7 +86,7 @@ const CreateRoomForm = ({
         className="w-full flex items-center justify-center gap-2 py-2 rounded-[10px] text-[13.5px] font-semibold transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
         style={{
           backgroundColor: accent,
-          color: '#ffffff',
+          color: theme.onPrimary,
           border: 'none',
         }}
         onMouseEnter={(e) => {

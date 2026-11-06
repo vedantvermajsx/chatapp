@@ -157,6 +157,11 @@ body,
     border-radius: 6px;
 }
 
+.chat-editor:focus-visible {
+    box-shadow: none;
+    border-radius: 1rem;
+}
+
 .msg-row:hover .msg-tools,
 .msg-row:focus-within .msg-tools,
 .msg-row:hover .msg-gutter-time,

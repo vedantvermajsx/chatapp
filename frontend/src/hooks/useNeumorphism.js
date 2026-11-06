@@ -45,7 +45,7 @@ export const useNeumorphism = () => {
     },
     onFocus: (e) => {
       e.target.style.backgroundColor = theme.background;
-      e.target.style.borderColor = theme.myMessageBubble || '#5865f2';
+      e.target.style.borderColor = theme.primary || '#5865f2';
     },
     onBlur: (e) => {
       e.target.style.backgroundColor = theme.isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)';

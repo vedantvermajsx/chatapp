@@ -2,7 +2,7 @@ import keyManager from './keyManager';
 import { blockDB, clearAllStores, hardResetDB } from './indexedDB/core.js';
 
 // Everything the app keeps in localStorage except the theme preference.
-const LOCAL_KEYS_TO_REMOVE = ['token', 'user', 'ban', 'gatherup.downloads.v1'];
+const LOCAL_KEYS_TO_REMOVE = ['token', 'user', 'ban', 'gatherup.downloads.v1', 'chatBackgroundImage'];
 
 const step = async (label, fn, failures) => {
   try {

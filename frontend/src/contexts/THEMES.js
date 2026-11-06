@@ -691,12 +691,13 @@ const _push = (c, bgs, min, dir) => {
 };
 
 
-// muted: secondary text readable on background, sidebar and other bubble
+const ACCENT_MIN = 4.5;
+
 export const THEMES = BASE_THEMES.map(t => {
   const dir = t.isLight ? '#000000' : '#ffffff';
   const surfaces = [t.background, t.otherMessageBubble].concat(t.sidebarBg ? [t.sidebarBg] : []);
   const muted = _push(t.isLight ? '#6b7280' : '#9ca3af', surfaces, 5.5, dir);
-  const accent = t.primary || t.myMessageBubble;
-  const onPrimary = _cr('#ffffff', accent) >= _cr('#000000', accent) ? '#ffffff' : '#000000';
-  return { ...t, muted, onPrimary };
+  const primary = _push(t.primary || t.myMessageBubble, surfaces, ACCENT_MIN, dir);
+  const onPrimary = _cr('#ffffff', primary) >= _cr('#000000', primary) ? '#ffffff' : '#000000';
+  return { ...t, primary, muted, onPrimary };
 });

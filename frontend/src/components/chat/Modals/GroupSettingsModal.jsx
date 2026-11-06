@@ -173,7 +173,7 @@ const GroupSettingsModal = ({ room, onClose, onUpdateSuccess }) => {
             className="w-full py-4 font-bold rounded-2xl transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               backgroundColor: theme.background,
-              color: theme.myMessageBubble,
+              color: theme.primary || theme.myMessageBubble,
               boxShadow: isLight
                 ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
                 : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'

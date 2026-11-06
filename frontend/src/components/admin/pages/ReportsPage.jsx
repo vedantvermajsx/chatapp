@@ -5,7 +5,7 @@ export default function ReportsPage() {
   const { theme } = useTheme();
   return (
     <div className="rounded-2xl p-4" style={{ backgroundColor: theme.otherMessageBubble }}>
-      <ReportsPanel accent={theme.myMessageBubble} />
+      <ReportsPanel accent={theme.primary || theme.myMessageBubble} />
     </div>
   );
 }
