@@ -198,8 +198,26 @@ class LoadBalancer {
     return req.socket?.remoteAddress || '0.0.0.0';
   }
 
-  // Tell backends the real user IP (and prove it came from us).
+  // TEMP diagnostic: remove once the real client IP is confirmed.
+  logIpDiagnostics(req) {
+    if (!req.originalUrl?.includes('/api/auth')) return;
+    console.log('[LB-IP]', JSON.stringify({
+      url: req.originalUrl,
+      resolved: this.getClientIp(req),
+      reqIp: req.ip,
+      reqIps: req.ips,
+      xff: req.headers['x-forwarded-for'] || null,
+      xRealIp: req.headers['x-real-ip'] || null,
+      cfConnectingIp: req.headers['cf-connecting-ip'] || null,
+      trueClientIp: req.headers['true-client-ip'] || null,
+      forwarded: req.headers['forwarded'] || null,
+      peer: req.socket?.remoteAddress || null,
+      hasLbSecret: Boolean(process.env.LB_SECRET),
+    }));
+  }
+
   stampClientIp(req) {
+    this.logIpDiagnostics(req);
     delete req.headers['x-client-ip'];
     delete req.headers['x-lb-secret'];
     req.headers['x-client-ip'] = this.getClientIp(req);
