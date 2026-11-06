@@ -1,7 +1,7 @@
 import keyManager from './keyManager';
 import { blockDB, clearAllStores, hardResetDB } from './indexedDB/core.js';
+import pushService from './push.service';
 
-// Everything the app keeps in localStorage except the theme preference.
 const LOCAL_KEYS_TO_REMOVE = ['token', 'user', 'ban', 'gatherup.downloads.v1', 'chatBackgroundImage'];
 
 const step = async (label, fn, failures) => {
@@ -20,24 +20,21 @@ const step = async (label, fn, failures) => {
 export async function wipeLocalChatData({ queryClient } = {}) {
   const failures = [];
 
-  // 1. Credentials first, so nothing can make an authenticated request any more.
+  await step('push', () => pushService.disable(), failures);
+
   try {
     LOCAL_KEYS_TO_REMOVE.forEach((k) => localStorage.removeItem(k));
   } catch (err) {
     failures.push('localStorage');
   }
 
-  // 2. Encryption keys + all stores, then lock the DB so late socket events can't refill it,
-  //    then delete the whole database file.
   await step('keys', () => keyManager.clear(), failures);
   await step('stores', () => clearAllStores(), failures);
   blockDB();
   await step('database', () => hardResetDB(), failures);
 
-  // 3. In-memory caches.
   try { queryClient?.clear(); } catch { failures.push('queryClient'); }
 
-  // 4. Let in-memory UI state (downloads list etc.) reset itself.
   window.dispatchEvent(new Event('chat:wiped'));
 
   return failures.length === 0;

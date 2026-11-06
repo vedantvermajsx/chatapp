@@ -208,7 +208,6 @@ export const useChatSocket = (user, {
       const isOwnMessage = msg.userId === (currentUser?._id || currentUser?.id);
       const isActiveRoom = String(currentRoomRef.current?._id) === String(msg.roomId);
 
-
       const newMessage = {
         id: msg?._id || msg?.id,
         senderId: msg?.userId,
@@ -335,7 +334,6 @@ export const useChatSocket = (user, {
       };
 
       const isActiveChat = currentPrivateChatRef.current?.id === otherUserId;
-
 
       if (isActiveChat) {
         if (messageCache.current[cacheKey]) {

@@ -8,6 +8,7 @@ import Avatar from '../../common/Avatar';
 import { useTheme } from '../../../contexts/ThemeContext';
 import authService from '../../../services/auth.service';
 import BlockedUsersList from './BlockedUsersList';
+import { useNotifications } from '../../../hooks/useNotifications';
 
 const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   const { theme } = useTheme();
@@ -21,6 +22,47 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
   const [usernameStatus, setUsernameStatus] = useState(null);
   const fileInputRef = useRef(null);
   const requestRef = useRef(0);
+
+  const { enabled: notifOn, busy: notifBusy, enable: enableNotifications, disable: disableNotifications } = useNotifications();
+
+  const toggleNotifications = async () => {
+    if (notifOn) {
+      await disableNotifications();
+      return;
+    }
+    const res = await enableNotifications();
+    if (!res.ok) toast.error('Could not enable notifications. Allow them in your browser settings.');
+  };
+
+  const toggleStyle = {
+    backgroundColor: theme.background,
+    boxShadow: isLight
+      ? 'inset 1px 1px 2px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.8)'
+      : 'inset 1px 1px 2px rgba(0,0,0,0.4), inset -1px -2px 2px rgba(255,255,255,0.05)'
+  };
+
+  const renderToggle = (label, hint, on, onClick, isBusy) => (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isBusy}
+      className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all disabled:opacity-60"
+      style={toggleStyle}
+    >
+      <span className="text-left">
+        <span className="block text-sm font-semibold" style={{ color: theme.otherMessageText }}>{label}</span>
+        <span className="block text-xs opacity-70" style={{ color: theme.otherUsernameColor }}>{hint}</span>
+      </span>
+      {isBusy ? (
+        <LoaderMini className="w-5 h-5 animate-spin" />
+      ) : (
+        <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${on ? 'bg-green-500' : 'bg-gray-400'}`}>
+          <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />
+        </span>
+      )}
+    </button>
+  );
+
   useEffect(() => {
     const trimmed = username.trim();
 
@@ -186,6 +228,10 @@ const UserSettingsModal = ({ user, onClose, onUpdateSuccess }) => {
                 </div>
               </>
             )}
+
+            <div className="space-y-3">
+              {renderToggle('Push notifications', notifOn ? 'On: you get alerts for new messages' : 'Off: no alerts', notifOn, toggleNotifications, notifBusy)}
+            </div>
 
             <BlockedUsersList
               load={() => userService.getBlockedUsers()}
