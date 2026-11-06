@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import httpProxy from 'http-proxy';
 import http from 'http';
 import https from 'https';
@@ -140,6 +140,7 @@ class LoadBalancer {
     const limiter = rateLimit({
       windowMs: this.rateLimitWindowMs,
       max: this.rateLimitMaxRequests,
+      keyGenerator: (req) => ipKeyGenerator(this.getClientIp(req)),
       standardHeaders: true,
       legacyHeaders: false
     });
@@ -186,9 +187,8 @@ class LoadBalancer {
   }
 
   getClientIp(req) {
-    // req.ip is correct for HTTP requests because of `trust proxy` (see constructor).
-    // WebSocket upgrades bypass Express, so parse X-Forwarded-For ourselves:
-    // with one trusted proxy (Render) the real client is the last entry.
+    const cf = req.headers['cf-connecting-ip'] || req.headers['true-client-ip'];
+    if (cf) return String(cf).trim();
     if (req.ip) return req.ip;
     const xff = req.headers['x-forwarded-for'];
     if (xff) {
@@ -198,26 +198,7 @@ class LoadBalancer {
     return req.socket?.remoteAddress || '0.0.0.0';
   }
 
-  // TEMP diagnostic: remove once the real client IP is confirmed.
-  logIpDiagnostics(req) {
-    if (!req.originalUrl?.includes('/api/auth')) return;
-    console.log('[LB-IP]', JSON.stringify({
-      url: req.originalUrl,
-      resolved: this.getClientIp(req),
-      reqIp: req.ip,
-      reqIps: req.ips,
-      xff: req.headers['x-forwarded-for'] || null,
-      xRealIp: req.headers['x-real-ip'] || null,
-      cfConnectingIp: req.headers['cf-connecting-ip'] || null,
-      trueClientIp: req.headers['true-client-ip'] || null,
-      forwarded: req.headers['forwarded'] || null,
-      peer: req.socket?.remoteAddress || null,
-      hasLbSecret: Boolean(process.env.LB_SECRET),
-    }));
-  }
-
   stampClientIp(req) {
-    this.logIpDiagnostics(req);
     delete req.headers['x-client-ip'];
     delete req.headers['x-lb-secret'];
     req.headers['x-client-ip'] = this.getClientIp(req);
