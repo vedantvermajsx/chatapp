@@ -8,16 +8,11 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { isTauri } from "@tauri-apps/api/core";
-import { appDataDir, BaseDirectory, join } from "@tauri-apps/api/path";
-import { mkdir, readFile, writeFile } from "@tauri-apps/plugin-fs";
-import { openPath } from "@tauri-apps/plugin-opener";
 
 const DownloadsContext = createContext(null);
 
 const STORAGE_KEY = "gatherup.downloads.v1";
 const MAX_ENTRIES = 100;
-const DOWNLOADS_SUBDIR = "downloads";
 
 export const formatBytes = (bytes) => {
   if (bytes == null || Number.isNaN(bytes)) return "";
@@ -59,7 +54,7 @@ const addAttachmentFlag = (url, filename) => {
   );
 };
 
-// Browser fallback: let the WebView save the URL directly.
+// Let the browser save the URL directly.
 const triggerSave = (href, filename) => {
   const a = document.createElement("a");
   a.href = href;
@@ -72,45 +67,7 @@ const triggerSave = (href, filename) => {
 
 export const DownloadsProvider = ({ children }) => {
   const [downloads, setDownloads] = useState(loadStored);
-  const [downloadsDir, setDownloadsDir] = useState(null);
   const blobsRef = useRef(new Map());
-  const dirRef = useRef(null);
-
-  const native = useMemo(() => {
-    try {
-      return isTauri();
-    } catch {
-      return false;
-    }
-  }, []);
-
-  const ensureDir = useCallback(async () => {
-    if (dirRef.current) return dirRef.current;
-    const base = await appDataDir();
-    const dir = await join(base, DOWNLOADS_SUBDIR);
-    await mkdir(DOWNLOADS_SUBDIR, { baseDir: BaseDirectory.AppData, recursive: true });
-    dirRef.current = dir;
-    return dir;
-  }, []);
-
-  useEffect(() => {
-    if (!native) return;
-    let alive = true;
-    ensureDir()
-      .then((dir) => {
-        if (alive) setDownloadsDir(dir);
-      })
-      .catch((err) => {
-        if (alive) {
-          toast.error("Couldn't prepare the downloads folder", {
-            description: err?.message || String(err),
-          });
-        }
-      });
-    return () => {
-      alive = false;
-    };
-  }, [native, ensureDir]);
 
   useEffect(() => {
     try {
@@ -161,7 +118,6 @@ export const DownloadsProvider = ({ children }) => {
             createdAt: Date.now(),
             completedAt: null,
             contentType: null,
-            filePath: null,
             error: null,
           },
           ...prev,
@@ -209,24 +165,13 @@ export const DownloadsProvider = ({ children }) => {
         const blobUrl = URL.createObjectURL(blob);
         blobsRef.current.set(id, blobUrl);
 
-        let filePath = null;
-        if (native) {
-          const bytes = new Uint8Array(await blob.arrayBuffer());
-          const dir = await ensureDir();
-          await writeFile(`${DOWNLOADS_SUBDIR}/${safeName}`, bytes, {
-            baseDir: BaseDirectory.AppData,
-          });
-          filePath = await join(dir, safeName);
-        } else {
-          triggerSave(blobUrl, safeName);
-        }
+        triggerSave(blobUrl, safeName);
 
         patch(id, {
           status: "completed",
           progress: 100,
           size: blob.size,
           contentType: contentType || null,
-          filePath,
           completedAt: Date.now(),
         });
         toast.success(`Downloaded ${safeName}`, {
@@ -234,14 +179,7 @@ export const DownloadsProvider = ({ children }) => {
           description: formatBytes(blob.size) || undefined,
         });
       } catch (err) {
-        if (native) {
-          patch(id, { status: "failed", error: err?.message || "Download failed" });
-          toast.error(`Failed to download ${safeName}`, {
-            id: toastId,
-            description: err?.message || undefined,
-          });
-          return;
-        }
+        // fetch can fail on CORS; fall back to letting the browser download the URL itself.
         try {
           triggerSave(addAttachmentFlag(url, safeName) || url, safeName);
           patch(id, { status: "completed", progress: 100, completedAt: Date.now() });
@@ -252,7 +190,7 @@ export const DownloadsProvider = ({ children }) => {
         }
       }
     },
-    [native, patch, revokeEntry, ensureDir]
+    [patch, revokeEntry]
   );
 
   const removeDownload = useCallback(
@@ -275,51 +213,11 @@ export const DownloadsProvider = ({ children }) => {
     return () => window.removeEventListener('chat:wiped', onWiped);
   }, [clearDownloads]);
 
+  // In-session blob if we still have it, otherwise the original remote URL.
   const ensureBlobUrl = useCallback(
-    async (item) => {
-      const cached = blobsRef.current.get(item.id);
-      if (cached) return cached;
-      if (!native || !item.filePath) return null;
-      try {
-        const bytes = await readFile(item.filePath);
-        const blob = new Blob([bytes], { type: item.contentType || undefined });
-        const url = URL.createObjectURL(blob);
-        blobsRef.current.set(item.id, url);
-        return url;
-      } catch {
-        return null;
-      }
-    },
-    [native]
+    async (item) => blobsRef.current.get(item.id) || item.sourceUrl || null,
+    []
   );
-
-  const openFile = useCallback(
-    async (item) => {
-      if (!native || !item?.filePath) {
-        toast.error("File is not available on this device");
-        return;
-      }
-      try {
-        await openPath(item.filePath);
-      } catch (err) {
-        toast.error("Couldn't open the file", {
-          description: err?.message || (typeof err === "string" ? err : undefined),
-        });
-      }
-    },
-    [native]
-  );
-
-  const openDownloadsFolder = useCallback(async () => {
-    if (!native) return;
-    try {
-      await openPath(await ensureDir());
-    } catch (err) {
-      toast.error("Couldn't open the downloads folder", {
-        description: err?.message || (typeof err === "string" ? err : undefined),
-      });
-    }
-  }, [native, ensureDir]);
 
   const activeCount = useMemo(
     () => downloads.filter((d) => d.status === "downloading").length,
@@ -330,26 +228,18 @@ export const DownloadsProvider = ({ children }) => {
     () => ({
       downloads,
       activeCount,
-      native,
-      downloadsDir,
       startDownload,
       removeDownload,
       clearDownloads,
       ensureBlobUrl,
-      openFile,
-      openDownloadsFolder,
     }),
     [
       downloads,
       activeCount,
-      native,
-      downloadsDir,
       startDownload,
       removeDownload,
       clearDownloads,
       ensureBlobUrl,
-      openFile,
-      openDownloadsFolder,
     ]
   );
 

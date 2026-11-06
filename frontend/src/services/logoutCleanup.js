@@ -1,10 +1,6 @@
-import { isTauri } from '@tauri-apps/api/core';
-import { BaseDirectory, exists, mkdir, remove } from '@tauri-apps/plugin-fs';
 import keyManager from './keyManager';
 import { blockDB, clearAllStores, hardResetDB } from './indexedDB/core.js';
-import { clearDesktopNotifications } from './desktopNotifications';
 
-const DOWNLOADS_SUBDIR = 'downloads';
 // Everything the app keeps in localStorage except the theme preference.
 const LOCAL_KEYS_TO_REMOVE = ['token', 'user', 'ban', 'gatherup.downloads.v1'];
 
@@ -15,15 +11,6 @@ const step = async (label, fn, failures) => {
     failures.push(label);
     console.error(`[logout wipe] ${label} failed:`, err);
   }
-};
-
-const wipeDownloadedFiles = async () => {
-  if (!isTauri()) return;
-  if (await exists(DOWNLOADS_SUBDIR, { baseDir: BaseDirectory.AppData })) {
-    await remove(DOWNLOADS_SUBDIR, { baseDir: BaseDirectory.AppData, recursive: true });
-  }
-  // Recreate the empty folder so the next download works straight away.
-  await mkdir(DOWNLOADS_SUBDIR, { baseDir: BaseDirectory.AppData, recursive: true });
 };
 
 /**
@@ -47,10 +34,8 @@ export async function wipeLocalChatData({ queryClient } = {}) {
   blockDB();
   await step('database', () => hardResetDB(), failures);
 
-  // 3. In-memory caches, downloaded attachments, notifications still on screen.
+  // 3. In-memory caches.
   try { queryClient?.clear(); } catch { failures.push('queryClient'); }
-  await step('downloads', wipeDownloadedFiles, failures);
-  await step('notifications', clearDesktopNotifications, failures);
 
   // 4. Let in-memory UI state (downloads list etc.) reset itself.
   window.dispatchEvent(new Event('chat:wiped'));

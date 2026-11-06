@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { notifyIncoming } from '../services/desktopNotifications';
 import io from 'socket.io-client';
 import { updatePrivateChatOptimistically, catchUpNewerMessagesHandler } from '../handlers/chat.handlers.js';
 import { dbService } from '../services/indexedDB.service.js';
@@ -209,15 +208,6 @@ export const useChatSocket = (user, {
       const isOwnMessage = msg.userId === (currentUser?._id || currentUser?.id);
       const isActiveRoom = String(currentRoomRef.current?._id) === String(msg.roomId);
 
-      if (!isOwnMessage && !msg?.isSystemMessage) {
-        notifyIncoming({
-          chatKey: `room_${msg.roomId}`,
-          title: room?.groupName || room?.name || 'New message',
-          body: `${msg?.username || 'Someone'} sent a new message`,
-          target: { type: 'room', roomId: String(msg.roomId) },
-          isActiveChat: isActiveRoom,
-        });
-      }
 
       const newMessage = {
         id: msg?._id || msg?.id,
@@ -346,15 +336,6 @@ export const useChatSocket = (user, {
 
       const isActiveChat = currentPrivateChatRef.current?.id === otherUserId;
 
-      if (!isOwnMessage && !msg?.isSystemMessage) {
-        notifyIncoming({
-          chatKey: `private_${otherUserId}`,
-          title: otherUser?.username || 'New message',
-          body: 'Sent you a new message',
-          target: { type: 'private', userId: String(otherUserId), otherUser },
-          isActiveChat,
-        });
-      }
 
       if (isActiveChat) {
         if (messageCache.current[cacheKey]) {

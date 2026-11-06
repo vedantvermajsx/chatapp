@@ -7,7 +7,6 @@ import { isProfanityBlocked, PROFANITY_BLOCK_MESSAGE } from '../utils/profanity.
 const RINGTONE_SRC = '/ringtone.mp3'; // receiver side
 const DIAL_SRC = '/calling.mp3';      // caller side
 const DIAL_TIMEOUT_MS = 30000;        // caller auto-ends if unanswered
-import { notifyIncomingCall } from '../services/desktopNotifications';
 
 const CallContext = createContext();
 
@@ -141,12 +140,6 @@ export const CallProvider = ({ children, socket }) => {
           }
           setIncomingCall({ callerId: senderId, callerData, offer: data, isVideo: callerData?.isVideo });
           playRingtone();
-          notifyIncomingCall({
-            callerId: senderId,
-            username: callerData?.username,
-            isVideo: callerData?.isVideo,
-            otherUser: callerData?.username ? { id: senderId, ...callerData } : undefined,
-          });
           break;
         }
 

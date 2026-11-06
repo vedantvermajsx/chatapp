@@ -14,7 +14,6 @@ import MinigameWindow from './chat/Minigames/MinigameWindow';
 import { MINIGAME_COMMANDS, inviteText } from '../utils/minigames';
 import { sendMessageHandler } from '../handlers/message/sendMessage.handler.js';
 import { dbService } from '../services/indexedDB.service';
-import { ensureNotificationPermission, isNotificationsEnabled, offerLaunchAtStartup, onNotificationTarget } from '../services/desktopNotifications';
 
 function Chat() {
   const { user, logout } = useAuth();
@@ -143,26 +142,6 @@ function Chat() {
     );
     return true;
   }, []);
-
-  // Desktop notifications: ask for permission once, and open the right chat when the user
-  // comes back to the window from a notification.
-  useEffect(() => {
-    if (!isNotificationsEnabled()) return;
-    ensureNotificationPermission().then((ok) => { if (ok) offerLaunchAtStartup(); });
-  }, []);
-
-  useEffect(() => {
-    return onNotificationTarget((target) => {
-      if (target?.type === 'room') {
-        const room = (joinedRooms || []).find((r) => String(r._id) === String(target.roomId));
-        if (room) { setCurrentPrivateChat(null); setCurrentRoom(room); }
-      } else if (target?.type === 'private') {
-        const chat = (privateChats || []).find((x) => String(x.otherUser?.id) === String(target.userId));
-        const other = chat?.otherUser || target.otherUser;
-        if (other) startPrivateChat(other, socket);
-      }
-    });
-  }, [joinedRooms, privateChats, socket, setCurrentRoom, setCurrentPrivateChat, startPrivateChat]);
 
   const handleChessCreated = useCallback((code) => {
     if (!code || lastInvitedCodeRef.current === code) return;
