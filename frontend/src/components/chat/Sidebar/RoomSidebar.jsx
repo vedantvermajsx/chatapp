@@ -65,7 +65,9 @@ function RoomSidebar({
   onCloseSidebar,
   setPrivateChats,
   unreadCounts = {},
-  socket = null
+  socket = null,
+  onSyncAll,
+  syncingAll = false
 }) {
   const { updateUser } = useAuth();
   const { theme } = useTheme();
@@ -288,7 +290,12 @@ function RoomSidebar({
       className="flex flex-col h-full overflow-hidden"
       style={{ backgroundColor: sidebarBg }}
     >
-      <SidebarHeader showMobileClose={showMobileClose} onCloseSidebar={onCloseSidebar} />
+      <SidebarHeader
+        showMobileClose={showMobileClose}
+        onCloseSidebar={onCloseSidebar}
+        onSyncAll={onSyncAll}
+        syncingAll={syncingAll}
+      />
 
       <SidebarSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 

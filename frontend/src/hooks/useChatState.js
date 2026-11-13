@@ -17,7 +17,7 @@ import roomService from '../services/room.service';
 import userService from '../services/user.service';
 import { toast } from 'sonner';
 import { dbService } from '../services/indexedDB.service';
-import { setOfflineHandlerDependencies, setupOfflineHandler, sendPendingMessages } from '../services/offlineMessageHandler.js';
+import { setOfflineHandlerDependencies, setupOfflineHandler, sendPendingMessages, syncAllChats } from '../services/offlineMessageHandler.js';
 
 export const useChatState = (user) => {
   const [messages, setMessages] = useState([]);
@@ -48,6 +48,7 @@ export const useChatState = (user) => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [loadingNewerMessages, setLoadingNewerMessages] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [syncingAll, setSyncingAll] = useState(false);
 
   useEffect(() => {
     dbService.loadUnreadCounts().then(saved => {
@@ -182,6 +183,28 @@ export const useChatState = (user) => {
     const { privateChats } = await loadPrivateChatsHandler(setPrivateChats, setLoadingPrivateChats);
     return privateChats;
   }, []);
+
+  const syncAllChatsNow = useCallback(async () => {
+    if (syncingAll) return;
+    if (!navigator.onLine) {
+      toast.error('You are offline');
+      return;
+    }
+    setSyncingAll(true);
+    try {
+      const [syncRooms, syncChats] = await Promise.all([loadJoinedRooms(), loadPrivateChats()]);
+      const result = await syncAllChats({ rooms: syncRooms || [], privateChats: syncChats || [] });
+      if (!result) return;
+      if (result.rateLimited) toast.error('Too many requests. Try syncing again in a minute.');
+      else if (result.failed) toast.warning(`Synced ${result.synced} chats, ${result.failed} failed`);
+      else toast.success('All chats synced');
+    } catch (error) {
+      console.error('Sync all chats failed:', error);
+      toast.error('Sync failed');
+    } finally {
+      setSyncingAll(false);
+    }
+  }, [syncingAll, loadJoinedRooms, loadPrivateChats]);
 
   const loadRoomMembers = useCallback(async (search = '', forceRefresh = false) => {
     if (!currentRoom) return;
@@ -581,6 +604,8 @@ export const useChatState = (user) => {
     joinRoom,
     startPrivateChat,
     loadMoreMessages,
-    loadNewerMessages
+    loadNewerMessages,
+    syncAllChatsNow,
+    syncingAll
   };
 };

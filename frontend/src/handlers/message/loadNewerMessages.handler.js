@@ -12,7 +12,8 @@ const fetchNewerMessagesPage = async (
   messageCache,
   setUnreadCounts,
   roomPrivateKey = null,
-  isActive = () => true
+  isActive = () => true,
+  pageSize = 20
 ) => {
   if (!messages || messages.length === 0) {
     return { messages: messages || [], hasMore: false };
@@ -28,9 +29,9 @@ const fetchNewerMessagesPage = async (
   let lastRead = null;
 
   if (type === 'room') {
-    res = await messageService.getRoomMessages(chatId, 20, null, after, roomPrivateKey);
+    res = await messageService.getRoomMessages(chatId, pageSize, null, after, roomPrivateKey);
   } else {
-    res = await messageService.getPrivateMessages(chatId, 20, null, after);
+    res = await messageService.getPrivateMessages(chatId, pageSize, null, after);
     lastRead = res.lastRead ?? null;
   }
 
@@ -84,7 +85,8 @@ export const catchUpNewerMessagesHandler = async (
   messageCache,
   setUnreadCounts = null,
   roomPrivateKey = null,
-  rethrow = false
+  rethrow = false,
+  pageSize = 20
 ) => {
   if (!messages || messages.length === 0) return messages;
 
@@ -93,7 +95,7 @@ export const catchUpNewerMessagesHandler = async (
 
   try {
     while (hasMore) {
-      const result = await fetchNewerMessagesPage(chatId, type, currentMessages, setMessages, messageCache, setUnreadCounts, roomPrivateKey);
+      const result = await fetchNewerMessagesPage(chatId, type, currentMessages, setMessages, messageCache, setUnreadCounts, roomPrivateKey, () => true, pageSize);
       currentMessages = result.messages;
       hasMore = result.hasMore;
     }

@@ -27,13 +27,13 @@ const chatInfoOf = (p) => p.type === 'room'
   ? { chatId: p.roomId, cacheKey: `room_${p.roomId}` }
   : { chatId: p.receiverId, cacheKey: `private_${p.receiverId}` };
 
-const catchUpChat = async (type, chatId, cacheKey) => {
+const catchUpChat = async (type, chatId, cacheKey, { room: roomArg = null, pageSize = 20 } = {}) => {
   const cache = dependencies.messageCache?.current;
   if (!cache) throw new Error('message cache not ready');
 
   let roomKey = null;
   if (type === 'room') {
-    const room = dependencies.getRoom?.(chatId);
+    const room = roomArg ?? dependencies.getRoom?.(chatId);
     if (!room) throw new Error('room not loaded yet');
     roomKey = room.privateKey ?? null;
   }
@@ -60,7 +60,8 @@ const catchUpChat = async (type, chatId, cacheKey) => {
       dependencies.messageCache,
       dependencies.setUnreadCounts,
       roomKey,
-      true
+      true,
+      pageSize
     );
     return;
   }
@@ -75,6 +76,63 @@ const catchUpChat = async (type, chatId, cacheKey) => {
     cache[cacheKey] = { messages: msgs, hasMore: res.hasMore, timestamp: Date.now() };
   }
   syncUnreadFromResponse(dependencies.setUnreadCounts, cacheKey, res.unreadCount);
+};
+
+const SYNC_PAGE_SIZE = 50;
+let isSyncingAll = false;
+
+const toTime = (v) => {
+  const t = typeof v === 'number' ? v : Date.parse(v);
+  return Number.isNaN(t) ? 0 : t;
+};
+
+export const syncAllChats = async ({ rooms = [], privateChats = [] } = {}) => {
+  if (isSyncingAll || !isOnline || !isLoggedIn()) return null;
+  isSyncingAll = true;
+  const result = { synced: 0, skipped: 0, failed: 0, rateLimited: false };
+
+  try {
+    const jobs = [
+      ...rooms
+        .filter((r) => r?._id)
+        .map((room) => ({ type: 'room', chatId: room._id, cacheKey: `room_${room._id}`, room })),
+      ...privateChats
+        .filter((c) => c?.otherUser?.id)
+        .map((c) => ({
+          type: 'private',
+          chatId: c.otherUser.id,
+          cacheKey: `private_${c.otherUser.id}`,
+          serverLatest: toTime(c.lastMessage?.timestamp),
+        })),
+    ];
+
+    for (const job of jobs) {
+      if (!isLoggedIn()) break;
+
+      if (job.serverLatest) {
+        const local = toTime(await dbService.getLatestTimestamp(job.cacheKey));
+        if (local >= job.serverLatest) {
+          result.skipped += 1;
+          continue;
+        }
+      }
+
+      try {
+        await catchUpChat(job.type, job.chatId, job.cacheKey, { room: job.room, pageSize: SYNC_PAGE_SIZE });
+        result.synced += 1;
+      } catch (error) {
+        result.failed += 1;
+        console.error(`Sync failed for ${job.cacheKey}:`, error);
+        if (error?.response?.status === 429) {
+          result.rateLimited = true;
+          break;
+        }
+      }
+    }
+  } finally {
+    isSyncingAll = false;
+  }
+  return result;
 };
 
 export const resetOfflineHandler = () => {

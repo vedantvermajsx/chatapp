@@ -92,8 +92,7 @@ const PrivateChat = memo(function PrivateChat({
                 return 'Attachment';
               }
               if (!msg.content) return 'No messages yet';
-              const text = msg.content.replace('__SYSTEM_CALL__', '');
-              return text.length > 30 ? text.slice(0, 30) + '…' : text;
+              return msg.content.length > 30 ? msg.content.slice(0, 30) + '…' : msg.content;
             })()}
           </p>
         </div>

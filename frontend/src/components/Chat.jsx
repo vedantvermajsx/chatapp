@@ -63,7 +63,9 @@ function Chat() {
     loadMoreMessages,
     loadNewerMessages,
     unreadCounts,
-    setUnreadCounts
+    setUnreadCounts,
+    syncAllChatsNow,
+    syncingAll
   } = chatState;
 
   const { socket, typingUsers } = useChatSocket(user, {
@@ -373,6 +375,8 @@ function Chat() {
         loadingPrivateChats={loadingPrivateChats}
         unreadCounts={unreadCounts}
         socket={socket}
+        onSyncAll={syncAllChatsNow}
+        syncingAll={syncingAll}
       />
 
       <CallProvider socket={socket}>
